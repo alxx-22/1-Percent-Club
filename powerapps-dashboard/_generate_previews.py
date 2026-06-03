@@ -48,6 +48,29 @@ DEFS = (
     "<feGaussianBlur stdDeviation='5'/></filter></defs>"
 )
 
+# HPE-aligned motion: purposeful, smooth, low-amplitude. Hidden states live ONLY
+# in @keyframes (never on base attrs) so static renders show the settled design,
+# while WebView2/Chromium plays the animation. Honors reduced-motion.
+CSS = (
+    "<style>"
+    ".fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}"
+    ".fo{animation:fo .5s ease-out both}"
+    ".pp{animation:pp .5s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:center}"
+    ".gx{animation:gx .65s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}"
+    ".rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}"
+    ".ring{transform-box:fill-box;transform-origin:center;animation:ring 2.8s ease-out infinite}"
+    ".brz{animation:brz 2.6s ease-in-out infinite}"
+    "@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}"
+    "@keyframes fo{from{opacity:0}to{opacity:1}}"
+    "@keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}"
+    "@keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}"
+    "@keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}"
+    "@keyframes ring{0%{opacity:.45;transform:scale(.75)}70%{opacity:0;transform:scale(2)}100%{opacity:0;transform:scale(2)}}"
+    "@keyframes brz{0%,100%{opacity:.9}50%{opacity:.45}}"
+    "@media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.ring,.brz{animation:none}}"
+    "</style>"
+)
+
 # =========================================================================
 # 1) PODIUM  (top 3 crews) — viewBox 920 x 440
 # =========================================================================
@@ -59,33 +82,36 @@ def podium_inner(top3):
         (460, 70,  0),   # 1st  (center)
         (740, 162, 2),   # 3rd  (right)
     ]
-    s = [DEFS]
+    card_delay = {0: 0.34, 1: 0.18, 2: 0.05}   # winner (#1) revealed last
+    medal_delay = {0: 0.55, 1: 0.39, 2: 0.26}
+    s = [DEFS, CSS]
     for (cx, top, mi), crew in zip(cols, [top3[1], top3[0], top3[2]]):
         medal, tint, ord_ = MEDALS[mi]
         cw = 232
         x = cx - cw / 2
         h = base - top
-        # shadow + card
-        s.append(shadow(x, top, cw, h, 16))
-        s.append(f"<rect x='{x}' y='{top}' width='{cw}' height='{h}' rx='16' "
-                 f"fill='{C['card']}' stroke='{C['border']}'/>")
-        # color top accent bar
-        s.append(f"<path d='M{x+1},{top+15} v-1 a14,14 0 0 1 14,-14 h{cw-30} "
-                 f"a14,14 0 0 1 14,14 v1 z' fill='{medal}'/>")
-        # medal circle
         my = top + 56
-        s.append(f"<circle cx='{cx}' cy='{my}' r='30' fill='{tint}' stroke='{medal}' stroke-width='2'/>")
-        s.append(f"<text x='{cx}' y='{my+1}' font-family='{FONT}' font-size='22' font-weight='700' "
+        g = [f"<g class='fu' style='animation-delay:{card_delay[mi]}s'>"]
+        g.append(shadow(x, top, cw, h, 16))
+        g.append(f"<rect x='{x}' y='{top}' width='{cw}' height='{h}' rx='16' "
+                 f"fill='{C['card']}' stroke='{C['border']}'/>")
+        g.append(f"<path d='M{x+1},{top+15} v-1 a14,14 0 0 1 14,-14 h{cw-30} "
+                 f"a14,14 0 0 1 14,14 v1 z' fill='{medal}'/>")
+        # champion idle halo (1st only)
+        if mi == 0:
+            g.append(f"<circle cx='{cx}' cy='{my}' r='30' fill='none' stroke='{medal}' stroke-width='2' class='ring' opacity='0'/>")
+        # medal pops in
+        g.append(f"<g class='pp' style='animation-delay:{medal_delay[mi]}s'>")
+        g.append(f"<circle cx='{cx}' cy='{my}' r='30' fill='{tint}' stroke='{medal}' stroke-width='2'/>")
+        g.append(f"<text x='{cx}' y='{my+1}' font-family='{FONT}' font-size='22' font-weight='700' "
                  f"fill='{medal}' text-anchor='middle' dominant-baseline='central'>{esc(crew['rank'])}</text>")
-        # crew name
-        s.append(f"<text x='{cx}' y='{my+58}' font-family='{FONT}' font-size='22' font-weight='700' "
+        g.append("</g>")
+        g.append(f"<text x='{cx}' y='{my+58}' font-family='{FONT}' font-size='22' font-weight='700' "
                  f"fill='{C['strong']}' text-anchor='middle'>{esc(crew['name'])}</text>")
-        # big points
-        s.append(f"<text x='{cx}' y='{my+108}' font-family='{FONT}' font-size='44' font-weight='700' "
+        g.append(f"<text x='{cx}' y='{my+108}' font-family='{FONT}' font-size='44' font-weight='700' "
                  f"fill='{C['greenDark']}' text-anchor='middle'>{esc(crew['pts'])}</text>")
-        s.append(f"<text x='{cx}' y='{my+130}' font-family='{FONT}' font-size='12' font-weight='600' "
+        g.append(f"<text x='{cx}' y='{my+130}' font-family='{FONT}' font-size='12' font-weight='600' "
                  f"letter-spacing='1.5' fill='{C['weak']}' text-anchor='middle'>TOTAL POINTS</text>")
-        # pending pill
         pend = crew['pending']
         py = base - 34
         if pend and int(pend) > 0:
@@ -93,12 +119,11 @@ def podium_inner(top3):
         else:
             label, fg, bg = "no pending", C['weak'], C['contrast']
         pw = 8 * len(label) + 26
-        s.append(f"<rect x='{cx-pw/2}' y='{py}' width='{pw}' height='24' rx='12' fill='{bg}'/>")
-        s.append(f"<text x='{cx}' y='{py+16}' font-family='{FONT}' font-size='12' font-weight='600' "
+        g.append(f"<rect x='{cx-pw/2}' y='{py}' width='{pw}' height='24' rx='12' fill='{bg}'/>")
+        g.append(f"<text x='{cx}' y='{py+16}' font-family='{FONT}' font-size='12' font-weight='600' "
                  f"fill='{fg}' text-anchor='middle'>{esc(label)}</text>")
-        # ordinal ribbon footer
-        s.append(f"<text x='{cx}' y='{base-2}' font-family='{FONT}' font-size='13' font-weight='700' "
-                 f"letter-spacing='1' fill='{medal}' text-anchor='middle' opacity='0'>{ord_}</text>")
+        g.append("</g>")
+        s.append("".join(g))
     return W, H, "".join(s)
 
 
@@ -107,36 +132,35 @@ def podium_inner(top3):
 # =========================================================================
 def row_inner(r, leader_pts):
     W, H = 920, 84
-    s = [DEFS]
-    s.append(shadow(4, 8, W - 8, 64, 12, op=0.07))
-    s.append(f"<rect x='4' y='8' width='{W-8}' height='64' rx='12' fill='{C['card']}' stroke='{C['border']}'/>")
-    # rank tile
-    s.append(f"<rect x='22' y='18' width='44' height='44' rx='10' fill='{C['contrast']}'/>")
-    s.append(f"<text x='44' y='40' font-family='{FONT}' font-size='20' font-weight='700' "
+    d = max(0.0, (int(r['rank']) - 4) * 0.08)   # stagger rows as the gallery appears
+    s = [DEFS, CSS]
+    g = [f"<g class='rw' style='animation-delay:{d:.2f}s'>"]
+    g.append(shadow(4, 8, W - 8, 64, 12, op=0.07))
+    g.append(f"<rect x='4' y='8' width='{W-8}' height='64' rx='12' fill='{C['card']}' stroke='{C['border']}'/>")
+    g.append(f"<rect x='22' y='18' width='44' height='44' rx='10' fill='{C['contrast']}'/>")
+    g.append(f"<text x='44' y='40' font-family='{FONT}' font-size='20' font-weight='700' "
              f"fill='{C['strong']}' text-anchor='middle' dominant-baseline='central'>{esc(r['rank'])}</text>")
-    # crew name
-    s.append(f"<text x='86' y='37' font-family='{FONT}' font-size='21' font-weight='700' "
+    g.append(f"<text x='86' y='37' font-family='{FONT}' font-size='21' font-weight='700' "
              f"fill='{C['strong']}'>{esc(r['name'])}</text>")
-    # progress bar (pct of leader)
     pct = (float(r['pts']) / leader_pts) if leader_pts else 0
     bx, bw = 86, 460
-    s.append(f"<rect x='{bx}' y='50' width='{bw}' height='7' rx='3.5' fill='{C['contrast']}'/>")
-    s.append(f"<rect x='{bx}' y='50' width='{max(6,bw*pct):.0f}' height='7' rx='3.5' fill='{C['brand']}'/>")
-    # divider
-    s.append(f"<line x1='735' y1='22' x2='735' y2='58' stroke='{C['border']}'/>")
-    # points
-    s.append(f"<text x='820' y='44' font-family='{FONT}' font-size='30' font-weight='700' "
+    g.append(f"<rect x='{bx}' y='50' width='{bw}' height='7' rx='3.5' fill='{C['contrast']}'/>")
+    g.append(f"<rect x='{bx}' y='50' width='{max(6,bw*pct):.0f}' height='7' rx='3.5' fill='{C['brand']}' "
+             f"class='gx' style='animation-delay:{d+0.25:.2f}s'/>")
+    g.append(f"<line x1='735' y1='22' x2='735' y2='58' stroke='{C['border']}'/>")
+    g.append(f"<text x='820' y='44' font-family='{FONT}' font-size='30' font-weight='700' "
              f"fill='{C['strong']}' text-anchor='end'>{esc(r['pts'])}</text>")
-    s.append(f"<text x='828' y='44' font-family='{FONT}' font-size='13' font-weight='600' "
+    g.append(f"<text x='828' y='44' font-family='{FONT}' font-size='13' font-weight='600' "
              f"fill='{C['weak']}'>pts</text>")
-    # pending
     pend = r['pending']
     if pend and int(pend) > 0:
-        s.append(f"<text x='890' y='62' font-family='{FONT}' font-size='12.5' font-weight='600' "
+        g.append(f"<text x='890' y='62' font-family='{FONT}' font-size='12.5' font-weight='600' "
                  f"fill='{C['warn']}' text-anchor='end'>+{esc(pend)} pending</text>")
     else:
-        s.append(f"<text x='890' y='62' font-family='{FONT}' font-size='12.5' "
+        g.append(f"<text x='890' y='62' font-family='{FONT}' font-size='12.5' "
                  f"fill='{C['weak']}' text-anchor='end'>no pending</text>")
+    g.append("</g>")
+    s.append("".join(g))
     return W, H, "".join(s)
 
 
@@ -145,7 +169,7 @@ def row_inner(r, leader_pts):
 # =========================================================================
 def grid_inner(crew_name, members, current):
     W, H = 440, 600
-    s = [DEFS]
+    s = [DEFS, CSS]
     # heading
     s.append(f"<text x='14' y='28' font-family='{FONT}' font-size='17' font-weight='700' "
              f"fill='{C['strong']}'>{esc(crew_name)} · Members</text>")
@@ -160,19 +184,25 @@ def grid_inner(crew_name, members, current):
         fill = C['greenTint'] if me else C['card']
         stroke = C['brand'] if me else C['border']
         sw = 2 if me else 1
-        s.append(shadow(x, y, tw, th, 12, op=0.05))
-        s.append(f"<rect x='{x}' y='{y}' width='{tw}' height='{th}' rx='12' fill='{fill}' "
+        g = [f"<g class='pp' style='animation-delay:{0.10 + i*0.05:.2f}s'>"]
+        g.append(shadow(x, y, tw, th, 12, op=0.05))
+        g.append(f"<rect x='{x}' y='{y}' width='{tw}' height='{th}' rx='12' fill='{fill}' "
                  f"stroke='{stroke}' stroke-width='{sw}'/>")
+        if me:  # idle breathing highlight on the viewer's tile
+            g.append(f"<rect x='{x}' y='{y}' width='{tw}' height='{th}' rx='12' fill='none' "
+                     f"stroke='{C['brand']}' stroke-width='2' class='brz' opacity='0'/>")
         nm = m['name'] if len(m['name']) <= 20 else m['name'][:19] + "…"
-        s.append(f"<text x='{x+16}' y='{y+28}' font-family='{FONT}' font-size='13.5' font-weight='600' "
+        g.append(f"<text x='{x+16}' y='{y+28}' font-family='{FONT}' font-size='13.5' font-weight='600' "
                  f"fill='{C['strong'] if me else C['text']}'>{esc(nm)}</text>")
         if me:
-            s.append(f"<text x='{x+tw-14}' y='{y+27}' font-family='{FONT}' font-size='10.5' font-weight='700' "
+            g.append(f"<text x='{x+tw-14}' y='{y+27}' font-family='{FONT}' font-size='10.5' font-weight='700' "
                      f"letter-spacing='.5' fill='{C['greenDark']}' text-anchor='end'>YOU</text>")
-        s.append(f"<text x='{x+16}' y='{y+74}' font-family='{FONT}' font-size='30' font-weight='700' "
+        g.append(f"<text x='{x+16}' y='{y+74}' font-family='{FONT}' font-size='30' font-weight='700' "
                  f"fill='{C['greenDark'] if me else C['strong']}'>{esc(m['pts'])}</text>")
-        s.append(f"<text x='{x+16+len(str(m['pts']))*18+6}' y='{y+74}' font-family='{FONT}' font-size='12' "
+        g.append(f"<text x='{x+16+len(str(m['pts']))*18+6}' y='{y+74}' font-family='{FONT}' font-size='12' "
                  f"fill='{C['weak']}'>pts</text>")
+        g.append("</g>")
+        s.append("".join(g))
     return W, H, "".join(s)
 
 
@@ -181,13 +211,16 @@ def grid_inner(crew_name, members, current):
 # =========================================================================
 def mypoints_inner(u):
     W, H = 440, 360
-    s = [DEFS]
+    s = [DEFS, CSS, "<g class='fu'>"]
     s.append(shadow(2, 2, W - 4, H - 6, 16, op=0.08))
     s.append(f"<rect x='2' y='2' width='{W-4}' height='{H-6}' rx='16' fill='{C['card']}' stroke='{C['border']}'/>")
-    # avatar
+    # avatar: idle halo + pop-in disc
+    s.append(f"<circle cx='44' cy='50' r='26' fill='none' stroke='{C['brand']}' stroke-width='2' class='ring' opacity='0'/>")
+    s.append("<g class='pp' style='animation-delay:.12s'>")
     s.append(f"<circle cx='44' cy='50' r='26' fill='{C['brand']}'/>")
     s.append(f"<text x='44' y='51' font-family='{FONT}' font-size='19' font-weight='700' fill='#ffffff' "
              f"text-anchor='middle' dominant-baseline='central'>{esc(initials(u['name']))}</text>")
+    s.append("</g>")
     s.append(f"<text x='82' y='44' font-family='{FONT}' font-size='20' font-weight='700' fill='{C['strong']}'>{esc(u['name'])}</text>")
     s.append(f"<text x='82' y='66' font-family='{FONT}' font-size='13' fill='{C['weak']}'>{esc(u['crew'])} · You</text>")
     # total (right)
@@ -195,12 +228,13 @@ def mypoints_inner(u):
              f"fill='{C['greenDark']}' text-anchor='end'>{esc(u['total'])}</text>")
     s.append(f"<text x='{W-22}' y='66' font-family='{FONT}' font-size='10.5' font-weight='600' letter-spacing='1' "
              f"fill='{C['weak']}' text-anchor='end'>TOTAL · EXCL PENDING</text>")
-    # pending chip (right under name area, left)
+    # pending chip (idle pulse to flag action)
     pend = u['pending']
     if pend and int(pend) > 0:
-        s.append(f"<rect x='82' y='78' width='{8*len(str(pend))+78}' height='20' rx='10' fill='#FBEEDF'/>")
-        s.append(f"<text x='{82+(8*len(str(pend))+78)/2}' y='92' font-family='{FONT}' font-size='11.5' font-weight='600' "
-                 f"fill='{C['warn']}' text-anchor='middle'>+{esc(pend)} pending</text>")
+        pw = 8*len(str(pend))+78
+        s.append(f"<g class='brz'><rect x='82' y='78' width='{pw}' height='20' rx='10' fill='#FBEEDF'/>")
+        s.append(f"<text x='{82+pw/2}' y='92' font-family='{FONT}' font-size='11.5' font-weight='600' "
+                 f"fill='{C['warn']}' text-anchor='middle'>+{esc(pend)} pending</text></g>")
     # divider
     s.append(f"<line x1='22' y1='110' x2='{W-22}' y2='110' stroke='{C['border']}'/>")
     # category cards 2x3
@@ -218,6 +252,7 @@ def mypoints_inner(u):
         x = x0 + col * (cw + gx)
         y = y0 + rowi * (ch + gy)
         acc = CATCOL[i]
+        s.append(f"<g class='fo' style='animation-delay:{0.28 + i*0.07:.2f}s'>")
         s.append(f"<rect x='{x}' y='{y}' width='{cw}' height='{ch}' rx='10' fill='#fbfcfc' stroke='{C['border']}'/>")
         s.append(f"<rect x='{x}' y='{y}' width='6' height='{ch}' rx='3' fill='{acc}'/>")
         s.append(f"<circle cx='{x+22}' cy='{y+22}' r='4' fill='{acc}'/>")
@@ -225,6 +260,8 @@ def mypoints_inner(u):
                  f"fill='{C['weak']}'>{esc(label)}</text>")
         s.append(f"<text x='{x+18}' y='{y+56}' font-family='{FONT}' font-size='24' font-weight='700' "
                  f"fill='{C['strong']}'>{esc(val)}</text>")
+        s.append("</g>")
+    s.append("</g>")
     return W, H, "".join(s)
 
 

@@ -12,13 +12,14 @@
 //        imgRow.Image = (the formula below)
 // ============================================================================
 "data:image/svg+xml;utf8," & EncodeUrl(
-    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 84' font-family='Segoe UI, Arial, sans-serif'>" &
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 84' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<g class='rw' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) ) & "ms'>" &
     "<rect x='4' y='8' width='912' height='64' rx='12' fill='#ffffff' stroke='#d4d8db'/>" &
     "<rect x='22' y='18' width='44' height='44' rx='10' fill='#f2f3f4'/>" &
     "<text x='44' y='40' font-size='20' font-weight='700' fill='#292d3a' text-anchor='middle' dominant-baseline='central'>" & Text(ThisItem.Rank) & "</text>" &
     "<text x='86' y='37' font-size='21' font-weight='700' fill='#292d3a'>" & ThisItem.CrewName & "</text>" &
     "<rect x='86' y='50' width='460' height='7' rx='3.5' fill='#f2f3f4'/>" &
-    "<rect x='86' y='50' width='" & Text( Round( Max( 6, 460 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) ) & "' height='7' rx='3.5' fill='#01a982'/>" &
+    "<rect x='86' y='50' width='" & Text( Round( Max( 6, 460 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) ) & "' height='7' rx='3.5' fill='#01a982' class='gx' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) + 250 ) & "ms'/>" &
     "<line x1='735' y1='22' x2='735' y2='58' stroke='#d4d8db'/>" &
     "<text x='820' y='44' font-size='30' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(ThisItem.CrewTotal) & "</text>" &
     "<text x='828' y='44' font-size='13' font-weight='600' fill='#606a70'>pts</text>" &
@@ -26,5 +27,5 @@
         "<text x='890' y='62' font-size='12.5' font-weight='600' fill='#d36d00' text-anchor='end'>+" & Text(ThisItem.CrewPending) & " pending</text>",
         "<text x='890' y='62' font-size='12.5' fill='#606a70' text-anchor='end'>no pending</text>"
     ) &
-    "</svg>"
+    "</g></svg>"
 )

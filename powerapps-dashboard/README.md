@@ -155,7 +155,33 @@ right `FillPortions=3`) and put each column’s controls in a **Vertical contain
 
 ---
 
-## 6. Regenerate the previews (optional)
+## 6. Animations (motion)
+
+Entrance + idle motion is **CSS keyframes embedded in each SVG** (`<style>`), defined
+once as `varSvgCss` in `OnVisible` and injected into every image via `& varSvgCss &`.
+CSS animation runs in PowerApps' WebView2 image rendering (img‑mode allows declarative
+CSS — only scripts are blocked); the hidden start‑states live **only** inside
+`@keyframes`, so any static export still shows the settled design.
+
+Tuned to HPE motion — purposeful, smooth, low‑amplitude, ease‑out ~0.5s — and it
+**honours `prefers-reduced-motion`** (motion off → content simply appears):
+
+| Component | Entrance | Idle |
+|-----------|----------|------|
+| **Podium** | cards rise + fade, **winner revealed last** (3rd → 2nd → 1st); medals pop in | gold medal **champion halo** pulses |
+| **Leaderboard rows** | slide in from the left, **staggered by rank** `(Rank‑4)·80ms`; progress bar **grows** from 0 | — (kept calm; many rows) |
+| **My Points** | box rises, avatar pops, the 6 category cards fade in staggered | avatar **halo**; **pending** chip gently pulses |
+| **Crew grid** | tiles **pop** in, staggered by position | your **“YOU”** tile breathes |
+
+Classes: `fu` fade‑up · `fo` fade · `pp` pop · `gx` grow‑bar · `rw` row‑slide ·
+`ring` idle halo · `brz` idle pulse. Per‑element timing is `style='animation-delay:<n>ms'`.
+To restyle every visual at once, edit the single `varSvgCss` block. Entrances replay
+when the screen is re‑shown or the data changes; idle loops run continuously. The
+`svg/` files animate when opened in any browser (a PNG can’t show motion).
+
+---
+
+## 7. Regenerate the previews (optional)
 
 ```bash
 pip install cairosvg openpyxl
