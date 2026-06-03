@@ -1,0 +1,62 @@
+// ============================================================================
+//  MY POINTS — the viewer's own breakdown (NON-gallery, the big box on top).
+//  Control: Image "imgMyPoints"  ·  Property: Image  ·  ImagePosition: Fit
+//  Suggested size: Width = 440, Height = Width*360/440  (= 294.5)
+//
+//  Category re-labels (as requested):
+//    New CC Logo / IB Upsell = IB & NS Points + New CC Logo Points
+//    CAP Engagement          = Cap Requests
+//    CAP Orders Booked       = Cap Won Points
+//    Customer Centricity     = Customer Centricity Points
+//    Accreditation Race      = Manager Sponsor Points
+//    IP Push                 = IP in GL points
+// ============================================================================
+With(
+    {
+        nm:   Substitute(Substitute(Substitute(varMe.Name,"&","&amp;"),"<","&lt;"),">","&gt;"),
+        ini:  varMyInitials,
+        crew: "Crew " & Text(varMyCrew),
+        tot:  varMe.MemberTotal,
+        pend: varMe.MemberPending,
+        c1:   Coalesce(varMe.'IB & NS Points',0) + Coalesce(varMe.'New CC Logo Points',0),
+        c2:   Coalesce(varMe.'Cap Requests',0),
+        c3:   Coalesce(varMe.'Cap Won Points',0),
+        c4:   Coalesce(varMe.'Customer Centricity Points',0),
+        c5:   Coalesce(varMe.'Manager Sponsor Points',0),
+        c6:   Coalesce(varMe.'IP in GL points',0)
+    },
+    "data:image/svg+xml;utf8," & EncodeUrl(
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 360' font-family='Segoe UI, Arial, sans-serif'>" &
+        "<rect x='2' y='2' width='436' height='354' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
+        "<circle cx='44' cy='50' r='26' fill='#01a982'/>" &
+        "<text x='44' y='51' font-size='19' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & ini & "</text>" &
+        "<text x='82' y='44' font-size='20' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+        "<text x='82' y='66' font-size='13' fill='#606a70'>" & crew & " - You</text>" &
+        "<text x='418' y='48' font-size='38' font-weight='700' fill='#006750' text-anchor='end'>" & Text(tot) & "</text>" &
+        "<text x='418' y='66' font-size='10.5' font-weight='600' letter-spacing='1' fill='#606a70' text-anchor='end'>TOTAL - EXCL PENDING</text>" &
+        If( pend > 0,
+            "<rect x='82' y='78' width='" & Text(8*Len(Text(pend))+78) & "' height='20' rx='10' fill='#FBEEDF'/>" &
+            "<text x='" & Text(82+(8*Len(Text(pend))+78)/2) & "' y='92' font-size='11.5' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(pend) & " pending</text>",
+            ""
+        ) &
+        "<line x1='22' y1='110' x2='418' y2='110' stroke='#d4d8db'/>" &
+        Concat(
+            Table(
+                { i:0, lbl:"New CC Logo / IB Upsell", val:c1, col:"#0070f8" },
+                { i:1, lbl:"CAP Engagement",          val:c2, col:"#04909d" },
+                { i:2, lbl:"CAP Orders Booked",       val:c3, col:"#009a71" },
+                { i:3, lbl:"Customer Centricity",     val:c4, col:"#7764fc" },
+                { i:4, lbl:"Accreditation Race",      val:c5, col:"#cc54a4" },
+                { i:5, lbl:"IP Push",                 val:c6, col:"#d25f4b" }
+            ),
+            "<g transform='translate(" & Text(22 + Mod(i,2)*206) & "," & Text(122 + Int(i/2)*80) & ")'>" &
+                "<rect width='194' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>" &
+                "<rect width='6' height='68' rx='3' fill='" & col & "'/>" &
+                "<circle cx='22' cy='22' r='4' fill='" & col & "'/>" &
+                "<text x='34' y='26' font-size='11' font-weight='600' fill='#606a70'>" & lbl & "</text>" &
+                "<text x='18' y='56' font-size='24' font-weight='700' fill='#292d3a'>" & Text(val) & "</text>" &
+            "</g>"
+        ) &
+        "</svg>"
+    )
+)

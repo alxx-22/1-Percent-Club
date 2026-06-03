@@ -1,0 +1,37 @@
+// ============================================================================
+//  PODIUM — top 3 crews (NON-gallery).  Control: Image "imgPodium"
+//  Property: Image     ·  ImagePosition: Fit
+//  Suggested size: Width = 854 (right column width), Height = Width*440/920
+//  Renders ranks 2 - 1 - 3 left-to-right with gold / silver / bronze accents.
+// ============================================================================
+With(
+    {
+        p1: Index( colCrew, 1 ),   // 1st  (or: Last(FirstN(colCrew,1)) on older Power Fx)
+        p2: Index( colCrew, 2 ),   // 2nd
+        p3: Index( colCrew, 3 )    // 3rd
+    },
+    "data:image/svg+xml;utf8," & EncodeUrl(
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 440' font-family='Segoe UI, Arial, sans-serif'>" &
+        Concat(
+            Table(
+                { cx: 180, top: 132, medal: "#8C99A4", tint: "#EDEFF1", rank: 2, nm: p2.CrewName, pts: p2.CrewTotal, pend: p2.CrewPending },
+                { cx: 460, top:  70, medal: "#E0A300", tint: "#FBF1D6", rank: 1, nm: p1.CrewName, pts: p1.CrewTotal, pend: p1.CrewPending },
+                { cx: 740, top: 162, medal: "#B5742E", tint: "#F4E9DD", rank: 3, nm: p3.CrewName, pts: p3.CrewTotal, pend: p3.CrewPending }
+            ),
+            "<rect x='" & Text(cx-116) & "' y='" & Text(top) & "' width='232' height='" & Text(430-top) & "' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
+            "<path d='M" & Text(cx-115) & "," & Text(top+15) & " v-1 a14,14 0 0 1 14,-14 h202 a14,14 0 0 1 14,14 v1 z' fill='" & medal & "'/>" &
+            "<circle cx='" & Text(cx) & "' cy='" & Text(top+56) & "' r='30' fill='" & tint & "' stroke='" & medal & "' stroke-width='2'/>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+57) & "' font-size='22' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rank) & "</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+114) & "' font-size='22' font-weight='700' fill='#292d3a' text-anchor='middle'>" & nm & "</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+164) & "' font-size='44' font-weight='700' fill='#006750' text-anchor='middle'>" & Text(pts) & "</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+186) & "' font-size='12' font-weight='600' letter-spacing='1.5' fill='#606a70' text-anchor='middle'>TOTAL POINTS</text>" &
+            If( pend > 0,
+                "<rect x='" & Text(cx-58) & "' y='396' width='116' height='24' rx='12' fill='#FBEEDF'/>" &
+                "<text x='" & Text(cx) & "' y='412' font-size='12' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(pend) & " pending</text>",
+                "<rect x='" & Text(cx-50) & "' y='396' width='100' height='24' rx='12' fill='#f2f3f4'/>" &
+                "<text x='" & Text(cx) & "' y='412' font-size='12' font-weight='600' fill='#606a70' text-anchor='middle'>no pending</text>"
+            )
+        ) &
+        "</svg>"
+    )
+)

@@ -1,0 +1,121 @@
+// ============================================================================
+//  1% CLUB — CREW DASHBOARD  ·  Screen.OnVisible  (the "invisible" data prep)
+//  Source: PowerBIIntegration.Data  (from Power BI custom-visual integration)
+//  Paste this whole block into the screen's OnVisible property.
+// ----------------------------------------------------------------------------
+//  POINTS counted toward a total (exclude "Pending" columns):
+//    IB & NS Points, Manager Sponsor Points, New CC Logo Points,
+//    Cap Won Points, Cap Requests, Customer Centricity Points, IP in GL points
+//  PENDING = every column whose name contains "Pending":
+//    Cap Won Points Pending, Cap Requests Pending, Customer Centricity Points Pending
+// ============================================================================
+
+// 0) Pull the Power BI dataset into a local collection (fast, non-delegated math)
+ClearCollect( colRaw, PowerBIIntegration.Data );
+
+// 1) Per-MEMBER total (excl. pending), pending total, kept as columns ----------
+ClearCollect(
+    colMembers,
+    AddColumns(
+        colRaw,
+        "MemberTotal",
+              Coalesce( 'IB & NS Points', 0 )
+            + Coalesce( 'Manager Sponsor Points', 0 )
+            + Coalesce( 'New CC Logo Points', 0 )
+            + Coalesce( 'Cap Won Points', 0 )
+            + Coalesce( 'Cap Requests', 0 )
+            + Coalesce( 'Customer Centricity Points', 0 )
+            + Coalesce( 'IP in GL points', 0 ),
+        "MemberPending",
+              Coalesce( 'Cap Won Points Pending', 0 )
+            + Coalesce( 'Cap Requests Pending', 0 )
+            + Coalesce( 'Customer Centricity Points Pending', 0 )
+    )
+);
+
+// 2) Aggregate to CREW level --------------------------------------------------
+ClearCollect(
+    colCrewAgg,
+    AddColumns(
+        GroupBy( colMembers, "Crew", "GroupData" ),
+        "CrewTotal",   Sum( GroupData, MemberTotal ),
+        "CrewPending", Sum( GroupData, MemberPending ),
+        "CrewSize",    CountRows( GroupData )
+    )
+);
+
+// 3) RANK the crews (1 = top). Ties broken by lower Crew number ---------------
+//    Trick: for each k in 1..N, the k-th row of the sorted table gets Rank = k.
+ClearCollect(
+    colCrew,
+    ForAll(
+        Sequence( CountRows( colCrewAgg ) ),
+        With(
+            { row:
+                Last(
+                    FirstN(
+                        SortByColumns(
+                            colCrewAgg,
+                            "CrewTotal", SortOrder.Descending,
+                            "Crew",      SortOrder.Ascending
+                        ),
+                        Value
+                    )
+                )
+            },
+            {
+                Rank:        Value,
+                Crew:        row.Crew,
+                CrewName:    "Crew " & row.Crew,
+                CrewTotal:   row.CrewTotal,
+                CrewPending: row.CrewPending,
+                CrewSize:    row.CrewSize
+            }
+        )
+    )
+);
+
+Set( varLeaderMax, First( colCrew ).CrewTotal );          // for the progress bars
+ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) ); // gallery Items (4..10)
+
+// 4) WHO is looking + their crew ---------------------------------------------
+//    Fallback to a sample member so the page renders while testing.
+Set( varUserEmail, Lower( User().Email ) );
+Set(
+    varMe,
+    With(
+        { found: LookUp( colMembers, Lower( 'User Email' ) = varUserEmail ) },
+        If( IsBlank( found.Name ), First( Filter( colMembers, Crew = 1 ) ), found )
+    )
+);
+Set( varMyCrew, varMe.Crew );
+Set(
+    varMyInitials,
+    Upper( Left( varMe.Name, 1 ) &
+           Mid( varMe.Name & " ", Find( " ", varMe.Name & " " ) + 1, 1 ) )
+);
+
+// 5) MY-CREW members, sorted, with a 0-based Idx for the grid layout ----------
+ClearCollect(
+    colMyCrewSorted,
+    SortByColumns(
+        Filter( colMembers, Crew = varMyCrew ),
+        "MemberTotal", SortOrder.Descending,
+        "Name",        SortOrder.Ascending
+    )
+);
+ClearCollect(
+    colMyCrew,
+    ForAll(
+        Sequence( CountRows( colMyCrewSorted ) ),
+        With(
+            { row: Last( FirstN( colMyCrewSorted, Value ) ) },
+            {
+                Idx:         Value - 1,
+                Name:        row.Name,
+                MemberTotal: row.MemberTotal,
+                IsMe:        Lower( row.'User Email' ) = Lower( varMe.'User Email' )
+            }
+        )
+    )
+);

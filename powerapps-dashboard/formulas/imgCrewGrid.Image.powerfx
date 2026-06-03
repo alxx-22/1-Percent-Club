@@ -1,0 +1,31 @@
+// ============================================================================
+//  IN-CREW MEMBER GRID (NON-gallery).  Control: Image "imgCrewGrid"
+//  Property: Image     ·  ImagePosition: Fit
+//  Each member = a small square: Name + total points (EXCLUDING pending).
+//  The viewBox height grows with the member count (2 tiles per row).
+//
+//  Set the control HEIGHT so the squares never stretch:
+//      imgCrewGrid.Width  = 440                       // (or the left-column width)
+//      imgCrewGrid.Height = imgCrewGrid.Width *
+//                           (46 + RoundUp(CountRows(colMyCrew)/2, 0) * 102 + 4) / 440
+// ============================================================================
+With(
+    { vbH: 46 + RoundUp( CountRows( colMyCrew ) / 2, 0 ) * 102 + 4 },
+    "data:image/svg+xml;utf8," & EncodeUrl(
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 " & Text(vbH) & "' font-family='Segoe UI, Arial, sans-serif'>" &
+        "<text x='14' y='28' font-size='17' font-weight='700' fill='#292d3a'>Crew " & Text(varMyCrew) & " - Members</text>" &
+        "<text x='426' y='28' font-size='13' fill='#606a70' text-anchor='end'>" & Text(CountRows(colMyCrew)) & " people</text>" &
+        Concat(
+            colMyCrew,
+            "<g transform='translate(" & Text(12 + Mod(Idx,2)*212) & "," & Text(46 + Int(Idx/2)*102) & ")'>" &
+                "<rect width='204' height='92' rx='12' fill='" & If(IsMe,"#d1ffee","#ffffff") & "' stroke='" & If(IsMe,"#01a982","#d4d8db") & "' stroke-width='" & If(IsMe,"2","1") & "'/>" &
+                "<text x='16' y='28' font-size='13.5' font-weight='600' fill='" & If(IsMe,"#292d3a","#3e4550") & "'>" &
+                    Left( Substitute(Substitute(Substitute(Name,"&","&amp;"),"<","&lt;"),">","&gt;"), 20 ) & "</text>" &
+                If( IsMe, "<text x='190' y='27' font-size='10.5' font-weight='700' fill='#006750' text-anchor='end'>YOU</text>", "" ) &
+                "<text x='16' y='74' font-size='30' font-weight='700' fill='" & If(IsMe,"#006750","#292d3a") & "'>" & Text(MemberTotal) & "</text>" &
+                "<text x='" & Text(16 + Len(Text(MemberTotal))*18 + 6) & "' y='74' font-size='12' fill='#606a70'>pts</text>" &
+            "</g>"
+        ) &
+        "</svg>"
+    )
+)
