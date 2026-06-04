@@ -1,0 +1,6 @@
+// ============================================================================
+//  App.OnStart  —  initial flags so the dashboard shows a clean loading state
+//  on first open (until tmrLoad has built the data once).
+// ============================================================================
+Set( varReady, false );
+Set( varDataSig, "" );

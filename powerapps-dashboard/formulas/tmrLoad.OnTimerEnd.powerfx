@@ -1,0 +1,144 @@
+// ============================================================================
+//  tmrLoad.OnTimerEnd   —  builds (and refreshes) ALL data for the dashboard
+//  WHY: in a Power BI custom visual, PowerBIIntegration.Data arrives a moment
+//  AFTER the screen first shows, so building in Screen.OnVisible once gives
+//  empty collections on open (it only worked after navigating away + back).
+//  A repeating Timer rebuilds as soon as data is present, then again whenever
+//  the data changes (e.g. a Power BI slicer) — so it just works on open.
+//
+//  Timer "tmrLoad" properties:
+//     AutoStart = true     Repeat = true     Duration = 500
+//     Visible   = true     (timers pause when Visible=false — keep it true and
+//                           tuck it in a corner / behind the ribbon; it draws nothing)
+//  Guard rebuilds only when the data SIGNATURE (row count + a column sum) changes.
+// ============================================================================
+If(
+    CountRows( PowerBIIntegration.Data ) > 0
+      && varDataSig <> Text( CountRows( PowerBIIntegration.Data ) ) & "_" & Text( Sum( PowerBIIntegration.Data, Coalesce('IB & NS Points',0) ) ),
+
+    // ---- 0) local copy -----------------------------------------------------
+    ClearCollect( colRaw, PowerBIIntegration.Data );
+
+    // ---- 1) per-member totals ---------------------------------------------
+    ClearCollect(
+        colMembers,
+        AddColumns(
+            colRaw,
+            "MemberTotal",
+                  Coalesce('IB & NS Points',0) + Coalesce('Manager Sponsor Points',0)
+                + Coalesce('New CC Logo Points',0) + Coalesce('Cap Won Points',0)
+                + Coalesce('Cap Requests',0) + Coalesce('Customer Centricity Points',0)
+                + Coalesce('IP in GL points',0),
+            "MemberPending",
+                  Coalesce('Cap Won Points Pending',0) + Coalesce('Cap Requests Pending',0)
+                + Coalesce('Customer Centricity Points Pending',0)
+        )
+    );
+
+    // ---- 2) crew aggregates + ranking -------------------------------------
+    ClearCollect(
+        colCrewAgg,
+        AddColumns(
+            GroupBy( colMembers, "Crew", "GroupData" ),
+            "CrewTotal",   Sum( GroupData, MemberTotal ),
+            "CrewPending", Sum( GroupData, MemberPending ),
+            "CrewSize",    CountRows( GroupData )
+        )
+    );
+    ClearCollect(
+        colCrew,
+        ForAll(
+            Sequence( CountRows( colCrewAgg ) ),
+            With(
+                { row: Last( FirstN(
+                           SortByColumns( colCrewAgg, "CrewTotal", SortOrder.Descending, "Crew", SortOrder.Ascending ),
+                           Value )) },
+                { Rank: Value, Crew: row.Crew, CrewName: "Crew " & row.Crew,
+                  CrewTotal: row.CrewTotal, CrewPending: row.CrewPending, CrewSize: row.CrewSize }
+            )
+        )
+    );
+    Set( varLeaderMax, First( colCrew ).CrewTotal );
+    ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
+
+    // ---- 3) viewer role ----------------------------------------------------
+    Set( varUserEmail, Lower( User().Email ) );
+    Set( varMemberRec,  LookUp( colMembers, Lower('User Email') = varUserEmail ) );
+    Set( varSponsorRec, LookUp( colMembers, Lower('Manager Sponsor Email') = varUserEmail ) );
+    Set( varRole,
+        If( !IsBlank( varMemberRec.Name ), "member",
+            If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) );
+    Set( varMyCrew,    Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) );
+    Set( varMyCrewTag, If( varRole = "sponsor", "YOU SPONSOR", "YOUR CREW" ) );
+    Set( varDispName,
+        Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.'Manager Sponsor', "Guest Viewer" ) );
+    Set( varMyInitials,
+        Upper( Left( varDispName, 1 ) & Mid( varDispName & " ", Find( " ", varDispName & " " ) + 1, 1 ) ) );
+    Set( varRibbonChip,
+        Switch( varRole,
+            "member",  varDispName & " · Crew " & varMyCrew,
+            "sponsor", varDispName & " · Sponsor",
+            "Guest Viewer · Spectator" ) );
+
+    // ---- 4) per-crew category breakdown -----------------------------------
+    ClearCollect(
+        colCrewBreak,
+        ForAll(
+            Sort( colCrew, Rank ),
+            With(
+                { cnum: Crew, rk: Rank, cnm: CrewName, ct: CrewTotal, cp: CrewPending },
+                With(
+                    { f: Filter( colMembers, Crew = cnum ) },
+                    { Rank: rk, Crew: cnum, CrewName: cnm, Total: ct, Pending: cp,
+                      NewCC:  Sum( f, Coalesce('IB & NS Points',0) + Coalesce('New CC Logo Points',0) ),
+                      CapEng: Sum( f, Coalesce('Cap Requests',0) ),
+                      CapOrd: Sum( f, Coalesce('Cap Won Points',0) ),
+                      CC:     Sum( f, Coalesce('Customer Centricity Points',0) ),
+                      Accred: Sum( f, Coalesce('Manager Sponsor Points',0) ),
+                      IP:     Sum( f, Coalesce('IP in GL points',0) ) }
+                )
+            )
+        )
+    );
+
+    // ---- 5) viewer's crew members (grid) ----------------------------------
+    ClearCollect(
+        colMyCrewSorted,
+        SortByColumns( Filter( colMembers, Crew = varMyCrew ),
+                       "MemberTotal", SortOrder.Descending, "Name", SortOrder.Ascending )
+    );
+    ClearCollect(
+        colMyCrew,
+        ForAll(
+            Sequence( CountRows( colMyCrewSorted ) ),
+            With( { row: Last( FirstN( colMyCrewSorted, Value ) ) },
+                { Idx: Value - 1, Name: row.Name, MemberTotal: row.MemberTotal,
+                  IsMe: Lower( row.'User Email' ) = varUserEmail } )
+        )
+    );
+
+    // ---- 6) left "box" values (member personal OR sponsored-crew summary) --
+    Set( varCB, LookUp( colCrewBreak, Crew = varMyCrew ) );
+    Set( varBoxTitle,  If( varRole = "sponsor", "YOUR CREW", "YOUR PERFORMANCE" ) );
+    Set( varBoxName,   If( varRole = "sponsor", varCB.CrewName, varMemberRec.Name ) );
+    Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyCrew) & " people", "Crew " & varMyCrew & " · You" ) );
+    Set( varBoxTotLbl, If( varRole = "sponsor", "CREW TOTAL · EXCL PENDING", "TOTAL · EXCL PENDING" ) );
+    Set( varBoxTotal,  If( varRole = "sponsor", varCB.Total,   varMemberRec.MemberTotal ) );
+    Set( varBoxPending,If( varRole = "sponsor", varCB.Pending, varMemberRec.MemberPending ) );
+    Set( varB1, If( varRole = "sponsor", varCB.NewCC,  Coalesce(varMemberRec.'IB & NS Points',0) + Coalesce(varMemberRec.'New CC Logo Points',0) ) );
+    Set( varB2, If( varRole = "sponsor", varCB.CapEng, Coalesce(varMemberRec.'Cap Requests',0) ) );
+    Set( varB3, If( varRole = "sponsor", varCB.CapOrd, Coalesce(varMemberRec.'Cap Won Points',0) ) );
+    Set( varB4, If( varRole = "sponsor", varCB.CC,     Coalesce(varMemberRec.'Customer Centricity Points',0) ) );
+    Set( varB5, If( varRole = "sponsor", varCB.Accred, Coalesce(varMemberRec.'Manager Sponsor Points',0) ) );
+    Set( varB6, If( varRole = "sponsor", varCB.IP,     Coalesce(varMemberRec.'IP in GL points',0) ) );
+
+    // ---- 7) shared SVG motion stylesheet ----------------------------------
+    Set(
+        varSvgCss,
+        "<style>.fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}.fo{animation:fo .5s ease-out both}.pp{animation:pp .5s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:center}.gx{animation:gx .65s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}.rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}.ring{transform-box:fill-box;transform-origin:center;animation:ring 2.8s ease-out infinite}.brz{animation:brz 2.6s ease-in-out infinite}@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes fo{from{opacity:0}to{opacity:1}}@keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}@keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}@keyframes ring{0%{opacity:.45;transform:scale(.75)}70%{opacity:0;transform:scale(2)}100%{opacity:0;transform:scale(2)}}@keyframes brz{0%,100%{opacity:.9}50%{opacity:.45}}@media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.ring,.brz,.scrl{animation:none}}</style>"
+    );
+
+    // ---- done: mark ready + remember this data signature ------------------
+    Set( varReady, true );
+    Set( varDataSig, Text( CountRows( PowerBIIntegration.Data ) ) & "_" & Text( Sum( PowerBIIntegration.Data, Coalesce('IB & NS Points',0) ) ) )
+)

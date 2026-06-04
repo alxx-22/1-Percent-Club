@@ -25,7 +25,9 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 
 | Control | Type | Property | Formula |
 |---|---|---|---|
-| **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) |
+| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) |
+| `tmrLoad` | **Timer** | `OnTimerEnd` | [`tmrLoad.OnTimerEnd.powerfx`](formulas/tmrLoad.OnTimerEnd.powerfx) — **builds all data** |
+| **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) (thin trigger) |
 | `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/imgRibbon.Image.powerfx) |
 | `imgMyPoints` | Image | `Image` | [`imgMyPoints.Image.powerfx`](formulas/imgMyPoints.Image.powerfx) |
 | `imgCrewGrid` | Image | `Image` | [`imgCrewGrid.Image.powerfx`](formulas/imgCrewGrid.Image.powerfx) |
@@ -53,6 +55,9 @@ its rectangle's aspect, so it fills with no letterboxing.
 | `imgPodium` | 452 | 68 | 668 | 300 | `true` |
 | `imgRanksHeader` | 452 | 380 | 668 | 28 | `true` |
 | `galLeaderboard` | 452 | 412 | 668 | 212 | `true` |
+| `recLoading` (Rectangle) | 0 | 0 | 1136 | 640 | `!varReady` |
+| `lblLoading` (Label, centred "Loading crew data…") | 0 | 0 | 1136 | 640 | `!varReady` |
+| `tmrLoad` (Timer) | 1100 | 14 | 24 | 24 | `true` *(place behind `imgRibbon`, or `Fill=Transparent`, so it's hidden)* |
 
 **Gallery** `galLeaderboard`: `Items = colCrewRest`, `TemplateSize = 30`, `TemplatePadding = 0`,
 `ShowScrollbar = false`. Inside it, one Image `imgRow`: `X=0 Y=0`,
@@ -62,9 +67,30 @@ its rectangle's aspect, so it fills with no letterboxing.
 `imgMyPoints`/`imgCrewGrid` (member & sponsor) and `imgSpectator` occupy the **same** left
 column and are swapped purely by their `Visible` rule — no screen switching.
 
+### Loads on open — build in a Timer, not `OnVisible`
+
+In a Power BI custom visual, **`PowerBIIntegration.Data` is empty for a beat after the screen
+first shows**, so building collections in `Screen.OnVisible` once gives empty data on open — it
+only "fixed itself" after navigating to another screen and back (which re‑runs `OnVisible` once
+the data had arrived). Build **reactively** instead:
+
+1. **`tmrLoad`** (Timer) — `AutoStart=true`, `Repeat=true`, `Duration=500`, `Visible=true`
+   (timers pause when hidden; keep it on and tuck it in a corner — it draws nothing). Its
+   `OnTimerEnd` rebuilds everything, but **only when the data signature (row count + a column
+   sum) changes** — so it fires the instant data appears, again on any Power BI slicer/refresh,
+   and is otherwise a cheap no‑op.
+2. **`Screen.OnVisible`** = `Set(varDataSig,""); Reset(tmrLoad)` → a fresh build whenever the
+   screen is (re)shown.
+3. **`App.OnStart`** sets `varReady=false`. While `!varReady`, a full‑screen `recLoading`
+   rectangle + `lblLoading` ("Loading crew data…") cover the page so users see a clean loading
+   state, not blank images. `tmrLoad` sets `varReady=true` once built.
+
+Result: it loads correctly **on open, with no navigation**. Collections are app‑global so they
+persist across screens; the timer just keeps them current.
+
 ---
 
-## 3. Roles (set in `OnVisible`)
+## 3. Roles (built by `tmrLoad`)
 
 ```
 varUserEmail  = Lower(User().Email)
@@ -84,7 +110,7 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 - **Crew flag** → on the podium and gallery, the row/card whose `Crew = varMyCrew` gets a green
   outline + a `varMyCrewTag` chip. Spectators see no flag.
 
-> **Test a role** without changing accounts: after `OnVisible` runs, set
+> **Test a role** without changing accounts: after `tmrLoad` runs, set
 > `Set(varUserEmail, "jordan.smith@example.com")` (member) /
 > a `Manager Sponsor Email` value (sponsor) / a non‑existent email (spectator) and re‑run.
 
@@ -116,7 +142,7 @@ Pending     = sum of the *Pending columns           "points pending" = per-crew 
 | Accreditation Race | `Manager Sponsor Points` |
 | IP Push | `IP in GL points` |
 
-Collections built in `OnVisible`: `colMembers` → `colCrew` (ranked) → `colCrewRest` (4‑10),
+Collections built by `tmrLoad`: `colMembers` → `colCrew` (ranked) → `colCrewRest` (4‑10),
 `colCrewBreak` (per‑crew category sums, for sponsor box + spectator), `colMyCrew` (viewer's crew,
 grid), plus the role / box / `varSvgCss` variables.
 
@@ -142,7 +168,7 @@ green tint `#d1ffee` · warning `#d36d00`. Category accents (dataVis categorical
 
 ## 6. Animations (motion)
 
-CSS keyframes embedded in each SVG (`<style>`), defined once as `varSvgCss` in `OnVisible`.
+CSS keyframes embedded in each SVG (`<style>`), defined once as `varSvgCss` in `tmrLoad`.
 Runs in PowerApps' WebView2 image rendering; hidden start‑states live only in `@keyframes` so
 static/`reduced-motion` renders show the settled design. **Honours `prefers-reduced-motion`.**
 
