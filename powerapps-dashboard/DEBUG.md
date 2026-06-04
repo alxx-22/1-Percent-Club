@@ -1,5 +1,14 @@
 # Debug: dashboard shows but is blank (0 people / 0 crews)
 
+> **Most common cause & fix (confirmed):** if `lblDebug` shows `rows = 86` (data is there)
+> but `colMembers = 0` **and `varRole` is blank**, the build simply **never ran** — Timer
+> controls don't fire reliably in the Power BI visual. **Move the entire build into
+> `Screen.OnVisible`** ([`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
+> and set `App.OnStart` = `Set(varReady,false)`. `OnVisible` runs on every screen show (and on a
+> button that navigates here), so it always populates. Remove/ignore the `tmrLoad` timer.
+> The labels below confirm it (after the fix: `colMembers` and `varRole` are populated).
+
+
 Add **two Labels** to the dashboard screen and read them in Power BI. They tell us
 exactly where the pipeline stalls. Both: `Wrap = true`, `AutoHeight = true`, on top.
 

@@ -1,7 +1,5 @@
 // ============================================================================
-//  App.OnStart  —  initial flags. varRowCount = -1 guarantees tmrLoad.Start
-//  evaluates true as soon as any data (>=0 rows) is present, so the build runs
-//  on first open. While !varReady, the recLoading overlay shows "Loading…".
+//  App.OnStart  —  just the loading flag. The build runs in Screen.OnVisible.
+//  While !varReady, the optional recLoading overlay shows "Loading…".
 // ============================================================================
-Set( varRowCount, -1 );
 Set( varReady, false );

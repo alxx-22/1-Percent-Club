@@ -25,10 +25,8 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 
 | Control | Type | Property | Formula |
 |---|---|---|---|
-| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) |
-| `tmrLoad` | **Timer** | `Start` | [`tmrLoad.Start.powerfx`](formulas/tmrLoad.Start.powerfx) — reactive trigger |
-| `tmrLoad` | **Timer** | `OnTimerEnd` | [`tmrLoad.OnTimerEnd.powerfx`](formulas/tmrLoad.OnTimerEnd.powerfx) — **builds all data** |
-| **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) (thin trigger) |
+| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — `Set(varReady,false)` |
+| **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) — **builds all data** |
 | `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/imgRibbon.Image.powerfx) |
 | `imgMyPoints` | Image | `Image` | [`imgMyPoints.Image.powerfx`](formulas/imgMyPoints.Image.powerfx) |
 | `imgCrewGrid` | Image | `Image` | [`imgCrewGrid.Image.powerfx`](formulas/imgCrewGrid.Image.powerfx) |
@@ -56,9 +54,8 @@ its rectangle's aspect, so it fills with no letterboxing.
 | `imgPodium` | 452 | 68 | 668 | 300 | `true` |
 | `imgRanksHeader` | 452 | 380 | 668 | 28 | `true` |
 | `galLeaderboard` | 452 | 412 | 668 | 212 | `true` |
-| `recLoading` (Rectangle) | 0 | 0 | 1136 | 640 | `!varReady` |
-| `lblLoading` (Label, centred "Loading crew data…") | 0 | 0 | 1136 | 640 | `!varReady` |
-| `tmrLoad` (Timer) | 1100 | 14 | 24 | 24 | `true` *(place behind `imgRibbon`, or `Fill=Transparent`, so it's hidden)* |
+| `recLoading` (Rectangle, optional) | 0 | 0 | 1136 | 640 | `!varReady` |
+| `lblLoading` (Label, optional, "Loading crew data…") | 0 | 0 | 1136 | 640 | `!varReady` |
 
 **Gallery** `galLeaderboard`: `Items = colCrewRest`, `TemplateSize = 30`, `TemplatePadding = 0`,
 `ShowScrollbar = false`. Inside it, one Image `imgRow`: `X=0 Y=0`,
@@ -68,44 +65,30 @@ its rectangle's aspect, so it fills with no letterboxing.
 `imgMyPoints`/`imgCrewGrid` (member & sponsor) and `imgSpectator` occupy the **same** left
 column and are swapped purely by their `Visible` rule — no screen switching.
 
-### Loads on open — REACTIVE timer (not `OnVisible`)
+### Loads on open — build in `Screen.OnVisible`
 
-In a Power BI custom visual, **`PowerBIIntegration.Data` is empty for a moment after the screen
-first shows**, so building collections in `Screen.OnVisible` once gives empty visuals on open —
-it only "fixed itself" after navigating to another screen and back (which re‑ran `OnVisible`
-after the data arrived). Build **reactively** with a Timer whose `Start` watches the row count:
+Put the whole data build in **`Screen.OnVisible`** ([`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
+and `App.OnStart` → `Set(varReady,false)`. `OnVisible` runs every time the screen is shown —
+including a **button that navigates to this screen** — so re‑entering always rebuilds with the
+latest data. (This is the "Screen 2 → Screen 1" hop that worked originally, made automatic.)
 
-1. **Insert a Timer `tmrLoad`** and set these **exactly** (the usual cause of "still empty" is
-   a missing one):
-   | Property | Value |
-   |---|---|
-   | `AutoStart` | `false` |
-   | `Start` | `CountRows(PowerBIIntegration.Data) <> varRowCount` |
-   | `Duration` | `50` |
-   | `Repeat` | `false` |
-   | `Reset` | `false` |
-   | `Visible` | `true` *(timers pause when hidden — keep true, place it behind `imgRibbon`)* |
-   | `OnTimerEnd` | paste [`tmrLoad.OnTimerEnd.powerfx`](formulas/tmrLoad.OnTimerEnd.powerfx) |
-   `Start` re‑evaluates whenever the data changes → fires the instant rows arrive (and on slicer
-   changes), `OnTimerEnd` builds, then sets `varRowCount` so `Start` goes false again.
-2. **`App.OnStart`** → `Set(varRowCount,-1); Set(varReady,false)`.
-3. **`Screen.OnVisible`** → `Set(varRowCount,-1)` (forces a rebuild whenever the screen is shown).
-4. **Loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew data…")
-   with `Visible = !varReady` cover the page until `OnTimerEnd` sets `varReady=true`.
+> **Do NOT build in a Timer.** Timer controls are unreliable in the Power BI PowerApps visual —
+> a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran). The
+> previous `tmrLoad.*` files are kept only as an *optional* extra for the rare first‑open race;
+> the supported path is `OnVisible`.
 
-Result: it loads on open with **no navigation**. Collections are app‑global so they persist
-across screens.
+**Optional loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew
+data…") with `Visible = !varReady` cover the page until `OnVisible` sets `varReady = true`.
 
-#### Still blank? Add the one‑line diagnostic
-Drop a Label `lblDebug` on the screen with `Text =` the contents of
-[`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx). It reads e.g.
-`data=86 | ready=true | members=86 | crews=10 | role=member …` and tells you where it stalls:
+#### Still blank? Add the diagnostic labels
+Add Labels with `Text =` [`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx) and
+[`lblDebugSchema.Text.powerfx`](formulas/lblDebugSchema.Text.powerfx) — see **[DEBUG.md](DEBUG.md)**:
 
-| What you see | Meaning → fix |
+| Reading | Meaning → fix |
 |---|---|
-| `data=0` always | Power BI is sending **no rows**. In Power BI, add the fields to the PowerApps visual's data well (Name, Crew, User Email, Manager Sponsor Email, **every points column**). |
-| `data>0` but `members=0` | Build failed — almost always a **column‑name mismatch**. Make the names in `tmrLoad` match your fields exactly (e.g. `'IB & NS Points'`). |
-| `started=false` forever, `data>0` | Timer never fired — re‑check the `tmrLoad` properties above (especially `Start`, `AutoStart=false`, `Visible=true`). |
+| `rows=0` always | Power BI is sending **no rows** — add the fields to the PowerApps visual's data well. |
+| `rows>0` but `colMembers=0` | Build didn't run / errored. If `varRole` is **blank**, the build never executed (you built in a Timer — move it to `OnVisible`). If `varRole="spectator"` with a member email, check **column names** against `lblDebugSchema`. |
+| `colMembers>0`, visuals blank | Image controls not on the latest formulas / wrong `Visible` rules. |
 | `members>0` but visuals blank | Image controls aren't bound to the latest formulas / `Visible` rules — re‑paste them. |
 
 Delete `lblDebug` once it works.
