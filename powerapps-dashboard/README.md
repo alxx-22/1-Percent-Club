@@ -26,6 +26,7 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 | Control | Type | Property | Formula |
 |---|---|---|---|
 | **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) |
+| `tmrLoad` | **Timer** | `Start` | [`tmrLoad.Start.powerfx`](formulas/tmrLoad.Start.powerfx) — reactive trigger |
 | `tmrLoad` | **Timer** | `OnTimerEnd` | [`tmrLoad.OnTimerEnd.powerfx`](formulas/tmrLoad.OnTimerEnd.powerfx) — **builds all data** |
 | **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) (thin trigger) |
 | `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/imgRibbon.Image.powerfx) |
@@ -67,26 +68,47 @@ its rectangle's aspect, so it fills with no letterboxing.
 `imgMyPoints`/`imgCrewGrid` (member & sponsor) and `imgSpectator` occupy the **same** left
 column and are swapped purely by their `Visible` rule — no screen switching.
 
-### Loads on open — build in a Timer, not `OnVisible`
+### Loads on open — REACTIVE timer (not `OnVisible`)
 
-In a Power BI custom visual, **`PowerBIIntegration.Data` is empty for a beat after the screen
-first shows**, so building collections in `Screen.OnVisible` once gives empty data on open — it
-only "fixed itself" after navigating to another screen and back (which re‑runs `OnVisible` once
-the data had arrived). Build **reactively** instead:
+In a Power BI custom visual, **`PowerBIIntegration.Data` is empty for a moment after the screen
+first shows**, so building collections in `Screen.OnVisible` once gives empty visuals on open —
+it only "fixed itself" after navigating to another screen and back (which re‑ran `OnVisible`
+after the data arrived). Build **reactively** with a Timer whose `Start` watches the row count:
 
-1. **`tmrLoad`** (Timer) — `AutoStart=true`, `Repeat=true`, `Duration=500`, `Visible=true`
-   (timers pause when hidden; keep it on and tuck it in a corner — it draws nothing). Its
-   `OnTimerEnd` rebuilds everything, but **only when the data signature (row count + a column
-   sum) changes** — so it fires the instant data appears, again on any Power BI slicer/refresh,
-   and is otherwise a cheap no‑op.
-2. **`Screen.OnVisible`** = `Set(varDataSig,""); Reset(tmrLoad)` → a fresh build whenever the
-   screen is (re)shown.
-3. **`App.OnStart`** sets `varReady=false`. While `!varReady`, a full‑screen `recLoading`
-   rectangle + `lblLoading` ("Loading crew data…") cover the page so users see a clean loading
-   state, not blank images. `tmrLoad` sets `varReady=true` once built.
+1. **Insert a Timer `tmrLoad`** and set these **exactly** (the usual cause of "still empty" is
+   a missing one):
+   | Property | Value |
+   |---|---|
+   | `AutoStart` | `false` |
+   | `Start` | `CountRows(PowerBIIntegration.Data) <> varRowCount` |
+   | `Duration` | `50` |
+   | `Repeat` | `false` |
+   | `Reset` | `false` |
+   | `Visible` | `true` *(timers pause when hidden — keep true, place it behind `imgRibbon`)* |
+   | `OnTimerEnd` | paste [`tmrLoad.OnTimerEnd.powerfx`](formulas/tmrLoad.OnTimerEnd.powerfx) |
+   `Start` re‑evaluates whenever the data changes → fires the instant rows arrive (and on slicer
+   changes), `OnTimerEnd` builds, then sets `varRowCount` so `Start` goes false again.
+2. **`App.OnStart`** → `Set(varRowCount,-1); Set(varReady,false)`.
+3. **`Screen.OnVisible`** → `Set(varRowCount,-1)` (forces a rebuild whenever the screen is shown).
+4. **Loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew data…")
+   with `Visible = !varReady` cover the page until `OnTimerEnd` sets `varReady=true`.
 
-Result: it loads correctly **on open, with no navigation**. Collections are app‑global so they
-persist across screens; the timer just keeps them current.
+Result: it loads on open with **no navigation**. Collections are app‑global so they persist
+across screens.
+
+#### Still blank? Add the one‑line diagnostic
+Drop a Label `lblDebug` on the screen with `Text =` the contents of
+[`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx). It reads e.g.
+`data=86 | ready=true | members=86 | crews=10 | role=member …` and tells you where it stalls:
+
+| What you see | Meaning → fix |
+|---|---|
+| `data=0` always | Power BI is sending **no rows**. In Power BI, add the fields to the PowerApps visual's data well (Name, Crew, User Email, Manager Sponsor Email, **every points column**). |
+| `data>0` but `members=0` | Build failed — almost always a **column‑name mismatch**. Make the names in `tmrLoad` match your fields exactly (e.g. `'IB & NS Points'`). |
+| `started=false` forever, `data>0` | Timer never fired — re‑check the `tmrLoad` properties above (especially `Start`, `AutoStart=false`, `Visible=true`). |
+| `members>0` but visuals blank | Image controls aren't bound to the latest formulas / `Visible` rules — re‑paste them. |
+
+Delete `lblDebug` once it works.
 
 ---
 

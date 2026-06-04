@@ -1,9 +1,7 @@
 // ============================================================================
-//  Screen.OnVisible  —  thin trigger only.
-//  The heavy data build lives in tmrLoad.OnTimerEnd, because it must wait for
-//  PowerBIIntegration.Data to arrive (which is AFTER the screen first shows).
-//  Clearing the signature + resetting the timer forces a fresh rebuild on the
-//  next tick whenever this screen is shown or re-shown.
+//  Screen.OnVisible  —  thin trigger.
+//  The data build lives in tmrLoad.OnTimerEnd (it must wait for
+//  PowerBIIntegration.Data). Forcing varRowCount = -1 makes tmrLoad.Start
+//  evaluate true, so a fresh build runs whenever this screen is (re)shown.
 // ============================================================================
-Set( varDataSig, "" );
-Reset( tmrLoad );
+Set( varRowCount, -1 );
