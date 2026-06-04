@@ -1,29 +1,12 @@
 // ============================================================================
-//  TEMPORARY DIAGNOSTIC — add a Label "lblDebug" anywhere on the screen and set
-//  its Text to this. It tells you exactly where the pipeline stalls. Delete it
-//  once everything works.
-//
-//  HOW TO READ IT
-//  • data = 0  (always)  -> Power BI is sending NO rows to the visual.
-//        Fix: in Power BI, add the fields to the PowerApps visual's data well
-//        (Name, Crew, User Email, Manager Sponsor Email, and every points column).
-//        Nothing here can work until data > 0.
-//  • data > 0  but  members = 0  -> the build failed (usually a COLUMN-NAME
-//        mismatch). Check the names in tmrLoad exactly match the fields you added,
-//        e.g. 'IB & NS Points'. Also confirm tmrLoad fired (toggle started below).
-//  • members > 0  but  crews = 0 -> 'Crew' column missing/blank.
-//  • members > 0  and the visuals are still blank -> the Image controls aren't
-//        seeing the vars; confirm imgMyPoints.Visible = (varRole <> "spectator")
-//        and that you pasted the latest Image formulas.
-//  • ready = false forever -> tmrLoad never ran: check AutoStart=false,
-//        Start = (CountRows(PowerBIIntegration.Data) <> varRowCount), Repeat=false,
-//        Duration=50, Visible=true (NOT false), and that the control is on THIS screen.
+//  lblDebug.Text  —  add a Label "lblDebug", paste this into its Text.
+//  Label props:  Wrap = true,  AutoHeight = true,  Size = 11,
+//                Fill = White,  Color = Red,  X = 16, Y = 70, Width = 700.
+//  (Put it on the same screen as the dashboard so it sees the same vars.)
 // ============================================================================
-"data=" & CountRows( PowerBIIntegration.Data ) &
-" | ready=" & varReady &
-" | started=" & tmrLoad.Start &
-" | members=" & CountRows( colMembers ) &
-" | crews=" & CountRows( colCrew ) &
-" | role=" & varRole &
-" | me=" & varDispName &
-" | email=" & varUserEmail
+"rows in PowerBIIntegration.Data = " & CountRows( PowerBIIntegration.Data ) & Char(10) &
+"colMembers = " & CountRows( colMembers ) & "    colCrew = " & CountRows( colCrew ) & Char(10) &
+"colMyCrew = " & CountRows( colMyCrew ) & "    colCrewBreak = " & CountRows( colCrewBreak ) & Char(10) &
+"varReady = " & varReady & "    varRole = " & varRole & Char(10) &
+"varMyCrew = " & varMyCrew & "    varDispName = " & varDispName & Char(10) &
+"viewer User().Email = " & Lower( User().Email )

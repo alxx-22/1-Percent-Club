@@ -1,0 +1,24 @@
+// ============================================================================
+//  lblDebugSchema.Text  —  THE IMPORTANT ONE. Add a second Label
+//  "lblDebugSchema" and paste this into Text.
+//  Label props:  Wrap = true,  AutoHeight = true,  Size = 10,
+//                Fill = White,  Color = Black,  X = 16, Y = 180, Width = 700.
+//
+//  It dumps the FIRST row of the data exactly as Power BI hands it over, so you
+//  can see the REAL column names + values. Compare them to the names the build
+//  expects (see EXPECTED list below). Any difference = the cause of the blanks.
+//
+//  EXPECTED column names (must match exactly, including spaces / & / casing):
+//    Name · Crew · User Email · Manager Sponsor Email · Manager Sponsor ·
+//    IB & NS Points · Manager Sponsor Points · New CC Logo Points ·
+//    Cap Won Points · Cap Requests · Customer Centricity Points · IP in GL points ·
+//    Cap Won Points Pending · Cap Requests Pending · Customer Centricity Points Pending
+//
+//  If a name differs (e.g. Power BI sent "Sum of IB & NS Points" or "IB and NS
+//  Points"), either rename the field in the Power BI visual to match, OR change
+//  the name in the formulas to match what you see here.
+//  If this shows "{}" / blank while lblDebug shows rows=0, the fields simply
+//  aren't on the visual yet — add them to the PowerApps visual's field well.
+// ============================================================================
+"COLUMNS PER ROW (first record):" & Char(10) &
+JSON( First( PowerBIIntegration.Data ), JSONFormat.IndentFour )
