@@ -1,31 +1,50 @@
 // ============================================================================
 //  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA (put it here, not in a Timer).
 //
-//  WHY HERE: Timer controls don't fire reliably in the Power BI PowerApps visual,
-//  so a timer-based build left everything blank (varRole was blank = the build
-//  never ran). OnVisible runs every time the screen is shown — including a button
-//  that navigates to this screen — which is exactly the "Screen 2 -> Screen 1"
-//  hop that worked for you originally. Re-entering the screen always rebuilds.
+//  Reads every field through TEXT first  ->  Value( field & "" )  so Power BI
+//  type quirks can't break the load. Symptom this fixes: rows>0 but colMembers=0
+//  plus a red "JSON parsing error, expected 'number' but got 'string'" — that
+//  means a numeric column is arriving as text; coercing through text avoids it.
+//  We also read only the columns we use, so an unrelated bad column is ignored.
 //
-//  Coalesce(col,0) already turns blanks/nulls into 0, so empty point cells are safe.
+//  If it STILL errors after this, one of the POINT columns is typed as Text in
+//  the Power BI model — set those columns to Whole Number in Power BI (Modeling
+//  > Data type) and reload. See DEBUG.md.
 // ============================================================================
 
-// 0) local copy ------------------------------------------------------------
-ClearCollect( colRaw, PowerBIIntegration.Data );
-
-// 1) per-member totals -----------------------------------------------------
+// 1) members (typed + totals) ---------------------------------------------
 ClearCollect(
     colMembers,
-    AddColumns(
-        colRaw,
-        "MemberTotal",
-              Coalesce('IB & NS Points',0) + Coalesce('Manager Sponsor Points',0)
-            + Coalesce('New CC Logo Points',0) + Coalesce('Cap Won Points',0)
-            + Coalesce('Cap Requests',0) + Coalesce('Customer Centricity Points',0)
-            + Coalesce('IP in GL points',0),
-        "MemberPending",
-              Coalesce('Cap Won Points Pending',0) + Coalesce('Cap Requests Pending',0)
-            + Coalesce('Customer Centricity Points Pending',0)
+    ForAll(
+        PowerBIIntegration.Data,
+        With(
+            { ib:   Coalesce(Value(ThisRecord.'IB & NS Points' & ""),0),
+              mgr:  Coalesce(Value(ThisRecord.'Manager Sponsor Points' & ""),0),
+              ncc:  Coalesce(Value(ThisRecord.'New CC Logo Points' & ""),0),
+              cw:   Coalesce(Value(ThisRecord.'Cap Won Points' & ""),0),
+              cr:   Coalesce(Value(ThisRecord.'Cap Requests' & ""),0),
+              cust: Coalesce(Value(ThisRecord.'Customer Centricity Points' & ""),0),
+              ipg:  Coalesce(Value(ThisRecord.'IP in GL points' & ""),0),
+              cwp:  Coalesce(Value(ThisRecord.'Cap Won Points Pending' & ""),0),
+              crp:  Coalesce(Value(ThisRecord.'Cap Requests Pending' & ""),0),
+              ccp:  Coalesce(Value(ThisRecord.'Customer Centricity Points Pending' & ""),0) },
+            {
+                Name:          ThisRecord.Name & "",
+                Crew:          Coalesce(Value(ThisRecord.Crew & ""),0),
+                Email:         Lower(ThisRecord.'User Email' & ""),
+                SponsorEmail:  Lower(ThisRecord.'Manager Sponsor Email' & ""),
+                Sponsor:       ThisRecord.'Manager Sponsor' & "",
+                IBNS:          ib,
+                MgrPts:        mgr,
+                NewCCLogo:     ncc,
+                CapWon:        cw,
+                CapReq:        cr,
+                CustCent:      cust,
+                IPgl:          ipg,
+                MemberTotal:   ib + mgr + ncc + cw + cr + cust + ipg,
+                MemberPending: cwp + crp + ccp
+            }
+        )
     )
 );
 
@@ -52,20 +71,20 @@ ClearCollect(
         )
     )
 );
-Set( varLeaderMax, First( colCrew ).CrewTotal );
+Set( varLeaderMax, Coalesce( First( colCrew ).CrewTotal, 1 ) );
 ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
 
 // 3) viewer role -----------------------------------------------------------
 Set( varUserEmail, Lower( User().Email ) );
-Set( varMemberRec,  LookUp( colMembers, Lower('User Email') = varUserEmail ) );
-Set( varSponsorRec, LookUp( colMembers, Lower('Manager Sponsor Email') = varUserEmail ) );
+Set( varMemberRec,  LookUp( colMembers, Email = varUserEmail ) );
+Set( varSponsorRec, LookUp( colMembers, SponsorEmail = varUserEmail ) );
 Set( varRole,
     If( !IsBlank( varMemberRec.Name ), "member",
         If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) );
 Set( varMyCrew,    Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) );
 Set( varMyCrewTag, If( varRole = "sponsor", "YOU SPONSOR", "YOUR CREW" ) );
 Set( varDispName,
-    Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.'Manager Sponsor', "Guest Viewer" ) );
+    Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.Sponsor, "Guest Viewer" ) );
 Set( varMyInitials,
     Upper( Left( varDispName, 1 ) & Mid( varDispName & " ", Find( " ", varDispName & " " ) + 1, 1 ) ) );
 Set( varRibbonChip,
@@ -84,12 +103,12 @@ ClearCollect(
             With(
                 { f: Filter( colMembers, Crew = cnum ) },
                 { Rank: rk, Crew: cnum, CrewName: cnm, Total: ct, Pending: cp,
-                  NewCC:  Sum( f, Coalesce('IB & NS Points',0) + Coalesce('New CC Logo Points',0) ),
-                  CapEng: Sum( f, Coalesce('Cap Requests',0) ),
-                  CapOrd: Sum( f, Coalesce('Cap Won Points',0) ),
-                  CC:     Sum( f, Coalesce('Customer Centricity Points',0) ),
-                  Accred: Sum( f, Coalesce('Manager Sponsor Points',0) ),
-                  IP:     Sum( f, Coalesce('IP in GL points',0) ) }
+                  NewCC:  Sum( f, IBNS + NewCCLogo ),
+                  CapEng: Sum( f, CapReq ),
+                  CapOrd: Sum( f, CapWon ),
+                  CC:     Sum( f, CustCent ),
+                  Accred: Sum( f, MgrPts ),
+                  IP:     Sum( f, IPgl ) }
             )
         )
     )
@@ -107,7 +126,7 @@ ClearCollect(
         Sequence( CountRows( colMyCrewSorted ) ),
         With( { row: Last( FirstN( colMyCrewSorted, Value ) ) },
             { Idx: Value - 1, Name: row.Name, MemberTotal: row.MemberTotal,
-              IsMe: Lower( row.'User Email' ) = varUserEmail } )
+              IsMe: row.Email = varUserEmail } )
     )
 );
 
@@ -119,12 +138,12 @@ Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyC
 Set( varBoxTotLbl, If( varRole = "sponsor", "CREW TOTAL · EXCL PENDING", "TOTAL · EXCL PENDING" ) );
 Set( varBoxTotal,  If( varRole = "sponsor", varCB.Total,   varMemberRec.MemberTotal ) );
 Set( varBoxPending,If( varRole = "sponsor", varCB.Pending, varMemberRec.MemberPending ) );
-Set( varB1, If( varRole = "sponsor", varCB.NewCC,  Coalesce(varMemberRec.'IB & NS Points',0) + Coalesce(varMemberRec.'New CC Logo Points',0) ) );
-Set( varB2, If( varRole = "sponsor", varCB.CapEng, Coalesce(varMemberRec.'Cap Requests',0) ) );
-Set( varB3, If( varRole = "sponsor", varCB.CapOrd, Coalesce(varMemberRec.'Cap Won Points',0) ) );
-Set( varB4, If( varRole = "sponsor", varCB.CC,     Coalesce(varMemberRec.'Customer Centricity Points',0) ) );
-Set( varB5, If( varRole = "sponsor", varCB.Accred, Coalesce(varMemberRec.'Manager Sponsor Points',0) ) );
-Set( varB6, If( varRole = "sponsor", varCB.IP,     Coalesce(varMemberRec.'IP in GL points',0) ) );
+Set( varB1, If( varRole = "sponsor", varCB.NewCC,  varMemberRec.IBNS + varMemberRec.NewCCLogo ) );
+Set( varB2, If( varRole = "sponsor", varCB.CapEng, varMemberRec.CapReq ) );
+Set( varB3, If( varRole = "sponsor", varCB.CapOrd, varMemberRec.CapWon ) );
+Set( varB4, If( varRole = "sponsor", varCB.CC,     varMemberRec.CustCent ) );
+Set( varB5, If( varRole = "sponsor", varCB.Accred, varMemberRec.MgrPts ) );
+Set( varB6, If( varRole = "sponsor", varCB.IP,     varMemberRec.IPgl ) );
 
 // 7) shared SVG motion stylesheet -----------------------------------------
 Set(

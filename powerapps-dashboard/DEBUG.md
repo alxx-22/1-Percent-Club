@@ -1,12 +1,19 @@
 # Debug: dashboard shows but is blank (0 people / 0 crews)
 
-> **Most common cause & fix (confirmed):** if `lblDebug` shows `rows = 86` (data is there)
-> but `colMembers = 0` **and `varRole` is blank**, the build simply **never ran** — Timer
-> controls don't fire reliably in the Power BI visual. **Move the entire build into
-> `Screen.OnVisible`** ([`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
-> and set `App.OnStart` = `Set(varReady,false)`. `OnVisible` runs on every screen show (and on a
-> button that navigates here), so it always populates. Remove/ignore the `tmrLoad` timer.
-> The labels below confirm it (after the fix: `colMembers` and `varRole` are populated).
+> **Confirmed causes & fixes**
+> 1. **`colMembers = 0` and `varRole` is _blank_** → the build never ran (you built in a Timer;
+>    timers are unreliable in the PBI visual). Put the whole build in **`Screen.OnVisible`**
+>    ([`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)).
+> 2. **`colMembers = 0` with a red `JSON parsing error, expected 'number' but got 'string'`** →
+>    a numeric column is arriving from Power BI as **text**. The current `Screen_OnVisible`
+>    reads every field through text first — `Value(field & "")` — which fixes this. If it STILL
+>    errors, set those point columns to **Whole Number** in the Power BI model (Modeling → Data
+>    type) and reload.
+> 3. **`Index … empty table`** is only a side‑effect of an empty `colCrew`; `imgPodium` now uses
+>    `First()/Last(FirstN())` so it no longer errors while loading.
+>
+> After the fix `lblDebug` should read `colMembers = 86`, `colCrew = 10`, and (for an email not in
+> the data, e.g. `alex.cohen@hpe.com`) `varRole = spectator` → the auto‑scroll tour fills in.
 
 
 Add **two Labels** to the dashboard screen and read them in Power BI. They tell us

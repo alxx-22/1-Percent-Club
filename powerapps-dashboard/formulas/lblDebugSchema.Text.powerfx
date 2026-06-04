@@ -1,24 +1,20 @@
 // ============================================================================
-//  lblDebugSchema.Text  —  THE IMPORTANT ONE. Add a second Label
-//  "lblDebugSchema" and paste this into Text.
-//  Label props:  Wrap = true,  AutoHeight = true,  Size = 10,
-//                Fill = White,  Color = Black,  X = 16, Y = 180, Width = 700.
-//
-//  It dumps the FIRST row of the data exactly as Power BI hands it over, so you
-//  can see the REAL column names + values. Compare them to the names the build
-//  expects (see EXPECTED list below). Any difference = the cause of the blanks.
-//
-//  EXPECTED column names (must match exactly, including spaces / & / casing):
-//    Name · Crew · User Email · Manager Sponsor Email · Manager Sponsor ·
-//    IB & NS Points · Manager Sponsor Points · New CC Logo Points ·
-//    Cap Won Points · Cap Requests · Customer Centricity Points · IP in GL points ·
-//    Cap Won Points Pending · Cap Requests Pending · Customer Centricity Points Pending
-//
-//  If a name differs (e.g. Power BI sent "Sum of IB & NS Points" or "IB and NS
-//  Points"), either rename the field in the Power BI visual to match, OR change
-//  the name in the formulas to match what you see here.
-//  If this shows "{}" / blank while lblDebug shows rows=0, the fields simply
-//  aren't on the visual yet — add them to the PowerApps visual's field well.
+//  lblDebugSchema.Text  —  shows the first row's values, each read through text
+//  ( & "" ) so it can't crash the way JSON() did. If every line shows a value,
+//  the columns are readable and OnVisible will build colMembers. If THIS label
+//  itself errors on a line, that column's type is broken in the Power BI model
+//  (set it to Whole Number) — the line that errors names the culprit.
+//  Label props: Wrap=true, AutoHeight=true, Size=10, X=16, Y=180, Width=700.
 // ============================================================================
-"COLUMNS PER ROW (first record):" & Char(10) &
-JSON( First( PowerBIIntegration.Data ), JSONFormat.IndentFour )
+"FIRST ROW (read as text):" & Char(10) &
+"Name = " & (First(PowerBIIntegration.Data).Name & "") & Char(10) &
+"Crew = " & (First(PowerBIIntegration.Data).Crew & "") & Char(10) &
+"User Email = " & (First(PowerBIIntegration.Data).'User Email' & "") & Char(10) &
+"Manager Sponsor Email = " & (First(PowerBIIntegration.Data).'Manager Sponsor Email' & "") & Char(10) &
+"IB & NS Points = " & (First(PowerBIIntegration.Data).'IB & NS Points' & "") & Char(10) &
+"Manager Sponsor Points = " & (First(PowerBIIntegration.Data).'Manager Sponsor Points' & "") & Char(10) &
+"New CC Logo Points = " & (First(PowerBIIntegration.Data).'New CC Logo Points' & "") & Char(10) &
+"Cap Won Points = " & (First(PowerBIIntegration.Data).'Cap Won Points' & "") & Char(10) &
+"Cap Requests = " & (First(PowerBIIntegration.Data).'Cap Requests' & "") & Char(10) &
+"Customer Centricity Points = " & (First(PowerBIIntegration.Data).'Customer Centricity Points' & "") & Char(10) &
+"IP in GL points = " & (First(PowerBIIntegration.Data).'IP in GL points' & "")

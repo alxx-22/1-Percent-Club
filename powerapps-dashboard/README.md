@@ -73,9 +73,13 @@ including a **button that navigates to this screen** — so re‑entering always
 latest data. (This is the "Screen 2 → Screen 1" hop that worked originally, made automatic.)
 
 > **Do NOT build in a Timer.** Timer controls are unreliable in the Power BI PowerApps visual —
-> a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran). The
-> previous `tmrLoad.*` files are kept only as an *optional* extra for the rare first‑open race;
-> the supported path is `OnVisible`.
+> a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran).
+> `OnVisible` is the supported path.
+>
+> **Type safety:** `OnVisible` reads every field through text first — `Value(field & "")` — so a
+> numeric column that Power BI delivers as text can't break the load (the `JSON parsing error,
+> expected 'number' but got 'string'` symptom). If it persists, set those point columns to
+> **Whole Number** in the Power BI model.
 
 **Optional loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew
 data…") with `Visible = !varReady` cover the page until `OnVisible` sets `varReady = true`.
@@ -87,15 +91,14 @@ Add Labels with `Text =` [`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerf
 | Reading | Meaning → fix |
 |---|---|
 | `rows=0` always | Power BI is sending **no rows** — add the fields to the PowerApps visual's data well. |
-| `rows>0` but `colMembers=0` | Build didn't run / errored. If `varRole` is **blank**, the build never executed (you built in a Timer — move it to `OnVisible`). If `varRole="spectator"` with a member email, check **column names** against `lblDebugSchema`. |
+| `rows>0` but `colMembers=0` | Build didn't run / errored. If `varRole` is **blank** → build never ran (don't use a Timer; use `OnVisible`). If you see a red **JSON `expected 'number' got 'string'`** → a numeric column arrives as text (OnVisible already coerces via `Value(field & "")`; else set it to Whole Number in Power BI). Check names/values with `lblDebugSchema`. |
 | `colMembers>0`, visuals blank | Image controls not on the latest formulas / wrong `Visible` rules. |
-| `members>0` but visuals blank | Image controls aren't bound to the latest formulas / `Visible` rules — re‑paste them. |
 
-Delete `lblDebug` once it works.
+Delete the debug labels once it works.
 
 ---
 
-## 3. Roles (built by `tmrLoad`)
+## 3. Roles (built in `OnVisible`)
 
 ```
 varUserEmail  = Lower(User().Email)
@@ -115,7 +118,7 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 - **Crew flag** → on the podium and gallery, the row/card whose `Crew = varMyCrew` gets a green
   outline + a `varMyCrewTag` chip. Spectators see no flag.
 
-> **Test a role** without changing accounts: after `tmrLoad` runs, set
+> **Test a role** without changing accounts: after `OnVisible` runs, set
 > `Set(varUserEmail, "jordan.smith@example.com")` (member) /
 > a `Manager Sponsor Email` value (sponsor) / a non‑existent email (spectator) and re‑run.
 
@@ -147,7 +150,7 @@ Pending     = sum of the *Pending columns           "points pending" = per-crew 
 | Accreditation Race | `Manager Sponsor Points` |
 | IP Push | `IP in GL points` |
 
-Collections built by `tmrLoad`: `colMembers` → `colCrew` (ranked) → `colCrewRest` (4‑10),
+Collections built in `OnVisible`: `colMembers` → `colCrew` (ranked) → `colCrewRest` (4‑10),
 `colCrewBreak` (per‑crew category sums, for sponsor box + spectator), `colMyCrew` (viewer's crew,
 grid), plus the role / box / `varSvgCss` variables.
 
@@ -173,7 +176,7 @@ green tint `#d1ffee` · warning `#d36d00`. Category accents (dataVis categorical
 
 ## 6. Animations (motion)
 
-CSS keyframes embedded in each SVG (`<style>`), defined once as `varSvgCss` in `tmrLoad`.
+CSS keyframes embedded in each SVG (`<style>`), defined once as `varSvgCss` in `OnVisible`.
 Runs in PowerApps' WebView2 image rendering; hidden start‑states live only in `@keyframes` so
 static/`reduced-motion` renders show the settled design. **Honours `prefers-reduced-motion`.**
 
