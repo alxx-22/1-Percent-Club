@@ -1,34 +1,34 @@
 // ============================================================================
 //  IN-CREW MEMBER GRID (NON-gallery).  Control: Image "imgCrewGrid"
-//  Property: Image     ·  ImagePosition: Fit
-//  Each member = a small square: Name + total points (EXCLUDING pending).
-//  The viewBox height grows with the member count (2 tiles per row).
-//
-//  Set the control HEIGHT so the squares never stretch:
-//      imgCrewGrid.Width  = 440                       // (or the left-column width)
-//      imgCrewGrid.Height = imgCrewGrid.Width *
-//                           (46 + RoundUp(CountRows(colMyCrew)/2, 0) * 102 + 4) / 440
+//  Geometry: X=16  Y=380  Width=420  Height=244   ImagePosition=Fit
+//  Visible:  varRole <> "spectator"
+//  Tiles auto-stretch so the grid fills the box for any crew size (up to 10).
+//  Member view highlights the viewer ("YOU"); sponsor view shows the crew only.
 // ============================================================================
 With(
-    { vbH: 46 + RoundUp( CountRows( colMyCrew ) / 2, 0 ) * 102 + 4 },
-    "data:image/svg+xml;utf8," & EncodeUrl(
-        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 440 " & Text(vbH) & "' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
-        "<text x='14' y='28' font-size='17' font-weight='700' fill='#292d3a'>Crew " & Text(varMyCrew) & " - Members</text>" &
-        "<text x='426' y='28' font-size='13' fill='#606a70' text-anchor='end'>" & Text(CountRows(colMyCrew)) & " people</text>" &
-        Concat(
-            colMyCrew,
-            "<g transform='translate(" & Text(12 + Mod(Idx,2)*212) & "," & Text(46 + Int(Idx/2)*102) & ")'>" &
-                "<g class='pp' style='animation-delay:" & Text(100 + Idx*50) & "ms'>" &
-                    "<rect width='204' height='92' rx='12' fill='" & If(IsMe,"#d1ffee","#ffffff") & "' stroke='" & If(IsMe,"#01a982","#d4d8db") & "' stroke-width='" & If(IsMe,"2","1") & "'/>" &
-                    If( IsMe, "<rect width='204' height='92' rx='12' fill='none' stroke='#01a982' stroke-width='2' class='brz' opacity='0'/>", "" ) &
-                    "<text x='16' y='28' font-size='13.5' font-weight='600' fill='" & If(IsMe,"#292d3a","#3e4550") & "'>" &
-                        Left( Substitute(Substitute(Substitute(Name,"&","&amp;"),"<","&lt;"),">","&gt;"), 20 ) & "</text>" &
-                    If( IsMe, "<text x='190' y='27' font-size='10.5' font-weight='700' fill='#006750' text-anchor='end'>YOU</text>", "" ) &
-                    "<text x='16' y='74' font-size='30' font-weight='700' fill='" & If(IsMe,"#006750","#292d3a") & "'>" & Text(MemberTotal) & "</text>" &
-                    "<text x='" & Text(16 + Len(Text(MemberTotal))*18 + 6) & "' y='74' font-size='12' fill='#606a70'>pts</text>" &
-                "</g>" &
-            "</g>"
-        ) &
-        "</svg>"
+    { rows: RoundUp( CountRows( colMyCrew ) / 2, 0 ) },
+    With(
+        { th: Int( (244 - 26 - (rows-1)*8) / rows ) },
+        "data:image/svg+xml;utf8," & EncodeUrl(
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 244' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+            "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW " & Text(varMyCrew) & " · MEMBERS</text>" &
+            "<text x='416' y='16' font-size='11' fill='#606a70' text-anchor='end'>" & Text(CountRows(colMyCrew)) & " people</text>" &
+            Concat(
+                colMyCrew,
+                With(
+                    { x: 2 + Mod(Idx,2)*212, y: 26 + Int(Idx/2)*(th+8) },
+                    "<g class='pp' style='animation-delay:" & Text(100 + Idx*50) & "ms'>" &
+                    "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='" & If(IsMe,"#d1ffee","#ffffff") & "' stroke='" & If(IsMe,"#01a982","#d4d8db") & "' stroke-width='" & If(IsMe,"2","1") & "'/>" &
+                    If( IsMe, "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='none' stroke='#01a982' stroke-width='2' class='brz' opacity='0'/>", "" ) &
+                    "<text x='" & Text(x+14) & "' y='" & Text(y+22) & "' font-size='12.5' font-weight='600' fill='" & If(IsMe,"#292d3a","#3e4550") & "'>" &
+                        Left( Substitute(Substitute(Substitute(Name,"&","&amp;"),"<","&lt;"),">","&gt;"), 22 ) & "</text>" &
+                    If( IsMe, "<text x='" & Text(x+192) & "' y='" & Text(y+21) & "' font-size='9.5' font-weight='700' letter-spacing='.5' fill='#006750' text-anchor='end'>YOU</text>", "" ) &
+                    "<text x='" & Text(x+14) & "' y='" & Text(y+th-11) & "' font-size='20' font-weight='700' fill='" & If(IsMe,"#006750","#292d3a") & "'>" & Text(MemberTotal) & "</text>" &
+                    "<text x='" & Text(x+14 + Len(Text(MemberTotal))*12 + 5) & "' y='" & Text(y+th-11) & "' font-size='11' fill='#606a70'>pts</text>" &
+                    "</g>"
+                )
+            ) &
+            "</svg>"
+        )
     )
 )

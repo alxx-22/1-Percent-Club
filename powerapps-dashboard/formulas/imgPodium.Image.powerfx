@@ -1,40 +1,44 @@
 // ============================================================================
 //  PODIUM — top 3 crews (NON-gallery).  Control: Image "imgPodium"
-//  Property: Image     ·  ImagePosition: Fit
-//  Suggested size: Width = 854 (right column width), Height = Width*440/920
-//  Renders ranks 2 - 1 - 3 left-to-right with gold / silver / bronze accents.
+//  Geometry: X=452  Y=68  Width=668  Height=300   ImagePosition=Fit
+//  If the viewer's crew (varMyCrew) is in the top 3 it gets a green outline +
+//  a "YOUR CREW" / "YOU SPONSOR" flag (varMyCrewTag). Spectators: varMyCrew is
+//  blank so nothing is flagged.
 // ============================================================================
 With(
-    {
-        p1: Index( colCrew, 1 ),   // 1st  (or: Last(FirstN(colCrew,1)) on older Power Fx)
-        p2: Index( colCrew, 2 ),   // 2nd
-        p3: Index( colCrew, 3 )    // 3rd
-    },
+    { p1: Index( colCrew, 1 ), p2: Index( colCrew, 2 ), p3: Index( colCrew, 3 ) },
     "data:image/svg+xml;utf8," & EncodeUrl(
-        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 440' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 300' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+        "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW LEADERBOARD</text>" &
+        "<text x='664' y='16' font-size='11' fill='#606a70' text-anchor='end'>Top 3 crews</text>" &
         Concat(
             Table(
-                { cx: 180, top: 132, medal: "#8C99A4", tint: "#EDEFF1", rank: 2, cd: 180, md: 390, nm: p2.CrewName, pts: p2.CrewTotal, pend: p2.CrewPending },
-                { cx: 460, top:  70, medal: "#E0A300", tint: "#FBF1D6", rank: 1, cd: 340, md: 550, nm: p1.CrewName, pts: p1.CrewTotal, pend: p1.CrewPending },
-                { cx: 740, top: 162, medal: "#B5742E", tint: "#F4E9DD", rank: 3, cd:  50, md: 260, nm: p3.CrewName, pts: p3.CrewTotal, pend: p3.CrewPending }
+                { cx:148, top:120, medal:"#8C99A4", tint:"#EDEFF1", cd:180, md:390, rank:p2.Rank, num:p2.Crew, nm:p2.CrewName, pts:p2.CrewTotal, pend:p2.CrewPending },
+                { cx:334, top: 78, medal:"#E0A300", tint:"#FBF1D6", cd:340, md:550, rank:p1.Rank, num:p1.Crew, nm:p1.CrewName, pts:p1.CrewTotal, pend:p1.CrewPending },
+                { cx:520, top:142, medal:"#B5742E", tint:"#F4E9DD", cd: 50, md:260, rank:p3.Rank, num:p3.Crew, nm:p3.CrewName, pts:p3.CrewTotal, pend:p3.CrewPending }
             ),
             "<g class='fu' style='animation-delay:" & Text(cd) & "ms'>" &
-            "<rect x='" & Text(cx-116) & "' y='" & Text(top) & "' width='232' height='" & Text(430-top) & "' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
-            "<path d='M" & Text(cx-115) & "," & Text(top+15) & " v-1 a14,14 0 0 1 14,-14 h202 a14,14 0 0 1 14,14 v1 z' fill='" & medal & "'/>" &
-            If( rank = 1, "<circle cx='" & Text(cx) & "' cy='" & Text(top+56) & "' r='30' fill='none' stroke='" & medal & "' stroke-width='2' class='ring' opacity='0'/>", "" ) &
+            "<rect x='" & Text(cx-90) & "' y='" & Text(top) & "' width='180' height='" & Text(292-top) & "' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+            "<path d='M" & Text(cx-89) & "," & Text(top+14) & " v-1 a13,13 0 0 1 13,-13 h152 a13,13 0 0 1 13,13 v1 z' fill='" & medal & "'/>" &
+            If( rank = 1, "<circle cx='" & Text(cx) & "' cy='" & Text(top+36) & "' r='22' fill='none' stroke='" & medal & "' stroke-width='2' class='ring' opacity='0'/>", "" ) &
             "<g class='pp' style='animation-delay:" & Text(md) & "ms'>" &
-            "<circle cx='" & Text(cx) & "' cy='" & Text(top+56) & "' r='30' fill='" & tint & "' stroke='" & medal & "' stroke-width='2'/>" &
-            "<text x='" & Text(cx) & "' y='" & Text(top+57) & "' font-size='22' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rank) & "</text>" &
+            "<circle cx='" & Text(cx) & "' cy='" & Text(top+36) & "' r='22' fill='" & tint & "' stroke='" & medal & "' stroke-width='2'/>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+37) & "' font-size='18' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rank) & "</text>" &
             "</g>" &
-            "<text x='" & Text(cx) & "' y='" & Text(top+114) & "' font-size='22' font-weight='700' fill='#292d3a' text-anchor='middle'>" & nm & "</text>" &
-            "<text x='" & Text(cx) & "' y='" & Text(top+164) & "' font-size='44' font-weight='700' fill='#006750' text-anchor='middle'>" & Text(pts) & "</text>" &
-            "<text x='" & Text(cx) & "' y='" & Text(top+186) & "' font-size='12' font-weight='600' letter-spacing='1.5' fill='#606a70' text-anchor='middle'>TOTAL POINTS</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+76) & "' font-size='17' font-weight='700' fill='#292d3a' text-anchor='middle'>" & nm & "</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+112) & "' font-size='30' font-weight='700' fill='#006750' text-anchor='middle'>" & Text(pts) & "</text>" &
+            "<text x='" & Text(cx) & "' y='" & Text(top+128) & "' font-size='9' font-weight='600' letter-spacing='1' fill='#606a70' text-anchor='middle'>TOTAL POINTS</text>" &
             If( pend > 0,
-                "<rect x='" & Text(cx-58) & "' y='396' width='116' height='24' rx='12' fill='#FBEEDF'/>" &
-                "<text x='" & Text(cx) & "' y='412' font-size='12' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(pend) & " pending</text>",
-                "<rect x='" & Text(cx-50) & "' y='396' width='100' height='24' rx='12' fill='#f2f3f4'/>" &
-                "<text x='" & Text(cx) & "' y='412' font-size='12' font-weight='600' fill='#606a70' text-anchor='middle'>no pending</text>"
+                "<rect x='" & Text(cx - (7*(Len(Text(pend))+9)+24)/2) & "' y='262' width='" & Text(7*(Len(Text(pend))+9)+24) & "' height='22' rx='11' fill='#FBEEDF'/>" &
+                "<text x='" & Text(cx) & "' y='277' font-size='11' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(pend) & " pending</text>",
+                "<rect x='" & Text(cx-47) & "' y='262' width='94' height='22' rx='11' fill='#f2f3f4'/>" &
+                "<text x='" & Text(cx) & "' y='277' font-size='11' font-weight='600' fill='#606a70' text-anchor='middle'>no pending</text>"
             ) &
+            If( !IsBlank(varMyCrew) && num = varMyCrew,
+                "<rect x='" & Text(cx-90) & "' y='" & Text(top) & "' width='180' height='" & Text(292-top) & "' rx='14' fill='none' stroke='#01a982' stroke-width='2.5'/>" &
+                "<g class='pp'><rect x='" & Text(cx - (7*Len(varMyCrewTag)+22)/2) & "' y='" & Text(top-19) & "' width='" & Text(7*Len(varMyCrewTag)+22) & "' height='18' rx='9' fill='#01a982'/>" &
+                "<text x='" & Text(cx) & "' y='" & Text(top-10) & "' font-size='10' font-weight='700' letter-spacing='.4' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyCrewTag & "</text></g>",
+                "" ) &
             "</g>"
         ) &
         "</svg>"

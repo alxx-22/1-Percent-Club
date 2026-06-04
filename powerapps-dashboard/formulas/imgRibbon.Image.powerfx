@@ -1,0 +1,21 @@
+// ============================================================================
+//  RIBBON — top app bar (NON-gallery).  Control: Image "imgRibbon"
+//  Geometry on the 1136 x 640 screen:  X=0  Y=0  Width=1136  Height=52
+//  ImagePosition = Fit
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 52' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<g class='fu'>" &
+    "<rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>" &
+    "<line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>" &
+    "<rect x='16' y='13' width='26' height='26' rx='7' fill='#01a982'/>" &
+    "<text x='29' y='27' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>" &
+    "<text x='54' y='32' font-size='17' font-weight='700' fill='#292d3a'>1% Club <tspan fill='#606a70' font-weight='400'>&#183; Crew Dashboard</tspan></text>" &
+    "<rect x='876' y='10' width='244' height='32' rx='16' fill='#f2f3f4'/>" &
+    "<circle cx='896' cy='26' r='12' fill='#01a982'/>" &
+    "<text x='896' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+    "<text x='916' y='30' font-size='13' fill='#3e4550'>" &
+        Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+    "</g>" &
+    "</svg>"
+)

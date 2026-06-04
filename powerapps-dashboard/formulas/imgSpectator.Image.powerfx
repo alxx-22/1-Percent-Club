@@ -1,0 +1,62 @@
+// ============================================================================
+//  SPECTATOR TOUR (NON-gallery).  Control: Image "imgSpectator"
+//  Geometry: X=16  Y=68  Width=420  Height=556   ImagePosition=Fit
+//  Visible:  varRole = "spectator"   (email not in User Email or Manager Sponsor Email)
+//  Slowly auto-scrolls through every crew's points breakdown (CSS marquee).
+//  Scroll distance/speed scale with the number of crews. Honours reduced-motion.
+// ============================================================================
+With(
+    { n: CountRows( colCrewBreak ) },
+    With(
+        { dist: Max( 0, n*160 - 10 - 510 ), dur: Max( 24, n*4 ) },
+        "data:image/svg+xml;utf8," & EncodeUrl(
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 556' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+            "<style>.scrl{animation:scrl " & Text(dur) & "s linear infinite alternate}@keyframes scrl{from{transform:translateY(0)}to{transform:translateY(-" & Text(dist) & "px)}}@media(prefers-reduced-motion:reduce){.scrl{animation:none}}</style>" &
+            "<clipPath id='spec'><rect x='6' y='36' width='408' height='510' rx='12'/></clipPath>" &
+            "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>ALL CREWS &#8212; LIVE TOUR</text>" &
+            "<circle cx='408' cy='12' r='4' fill='#01a982' class='brz'/>" &
+            "<text x='398' y='16' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>auto</text>" &
+            "<rect x='4' y='34' width='412' height='514' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+            "<g clip-path='url(#spec)'><g class='scrl'>" &
+            Concat(
+                Sort( colCrewBreak, Rank ),
+                With(
+                    { yc: 42 + (Rank-1)*160,
+                      medal: Switch( Rank, 1, "#E0A300", 2, "#8C99A4", 3, "#B5742E", "#606a70" ),
+                      mbg:   Switch( Rank, 1, "#FBF1D6", 2, "#EDEFF1", 3, "#F4E9DD", "#f2f3f4" ),
+                      mx:    Max( 1, NewCC, CapEng, CapOrd, CC, Accred, IP ),
+                      v1:NewCC, v2:CapEng, v3:CapOrd, v4:CC, v5:Accred, v6:IP, tot:Total, rk:Rank, nm:CrewName },
+                    "<g transform='translate(12," & Text(yc) & ")'>" &
+                    "<rect x='0' y='0' width='396' height='150' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+                    "<circle cx='26' cy='28' r='15' fill='" & mbg & "' stroke='" & medal & "' stroke-width='1.5'/>" &
+                    "<text x='26' y='29' font-size='13' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rk) & "</text>" &
+                    "<text x='50' y='24' font-size='16' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+                    "<text x='50' y='40' font-size='10.5' fill='#606a70'>rank #" & Text(rk) & "</text>" &
+                    "<text x='382' y='26' font-size='24' font-weight='700' fill='#006750' text-anchor='end'>" & Text(tot) & "</text>" &
+                    "<text x='382' y='40' font-size='8.5' font-weight='600' letter-spacing='.5' fill='#606a70' text-anchor='end'>TOTAL POINTS</text>" &
+                    Concat(
+                        Table(
+                            { i:0, lbl:"New CC Logo / IB Upsell", val:v1, col:"#0070f8" },
+                            { i:1, lbl:"CAP Engagement",          val:v2, col:"#04909d" },
+                            { i:2, lbl:"CAP Orders Booked",       val:v3, col:"#009a71" },
+                            { i:3, lbl:"Customer Centricity",     val:v4, col:"#7764fc" },
+                            { i:4, lbl:"Accreditation Race",      val:v5, col:"#cc54a4" },
+                            { i:5, lbl:"IP Push",                 val:v6, col:"#d25f4b" }
+                        ),
+                        With(
+                            { yy: 54 + i*15 },
+                            "<circle cx='14' cy='" & Text(yy+5) & "' r='3' fill='" & col & "'/>" &
+                            "<text x='22' y='" & Text(yy+8) & "' font-size='9.5' fill='#3e4550'>" & lbl & "</text>" &
+                            "<rect x='196' y='" & Text(yy+1) & "' width='156' height='7' rx='3.5' fill='#f2f3f4'/>" &
+                            "<rect x='196' y='" & Text(yy+1) & "' width='" & Text( Round( Max( 3, 156*val/mx ), 0 ) ) & "' height='7' rx='3.5' fill='" & col & "'/>" &
+                            "<text x='382' y='" & Text(yy+8) & "' font-size='9.5' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(val) & "</text>"
+                        )
+                    ) &
+                    "</g>"
+                )
+            ) &
+            "</g></g>" &
+            "</svg>"
+        )
+    )
+)

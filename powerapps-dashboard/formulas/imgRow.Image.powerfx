@@ -1,31 +1,33 @@
 // ============================================================================
 //  LEADERBOARD ROW — ranks 4..10 (GALLERY template).
-//  1) Add a blank VERTICAL gallery "galLeaderboard"
-//        galLeaderboard.Items        =  colCrewRest
-//        galLeaderboard.TemplateSize  =  84            // row height in app units
-//        galLeaderboard.TemplatePadding = 0
-//  2) Inside the gallery template add ONE Image "imgRow":
-//        imgRow.X = 0 : imgRow.Y = 0
-//        imgRow.Width  = Parent.TemplateWidth
-//        imgRow.Height = Parent.TemplateHeight
-//        imgRow.ImagePosition = ImagePosition.Fit
-//        imgRow.Image = (the formula below)
+//  Gallery "galLeaderboard":  Items = colCrewRest
+//        X=452  Y=412  Width=668  Height=212   TemplateSize=30  TemplatePadding=0
+//  Inside template, Image "imgRow":  X=0 Y=0  Width=Parent.TemplateWidth
+//        Height=Parent.TemplateHeight  ImagePosition=Fit  Image = (below)
+//  The viewer's crew row is tinted + flagged (varMyCrew / varMyCrewTag).
 // ============================================================================
 "data:image/svg+xml;utf8," & EncodeUrl(
-    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 920 84' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
     "<g class='rw' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) ) & "ms'>" &
-    "<rect x='4' y='8' width='912' height='64' rx='12' fill='#ffffff' stroke='#d4d8db'/>" &
-    "<rect x='22' y='18' width='44' height='44' rx='10' fill='#f2f3f4'/>" &
-    "<text x='44' y='40' font-size='20' font-weight='700' fill='#292d3a' text-anchor='middle' dominant-baseline='central'>" & Text(ThisItem.Rank) & "</text>" &
-    "<text x='86' y='37' font-size='21' font-weight='700' fill='#292d3a'>" & ThisItem.CrewName & "</text>" &
-    "<rect x='86' y='50' width='460' height='7' rx='3.5' fill='#f2f3f4'/>" &
-    "<rect x='86' y='50' width='" & Text( Round( Max( 6, 460 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) ) & "' height='7' rx='3.5' fill='#01a982' class='gx' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) + 250 ) & "ms'/>" &
-    "<line x1='735' y1='22' x2='735' y2='58' stroke='#d4d8db'/>" &
-    "<text x='820' y='44' font-size='30' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(ThisItem.CrewTotal) & "</text>" &
-    "<text x='828' y='44' font-size='13' font-weight='600' fill='#606a70'>pts</text>" &
-    If( ThisItem.CrewPending > 0,
-        "<text x='890' y='62' font-size='12.5' font-weight='600' fill='#d36d00' text-anchor='end'>+" & Text(ThisItem.CrewPending) & " pending</text>",
-        "<text x='890' y='62' font-size='12.5' fill='#606a70' text-anchor='end'>no pending</text>"
+    With(
+        { m: !IsBlank(varMyCrew) && ThisItem.Crew = varMyCrew },
+        "<rect x='2' y='2' width='664' height='26' rx='8' fill='" & If(m,"#d1ffee","#ffffff") & "' stroke='" & If(m,"#01a982","#d4d8db") & "' stroke-width='" & If(m,"2","1") & "'/>" &
+        If( m, "<rect x='2' y='2' width='5' height='26' rx='2.5' fill='#01a982'/>", "" ) &
+        "<rect x='10' y='5' width='20' height='20' rx='6' fill='" & If(m,"#01a982","#f2f3f4") & "'/>" &
+        "<text x='20' y='15' font-size='11' font-weight='700' fill='" & If(m,"#ffffff","#292d3a") & "' text-anchor='middle' dominant-baseline='central'>" & Text(ThisItem.Rank) & "</text>" &
+        "<text x='40' y='19' font-size='13' font-weight='700' fill='" & If(m,"#006750","#292d3a") & "'>" & ThisItem.CrewName & "</text>" &
+        If( m,
+            "<rect x='" & Text(40 + Len(ThisItem.CrewName)*7 + 8) & "' y='8' width='" & Text(7*Len(varMyCrewTag)+16) & "' height='14' rx='7' fill='#d1ffee' stroke='#01a982'/>" &
+            "<text x='" & Text(40 + Len(ThisItem.CrewName)*7 + 8 + (7*Len(varMyCrewTag)+16)/2) & "' y='15' font-size='8.5' font-weight='700' letter-spacing='.3' fill='#006750' text-anchor='middle' dominant-baseline='central'>" & varMyCrewTag & "</text>",
+            "" )
     ) &
-    "</g></svg>"
+    "<rect x='300' y='12' width='150' height='6' rx='3' fill='#f2f3f4'/>" &
+    "<rect x='300' y='12' width='" & Text( Round( Max( 4, 150 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) ) & "' height='6' rx='3' fill='#01a982' class='gx' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) + 250 ) & "ms'/>" &
+    "<text x='598' y='20' font-size='16' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(ThisItem.CrewTotal) & "</text>" &
+    "<text x='602' y='20' font-size='10' font-weight='600' fill='#606a70'>pts</text>" &
+    If( ThisItem.CrewPending > 0,
+        "<text x='658' y='20' font-size='10' font-weight='600' fill='#d36d00' text-anchor='end'>+" & Text(ThisItem.CrewPending) & "</text>",
+        "" ) &
+    "</g>" &
+    "</svg>"
 )
