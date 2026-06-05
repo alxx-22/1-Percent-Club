@@ -1,0 +1,7 @@
+// ============================================================================
+//  btnEnter.OnSelect  —  guaranteed manual fallback on the landing screen.
+//  A normal Button ("View dashboard"); tapping it navigates to the dashboard
+//  (by then the data has loaded, so it builds correctly — the exact thing that
+//  already works for you). Keep this even if you use tmrGo, as a safety net.
+// ============================================================================
+Navigate( scrDashboard, ScreenTransition.Fade )

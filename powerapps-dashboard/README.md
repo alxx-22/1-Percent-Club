@@ -26,7 +26,10 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 | Control | Type | Property | Formula |
 |---|---|---|---|
 | **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — `Set(varReady,false)` |
-| **Screen** | — | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) — **builds all data** |
+| `imgLoading` (on **scrLoading**, the 1st screen) | Image | `Image` | [`imgLoading.Image.powerfx`](formulas/imgLoading.Image.powerfx) |
+| `tmrGo` (on scrLoading) | Timer | `OnTimerEnd` | [`tmrGo.OnTimerEnd.powerfx`](formulas/tmrGo.OnTimerEnd.powerfx) — auto‑enter when data ready |
+| `btnEnter` (on scrLoading) | Button | `OnSelect` | [`btnEnter.OnSelect.powerfx`](formulas/btnEnter.OnSelect.powerfx) — manual fallback |
+| **scrDashboard** | Screen | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) — **builds all data** |
 | `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/imgRibbon.Image.powerfx) |
 | `imgMyPoints` | Image | `Image` | [`imgMyPoints.Image.powerfx`](formulas/imgMyPoints.Image.powerfx) |
 | `imgCrewGrid` | Image | `Image` | [`imgCrewGrid.Image.powerfx`](formulas/imgCrewGrid.Image.powerfx) |
@@ -65,25 +68,32 @@ its rectangle's aspect, so it fills with no letterboxing.
 `imgMyPoints`/`imgCrewGrid` (member & sponsor) and `imgSpectator` occupy the **same** left
 column and are swapped purely by their `Visible` rule — no screen switching.
 
-### Loads on open — build in `Screen.OnVisible`
+### Loads on open — land on a splash screen, then enter the dashboard
 
-Put the whole data build in **`Screen.OnVisible`** ([`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
-and `App.OnStart` → `Set(varReady,false)`. `OnVisible` runs every time the screen is shown —
-including a **button that navigates to this screen** — so re‑entering always rebuilds with the
-latest data. (This is the "Screen 2 → Screen 1" hop that worked originally, made automatic.)
+The data build lives in **`scrDashboard.OnVisible`** and runs every time the screen is shown —
+**navigating in always builds correctly** (the data is there by then). The only gotcha is the
+*very first* open: `PowerBIIntegration.Data` lands a beat after the screen first appears, so a
+cold open can be blank. Fix it by **opening on a small landing screen** and entering the
+dashboard once data is ready:
 
-> **Do NOT build in a Timer.** Timer controls are unreliable in the Power BI PowerApps visual —
-> a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran).
-> `OnVisible` is the supported path.
->
-> **Two PBI‑visual gotchas handled in `OnVisible`:** (1) a **blank numeric cell throws on read**
-> ("expected 'number' but got 'string'") — so every point cell is read with `IfError(pbi.col,0)`
-> (value → number, blank → 0; `Coalesce`/`Value` can't help, the error is at field access).
-> (2) this environment rejects `GroupBy`/`SortByColumns` **string column names** — so the build
-> uses none, aggregating with `Distinct`/`Filter`/`Sum`/`Sort(<expression>)`/`ForAll` instead.
+1. **`scrLoading`** = the app's **first screen**. Put `imgLoading`
+   ([`imgLoading.Image.powerfx`](formulas/imgLoading.Image.powerfx)) full‑screen — a branded
+   "Loading crew dashboard…" splash with a spinning ring (self‑contained, no data needed).
+2. **Auto‑advance:** Timer `tmrGo` on `scrLoading` (`AutoStart=true`, `Repeat=true`,
+   `Duration=500`), `OnTimerEnd` = [`tmrGo.OnTimerEnd.powerfx`](formulas/tmrGo.OnTimerEnd.powerfx)
+   → `If(CountRows(PowerBIIntegration.Data)>0, Navigate(scrDashboard,…))`. The instant data
+   arrives it enters the dashboard, whose `OnVisible` then builds with data present.
+3. **Guaranteed fallback:** a Button `btnEnter` ("View dashboard"),
+   `OnSelect` = [`btnEnter.OnSelect.powerfx`](formulas/btnEnter.OnSelect.powerfx). If timers don't
+   fire in your visual, one tap still works — exactly the "navigate in" path that already works.
 
-**Optional loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew
-data…") with `Visible = !varReady` cover the page until `OnVisible` sets `varReady = true`.
+![loading splash](previews/loading.png)
+
+> **Build gotchas already handled in `OnVisible`:** (1) a **blank numeric cell throws on read**
+> ("expected 'number' but got 'string'") — every point cell is read with `IfError(pbi.col,0)`
+> (`Coalesce`/`Value` can't help; the error is at field access). (2) this environment rejects
+> `GroupBy`/`SortByColumns` **string column names** — so the build uses
+> `Distinct`/`Filter`/`Sum`/`Sort(<expression>)`/`ForAll` instead.
 
 #### Still blank? Add the diagnostic labels
 Add Labels with `Text =` [`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx) and

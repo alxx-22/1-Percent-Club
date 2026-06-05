@@ -1,0 +1,12 @@
+// ============================================================================
+//  tmrGo.OnTimerEnd  —  auto-advance from the landing screen to the dashboard
+//  the instant Power BI has delivered data. Put this Timer on "scrLoading":
+//        AutoStart = true   Repeat = true   Duration = 500   Visible = true
+//  When data is present, navigate to the dashboard; its OnVisible then builds
+//  with the data already there (the same "navigate in" path that works for you).
+//  If timers don't fire in your visual, the manual "Enter" button still works.
+// ============================================================================
+If(
+    CountRows( PowerBIIntegration.Data ) > 0,
+    Navigate( scrDashboard, ScreenTransition.Fade )
+)
