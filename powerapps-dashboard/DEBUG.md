@@ -1,19 +1,19 @@
 # Debug: dashboard shows but is blank (0 people / 0 crews)
 
-> **CONFIRMED ROOT CAUSE & FIX.** `PowerBIIntegration.Data` arrives with 86 rows and the
-> identity columns (Name, Crew, emails) read fine, but the **point columns throw on blank
-> cells** — a blank number arrives as `""` and just *reading* it errors ("expected 'number'
-> but got 'string'"). The per‑column error counts prove it (blank‑heavy columns error on every
-> row). `Coalesce()/Value()` can't catch it because the error is at field **access**.
+> **CONFIRMED ROOT CAUSES & FIX** (both handled in the current
+> [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)):
+> 1. **Blank numeric cells throw on read.** A blank point cell arrives as `""`; just *reading*
+>    it errors ("expected 'number' but got 'string'"). The per‑column error counts prove it
+>    (blank‑heavy columns error on every row). Fix: read each point cell with
+>    **`IfError( pbi.col, 0 )`** — value → number, blank → 0. (`Coalesce`/`Value` can't help; the
+>    error is at field **access**.)
+> 2. **This environment rejects `GroupBy` / `SortByColumns` string column names**
+>    ("expected identifier name", which cascades into "name isn't valid"). Fix: the build uses
+>    **no string column‑name functions** — only `Distinct` / `Filter` / `Sum` /
+>    `Sort(<expression>)` / `ForAll`.
 >
-> **Fix (in `Screen_OnVisible`): read every point cell with `IfError( pbi.col, 0 )`** — value
-> rows return the number, blank rows return 0. Identity columns are read normally.
-> Also: `GroupBy/AddColumns` column names MUST use **double quotes** (`"Crew"`, `"GroupData"`) —
-> single quotes are a column reference and silently break the whole `OnVisible`.
->
-> Use the current [`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)
-> verbatim. After it, `colMembers = 86`, `colCrew = 10`; `alex.cohen@hpe.com` (not in the data)
-> correctly resolves to `varRole = spectator` → the All‑Crews tour fills in.
+> Paste the current `Screen_OnVisible.powerfx` **verbatim**. After it: `colMembers = 86`,
+> `colCrew = 10`; `alex.cohen@hpe.com` (not in the data) → `varRole = spectator` (the live tour).
 
 
 Add **two Labels** to the dashboard screen and read them in Power BI. They tell us

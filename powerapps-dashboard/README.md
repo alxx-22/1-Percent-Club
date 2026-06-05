@@ -76,11 +76,11 @@ latest data. (This is the "Screen 2 → Screen 1" hop that worked originally, ma
 > a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran).
 > `OnVisible` is the supported path.
 >
-> **Type safety:** in `PowerBIIntegration.Data`, a **blank numeric cell throws on read**
-> ("expected 'number' but got 'string'"). `OnVisible` reads every point cell with
-> `IfError(pbi.col, 0)` (value → number, blank → 0) — `Coalesce`/`Value` can't help because the
-> error is at field access. `GroupBy`/`AddColumns` names use **double quotes**; single quotes
-> compile as column refs and silently break `OnVisible`.
+> **Two PBI‑visual gotchas handled in `OnVisible`:** (1) a **blank numeric cell throws on read**
+> ("expected 'number' but got 'string'") — so every point cell is read with `IfError(pbi.col,0)`
+> (value → number, blank → 0; `Coalesce`/`Value` can't help, the error is at field access).
+> (2) this environment rejects `GroupBy`/`SortByColumns` **string column names** — so the build
+> uses none, aggregating with `Distinct`/`Filter`/`Sum`/`Sort(<expression>)`/`ForAll` instead.
 
 **Optional loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew
 data…") with `Visible = !varReady` cover the page until `OnVisible` sets `varReady = true`.

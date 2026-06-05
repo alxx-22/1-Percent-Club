@@ -1,16 +1,13 @@
 // ============================================================================
-//  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA (put it here, not in a Timer).
+//  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA.
 //
-//  ROOT CAUSE this fixes: in PowerBIIntegration.Data the point columns are
-//  number-typed, but a BLANK cell arrives as "" — and just *reading* that cell
-//  throws ("expected 'number' but got 'string'"). Coalesce()/Value() can't help
-//  because the error happens at field access. So every point cell is read with
-//  IfError( pbi.col, 0 )  — value rows return the number, blank rows return 0.
-//  (Confirmed by the per-column error counts: blank-heavy columns errored most.)
-//
-//  NOTE: GroupBy / AddColumns column names below MUST be in DOUBLE quotes
-//  ("Crew","GroupData",...). Single quotes ('Crew') are a column reference and
-//  will fail to compile, which silently stops the whole OnVisible.
+//  Two things this version is hardened against (both seen in this app):
+//   1) Reading a BLANK numeric cell from PowerBIIntegration.Data throws
+//      ("expected 'number' but got 'string'"). So every point cell is read with
+//      IfError( pbi.col, 0 )  — value rows keep the number, blanks become 0.
+//   2) Your environment rejects GroupBy / SortByColumns string column names
+//      ("expected identifier name"). So this uses NO string column-name
+//      functions — only Distinct / Filter / Sum / Sort(<expression>) / ForAll.
 // ============================================================================
 
 // 1) members (typed + totals) ---------------------------------------------
@@ -49,26 +46,36 @@ ClearCollect(
     )
 );
 
-// 2) crew aggregates + ranking --------------------------------------------
+// 2) crew totals (NO GroupBy) — one row per distinct Crew -----------------
 ClearCollect(
     colCrewAgg,
-    AddColumns(
-        GroupBy( colMembers, "Crew", "GroupData" ),
-        "CrewTotal",   Sum( GroupData, MemberTotal ),
-        "CrewPending", Sum( GroupData, MemberPending ),
-        "CrewSize",    CountRows( GroupData )
+    ForAll(
+        Distinct( colMembers, Crew ) As d,
+        With(
+            { f: Filter( colMembers, Crew = d.Value ) },
+            { Crew:        d.Value,
+              CrewTotal:   Sum( f, MemberTotal ),
+              CrewPending: Sum( f, MemberPending ),
+              CrewSize:    CountRows( f ) }
+        )
     )
 );
+
+// 2b) rank them (NO SortByColumns) — key = total desc, lower Crew breaks ties
 ClearCollect(
     colCrew,
     ForAll(
         Sequence( CountRows( colCrewAgg ) ),
         With(
             { row: Last( FirstN(
-                       SortByColumns( colCrewAgg, "CrewTotal", SortOrder.Descending, "Crew", SortOrder.Ascending ),
+                       Sort( colCrewAgg, CrewTotal - Crew/1000, SortOrder.Descending ),
                        Value )) },
-            { Rank: Value, Crew: row.Crew, CrewName: "Crew " & row.Crew,
-              CrewTotal: row.CrewTotal, CrewPending: row.CrewPending, CrewSize: row.CrewSize }
+            { Rank:        Value,
+              Crew:        row.Crew,
+              CrewName:    "Crew " & row.Crew,
+              CrewTotal:   row.CrewTotal,
+              CrewPending: row.CrewPending,
+              CrewSize:    row.CrewSize }
         )
     )
 );
@@ -98,28 +105,24 @@ Set( varRibbonChip,
 ClearCollect(
     colCrewBreak,
     ForAll(
-        Sort( colCrew, Rank ),
+        Sort( colCrew, Rank ) As c,
         With(
-            { cnum: Crew, rk: Rank, cnm: CrewName, ct: CrewTotal, cp: CrewPending },
-            With(
-                { f: Filter( colMembers, Crew = cnum ) },
-                { Rank: rk, Crew: cnum, CrewName: cnm, Total: ct, Pending: cp,
-                  NewCC:  Sum( f, IBNS + NewCCLogo ),
-                  CapEng: Sum( f, CapReq ),
-                  CapOrd: Sum( f, CapWon ),
-                  CC:     Sum( f, CustCent ),
-                  Accred: Sum( f, MgrPts ),
-                  IP:     Sum( f, IPgl ) }
-            )
+            { f: Filter( colMembers, Crew = c.Crew ) },
+            { Rank: c.Rank, Crew: c.Crew, CrewName: c.CrewName, Total: c.CrewTotal, Pending: c.CrewPending,
+              NewCC:  Sum( f, IBNS + NewCCLogo ),
+              CapEng: Sum( f, CapReq ),
+              CapOrd: Sum( f, CapWon ),
+              CC:     Sum( f, CustCent ),
+              Accred: Sum( f, MgrPts ),
+              IP:     Sum( f, IPgl ) }
         )
     )
 );
 
-// 5) viewer's crew members (grid) -----------------------------------------
+// 5) viewer's crew members (grid), 0-based Idx ----------------------------
 ClearCollect(
     colMyCrewSorted,
-    SortByColumns( Filter( colMembers, Crew = varMyCrew ),
-                   "MemberTotal", SortOrder.Descending, "Name", SortOrder.Ascending )
+    Sort( Filter( colMembers, Crew = varMyCrew ), MemberTotal, SortOrder.Descending )
 );
 ClearCollect(
     colMyCrew,
