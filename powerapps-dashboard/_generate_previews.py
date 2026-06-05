@@ -74,6 +74,7 @@ CSS = (
     ".rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}"
     ".ring{transform-box:fill-box;transform-origin:center;animation:ring 2.8s ease-out infinite}"
     ".brz{animation:brz 2.6s ease-in-out infinite}"
+    ".bob{transform-box:fill-box;transform-origin:center;animation:bob 2.4s ease-in-out infinite}"
     "@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}"
     "@keyframes fo{from{opacity:0}to{opacity:1}}"
     "@keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}"
@@ -81,7 +82,8 @@ CSS = (
     "@keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}"
     "@keyframes ring{0%{opacity:.45;transform:scale(.75)}70%{opacity:0;transform:scale(2)}100%{opacity:0;transform:scale(2)}}"
     "@keyframes brz{0%,100%{opacity:.9}50%{opacity:.45}}"
-    "@media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.ring,.brz,.scrl{animation:none}}"
+    "@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-2px) rotate(4deg)}}"
+    "@media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.ring,.brz,.scrl,.bob{animation:none}}"
     "</style>"
 )
 
@@ -262,9 +264,20 @@ def row_inner(r, leader_pts, my_crew=None, tag="YOUR CREW"):
         g.append(f"<rect x='{nx:.0f}' y='8' width='{tw}' height='14' rx='7' fill='{C['greenTint']}' stroke='{C['brand']}'/>")
         g.append(f"<text x='{nx+tw/2:.0f}' y='15' font-family='{FONT}' font-size='8.5' font-weight='700' letter-spacing='.3' fill='{C['greenDark']}' text-anchor='middle' dominant-baseline='central'>{esc(tag)}</text>")
     pct = (float(r['pts']) / leader_pts) if leader_pts else 0
-    bx, bw = 300, 150
-    g.append(f"<rect x='{bx}' y='12' width='{bw}' height='6' rx='3' fill='{C['contrast']}'/>")
-    g.append(f"<rect x='{bx}' y='12' width='{max(4,bw*pct):.0f}' height='6' rx='3' fill='{C['brand']}' class='gx' style='animation-delay:{d+0.25:.2f}s'/>")
+    bx, bw = 190, 358
+    fw = max(4, bw * pct)
+    shipx = bx + fw
+    g.append(f"<rect x='{bx}' y='15' width='{bw}' height='7' rx='3.5' fill='#eef1f3'/>")              # sea lane
+    g.append(f"<rect x='{bx}' y='15' width='{fw:.0f}' height='7' rx='3.5' fill='{C['brand']}' class='gx' style='animation-delay:{d+0.25:.2f}s'/>")  # water
+    g.append(f"<g class='fo' style='animation-delay:{d+0.5:.2f}s' transform='translate({shipx:.0f},15)'>")
+    g.append("<path d='M-12,5 q3,-3 6,0 t6,0 t6,0' fill='none' stroke='#ffffff' stroke-width='1.4' opacity='.7'/>")  # bow wave
+    g.append("<g class='bob'>")
+    g.append("<path d='M-8,-1 L8,-1 L5,4 L-5,4 Z' fill='#292d3a'/>")                                  # hull
+    g.append("<line x1='0' y1='-1' x2='0' y2='-12' stroke='#292d3a' stroke-width='1.4'/>")           # mast
+    g.append("<path d='M1.5,-11 L7,-2 L1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>")  # mainsail
+    g.append("<path d='M-1.5,-9 L-5.5,-2 L-1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>")  # jib
+    g.append(f"<path d='M0,-12 L4,-11 L0,-10 Z' fill='{C['brand']}'/>")                               # pennant
+    g.append("</g></g>")
     g.append(f"<text x='{W-70}' y='20' font-family='{FONT}' font-size='16' font-weight='700' fill='{C['strong']}' text-anchor='end'>{esc(r['pts'])}</text>")
     g.append(f"<text x='{W-66}' y='20' font-family='{FONT}' font-size='10' font-weight='600' fill='{C['weak']}'>pts</text>")
     if r['pending'] and int(r['pending']) > 0:

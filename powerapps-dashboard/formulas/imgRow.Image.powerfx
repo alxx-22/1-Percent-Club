@@ -21,8 +21,22 @@
             "<text x='" & Text(40 + Len(ThisItem.CrewName)*7 + 8 + (7*Len(varMyCrewTag)+16)/2) & "' y='15' font-size='8.5' font-weight='700' letter-spacing='.3' fill='#006750' text-anchor='middle' dominant-baseline='central'>" & varMyCrewTag & "</text>",
             "" )
     ) &
-    "<rect x='300' y='12' width='150' height='6' rx='3' fill='#f2f3f4'/>" &
-    "<rect x='300' y='12' width='" & Text( Round( Max( 4, 150 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) ) & "' height='6' rx='3' fill='#01a982' class='gx' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) + 250 ) & "ms'/>" &
+    // ---- progress = a ship sailing a wave (water fills, ship rides the leading edge) ----
+    With(
+        { d:  Max( 0, (ThisItem.Rank-4)*80 ),
+          fw: Round( Max( 4, 358 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) },
+        "<rect x='190' y='15' width='358' height='7' rx='3.5' fill='#eef1f3'/>" &
+        "<rect x='190' y='15' width='" & Text(fw) & "' height='7' rx='3.5' fill='#01a982' class='gx' style='animation-delay:" & Text(d+250) & "ms'/>" &
+        "<g class='fo' style='animation-delay:" & Text(d+500) & "ms' transform='translate(" & Text(190+fw) & ",15)'>" &
+        "<path d='M-12,5 q3,-3 6,0 t6,0 t6,0' fill='none' stroke='#ffffff' stroke-width='1.4' opacity='.7'/>" &
+        "<g class='bob'>" &
+        "<path d='M-8,-1 L8,-1 L5,4 L-5,4 Z' fill='#292d3a'/>" &
+        "<line x1='0' y1='-1' x2='0' y2='-12' stroke='#292d3a' stroke-width='1.4'/>" &
+        "<path d='M1.5,-11 L7,-2 L1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>" &
+        "<path d='M-1.5,-9 L-5.5,-2 L-1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>" &
+        "<path d='M0,-12 L4,-11 L0,-10 Z' fill='#01a982'/>" &
+        "</g></g>"
+    ) &
     "<text x='598' y='20' font-size='16' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(ThisItem.CrewTotal) & "</text>" &
     "<text x='602' y='20' font-size='10' font-weight='600' fill='#606a70'>pts</text>" &
     If( ThisItem.CrewPending > 0,
