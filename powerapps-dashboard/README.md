@@ -76,10 +76,11 @@ latest data. (This is the "Screen 2 → Screen 1" hop that worked originally, ma
 > a timer‑based build leaves the page blank (`varRole` stays empty = the build never ran).
 > `OnVisible` is the supported path.
 >
-> **Type safety:** `OnVisible` reads every field through text first — `Value(field & "")` — so a
-> numeric column that Power BI delivers as text can't break the load (the `JSON parsing error,
-> expected 'number' but got 'string'` symptom). If it persists, set those point columns to
-> **Whole Number** in the Power BI model.
+> **Type safety:** in `PowerBIIntegration.Data`, a **blank numeric cell throws on read**
+> ("expected 'number' but got 'string'"). `OnVisible` reads every point cell with
+> `IfError(pbi.col, 0)` (value → number, blank → 0) — `Coalesce`/`Value` can't help because the
+> error is at field access. `GroupBy`/`AddColumns` names use **double quotes**; single quotes
+> compile as column refs and silently break `OnVisible`.
 
 **Optional loading state**: a full‑screen `recLoading` rectangle + `lblLoading` ("Loading crew
 data…") with `Visible = !varReady` cover the page until `OnVisible` sets `varReady = true`.

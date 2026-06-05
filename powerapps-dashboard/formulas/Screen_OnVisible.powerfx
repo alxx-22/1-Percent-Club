@@ -1,39 +1,40 @@
 // ============================================================================
 //  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA (put it here, not in a Timer).
 //
-//  Reads every field through TEXT first  ->  Value( field & "" )  so Power BI
-//  type quirks can't break the load. Symptom this fixes: rows>0 but colMembers=0
-//  plus a red "JSON parsing error, expected 'number' but got 'string'" — that
-//  means a numeric column is arriving as text; coercing through text avoids it.
-//  We also read only the columns we use, so an unrelated bad column is ignored.
+//  ROOT CAUSE this fixes: in PowerBIIntegration.Data the point columns are
+//  number-typed, but a BLANK cell arrives as "" — and just *reading* that cell
+//  throws ("expected 'number' but got 'string'"). Coalesce()/Value() can't help
+//  because the error happens at field access. So every point cell is read with
+//  IfError( pbi.col, 0 )  — value rows return the number, blank rows return 0.
+//  (Confirmed by the per-column error counts: blank-heavy columns errored most.)
 //
-//  If it STILL errors after this, one of the POINT columns is typed as Text in
-//  the Power BI model — set those columns to Whole Number in Power BI (Modeling
-//  > Data type) and reload. See DEBUG.md.
+//  NOTE: GroupBy / AddColumns column names below MUST be in DOUBLE quotes
+//  ("Crew","GroupData",...). Single quotes ('Crew') are a column reference and
+//  will fail to compile, which silently stops the whole OnVisible.
 // ============================================================================
 
 // 1) members (typed + totals) ---------------------------------------------
 ClearCollect(
     colMembers,
     ForAll(
-        PowerBIIntegration.Data,
+        PowerBIIntegration.Data As pbi,
         With(
-            { ib:   Coalesce(Value(ThisRecord.'IB & NS Points' & ""),0),
-              mgr:  Coalesce(Value(ThisRecord.'Manager Sponsor Points' & ""),0),
-              ncc:  Coalesce(Value(ThisRecord.'New CC Logo Points' & ""),0),
-              cw:   Coalesce(Value(ThisRecord.'Cap Won Points' & ""),0),
-              cr:   Coalesce(Value(ThisRecord.'Cap Requests' & ""),0),
-              cust: Coalesce(Value(ThisRecord.'Customer Centricity Points' & ""),0),
-              ipg:  Coalesce(Value(ThisRecord.'IP in GL points' & ""),0),
-              cwp:  Coalesce(Value(ThisRecord.'Cap Won Points Pending' & ""),0),
-              crp:  Coalesce(Value(ThisRecord.'Cap Requests Pending' & ""),0),
-              ccp:  Coalesce(Value(ThisRecord.'Customer Centricity Points Pending' & ""),0) },
+            { ib:   IfError(pbi.'IB & NS Points', 0),
+              mgr:  IfError(pbi.'Manager Sponsor Points', 0),
+              ncc:  IfError(pbi.'New CC Logo Points', 0),
+              cw:   IfError(pbi.'Cap Won Points', 0),
+              cr:   IfError(pbi.'Cap Requests', 0),
+              cust: IfError(pbi.'Customer Centricity Points', 0),
+              ipg:  IfError(pbi.'IP in GL points', 0),
+              cwp:  IfError(pbi.'Cap Won Points Pending', 0),
+              crp:  IfError(pbi.'Cap Requests Pending', 0),
+              ccp:  IfError(pbi.'Customer Centricity Points Pending', 0) },
             {
-                Name:          ThisRecord.Name & "",
-                Crew:          Coalesce(Value(ThisRecord.Crew & ""),0),
-                Email:         Lower(ThisRecord.'User Email' & ""),
-                SponsorEmail:  Lower(ThisRecord.'Manager Sponsor Email' & ""),
-                Sponsor:       ThisRecord.'Manager Sponsor' & "",
+                Name:          pbi.Name & "",
+                Crew:          IfError(Value(pbi.Crew & ""), 0),
+                Email:         Lower(pbi.'User Email' & ""),
+                SponsorEmail:  Lower(pbi.'Manager Sponsor Email' & ""),
+                Sponsor:       pbi.'Manager Sponsor' & "",
                 IBNS:          ib,
                 MgrPts:        mgr,
                 NewCCLogo:     ncc,

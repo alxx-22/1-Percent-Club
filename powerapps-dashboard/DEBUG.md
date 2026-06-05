@@ -1,19 +1,19 @@
 # Debug: dashboard shows but is blank (0 people / 0 crews)
 
-> **Confirmed causes & fixes**
-> 1. **`colMembers = 0` and `varRole` is _blank_** → the build never ran (you built in a Timer;
->    timers are unreliable in the PBI visual). Put the whole build in **`Screen.OnVisible`**
->    ([`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)).
-> 2. **`colMembers = 0` with a red `JSON parsing error, expected 'number' but got 'string'`** →
->    a numeric column is arriving from Power BI as **text**. The current `Screen_OnVisible`
->    reads every field through text first — `Value(field & "")` — which fixes this. If it STILL
->    errors, set those point columns to **Whole Number** in the Power BI model (Modeling → Data
->    type) and reload.
-> 3. **`Index … empty table`** is only a side‑effect of an empty `colCrew`; `imgPodium` now uses
->    `First()/Last(FirstN())` so it no longer errors while loading.
+> **CONFIRMED ROOT CAUSE & FIX.** `PowerBIIntegration.Data` arrives with 86 rows and the
+> identity columns (Name, Crew, emails) read fine, but the **point columns throw on blank
+> cells** — a blank number arrives as `""` and just *reading* it errors ("expected 'number'
+> but got 'string'"). The per‑column error counts prove it (blank‑heavy columns error on every
+> row). `Coalesce()/Value()` can't catch it because the error is at field **access**.
 >
-> After the fix `lblDebug` should read `colMembers = 86`, `colCrew = 10`, and (for an email not in
-> the data, e.g. `alex.cohen@hpe.com`) `varRole = spectator` → the auto‑scroll tour fills in.
+> **Fix (in `Screen_OnVisible`): read every point cell with `IfError( pbi.col, 0 )`** — value
+> rows return the number, blank rows return 0. Identity columns are read normally.
+> Also: `GroupBy/AddColumns` column names MUST use **double quotes** (`"Crew"`, `"GroupData"`) —
+> single quotes are a column reference and silently break the whole `OnVisible`.
+>
+> Use the current [`formulas/Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)
+> verbatim. After it, `colMembers = 86`, `colCrew = 10`; `alex.cohen@hpe.com` (not in the data)
+> correctly resolves to `varRole = spectator` → the All‑Crews tour fills in.
 
 
 Add **two Labels** to the dashboard screen and read them in Power BI. They tell us
