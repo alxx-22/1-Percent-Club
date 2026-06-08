@@ -1,0 +1,30 @@
+// ============================================================================
+//  Power BI MEASURE — "IP in GL points"  (tiered / bracketed)
+//  Replaces the old continuous  *1000  version with point bands based on the
+//  raw SUM of 'IP GL'[May] for the current user:
+//        value = 0            -> 0   (no IP push / blank)
+//        0  < value < 0.1     -> 10
+//        0.1 <= value < 0.25  -> 20
+//        0.25 <= value < 0.4  -> 30
+//        0.4 <= value < 0.5   -> 50
+//        value >= 0.5         -> 75
+//  (Boundaries: lower-inclusive, upper-exclusive; 0.5 and above = 75.)
+// ============================================================================
+IP in GL points =
+VAR thisuser = Teams[User Email]
+VAR v =
+    CALCULATE ( SUM ( 'IP GL'[May] ), 'IP GL'[Email] = thisuser )
+RETURN
+    SWITCH (
+        TRUE (),
+        ISBLANK ( v ) || v <= 0, 0,
+        v < 0.1,  10,
+        v < 0.25, 20,
+        v < 0.4,  30,
+        v < 0.5,  50,
+        75
+    )
+
+// If you DO want an exact 0 (a row that sums to 0, not blank) to score 10
+// instead of 0, change the first line of the SWITCH to:
+//        ISBLANK ( v ), 0,

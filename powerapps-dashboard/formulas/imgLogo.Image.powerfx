@@ -1,0 +1,29 @@
+// ============================================================================
+//  LOGO for an Image control.  Your SVG just scales a PNG (334x502 * 0.48 =
+//  160.32 x 240.96), so there are two equivalent ways to use it in Power Fx.
+//  In BOTH, replace  <<<BASE64>>>  with the long string from your file that
+//  comes AFTER  data:image/png;base64,  (everything up to the closing quote).
+//  Set the Image control:  ImagePosition = ImagePosition.Fit, and size it to a
+//  ~2:3 box (e.g. Width=160, Height=241) to keep the aspect.
+// ============================================================================
+
+// ---- OPTION A (RECOMMENDED): use the PNG directly --------------------------
+//  Simplest and most reliable in the Power BI / PowerApps webview — no SVG
+//  wrapper, no EncodeUrl, no nested data-URI. The SVG added nothing but scaling,
+//  which ImagePosition=Fit already does.
+"data:image/png;base64," & "<<<BASE64>>>"
+
+
+// ---- OPTION B: keep it as an SVG (if you must wrap it) ---------------------
+//  Same picture, wrapped in your SVG. EncodeUrl percent-encodes the whole
+//  markup (incl. the base64 + / = chars) and the webview decodes it back, so it
+//  round-trips fine. Single quotes used for attributes so nothing needs escaping.
+//  (Some PBI-visual webviews are picky about a data-URI image INSIDE a data-URI
+//   SVG; if Option B ever shows blank, use Option A.)
+//
+//  "data:image/svg+xml;utf8," & EncodeUrl(
+//      "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 160.32 240.96'>" &
+//      "<image width='334' height='502' transform='scale(.48)' xlink:href='data:image/png;base64," &
+//      "<<<BASE64>>>" &
+//      "'/></svg>"
+//  )
