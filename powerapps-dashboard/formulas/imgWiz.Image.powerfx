@@ -1,0 +1,71 @@
+// ============================================================================
+//  "WIZ" CHATBOT MASCOT.  Control: Image "imgWiz"
+//  Geometry: any 23:12 box, e.g. Width=460 Height=240 (or 345x180)  ImagePosition=Fit
+//  Transparent background - floats over whatever is behind it.
+//
+//  Sequence:  leans in from the right edge -> waves -> jumps out and lands
+//             -> idle bob + blink + occasional wave, speech bubble cycles
+//             "Hey, I'm Wiz!" / "How can I help?"
+//
+//  The  k=varAnimKey1  comment makes the data-URI change when you bump the
+//  variable (Set(varAnimKey1, varAnimKey1+1)) so the whole intro replays.
+//  Delete that fragment if you don't use varAnimKey1 in your app.
+//  Honours prefers-reduced-motion (settles to the final pose, bubble shown).
+// ============================================================================
+"data:image/svg+xml;utf8, " & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 240' width='460' height='240'>" &
+    "<!-- k=" & varAnimKey1 & " -->" &
+    "<defs><style>" &
+    "@keyframes botEnter{0%{transform:translate(190px,0px) rotate(0deg)}12%{transform:translate(95px,0px) rotate(-14deg)}16%{transform:translate(98px,0px) rotate(-13deg)}60%{transform:translate(98px,0px) rotate(-13deg)}68%{transform:translate(40px,-55px) rotate(-4deg)}76%{transform:translate(0px,10px) rotate(0deg)}82%{transform:translate(0px,-8px) rotate(0deg)}88%{transform:translate(0px,3px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}" &
+    "@keyframes waveIn{0%,14%{transform:rotate(0deg)}20%{transform:rotate(150deg)}26%{transform:rotate(115deg)}32%{transform:rotate(150deg)}38%{transform:rotate(115deg)}44%{transform:rotate(150deg)}50%{transform:rotate(125deg)}58%,100%{transform:rotate(0deg)}}" &
+    "@keyframes idleWave{0%,80%,100%{transform:rotate(0deg)}86%{transform:rotate(140deg)}90%{transform:rotate(112deg)}94%{transform:rotate(140deg)}}" &
+    "@keyframes idleBob{0%,100%{transform:translateY(0px)}50%{transform:translateY(-7px)}}" &
+    "@keyframes blink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.08)}}" &
+    "@keyframes antennaPulse{0%,100%{opacity:0.15}50%{opacity:0.55}}" &
+    "@keyframes shadowIn{0%{opacity:0}100%{opacity:0.22}}" &
+    "@keyframes shadowPulse{0%,100%{transform:scaleX(1)}50%{transform:scaleX(0.9)}}" &
+    "@keyframes bubblePop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}" &
+    "@keyframes msgA{0%,40%{opacity:1}48%,92%{opacity:0}100%{opacity:1}}" &
+    "@keyframes msgB{0%,40%{opacity:0}48%,92%{opacity:1}100%{opacity:0}}" &
+    ".bot{animation:botEnter 4.4s cubic-bezier(0.33,1,0.4,1) both;transform-origin:460px 240px}" &
+    ".bot-idle{animation:idleBob 3.2s ease-in-out 4.6s infinite}" &
+    ".arm-wave{animation:waveIn 4.4s ease-in-out both,idleWave 9s ease-in-out 7s infinite;transform-origin:314px 162px}" &
+    ".eyes{animation:blink 4.5s ease-in-out 4.6s infinite;transform-origin:350px 102px}" &
+    ".ant-glow{animation:antennaPulse 2.4s ease-in-out infinite}" &
+    ".shadow{animation:shadowIn 0.4s ease 3.1s both,shadowPulse 3.2s ease-in-out 4.6s infinite;transform-origin:350px 226px}" &
+    ".bubble{animation:bubblePop 0.5s cubic-bezier(0.22,1,0.36,1) 4.8s both;transform-origin:280px 95px}" &
+    ".msg1{animation:msgA 8s ease-in-out 5.4s infinite}" &
+    ".msg2{animation:msgB 8s ease-in-out 5.4s infinite;opacity:0}" &
+    "@media(prefers-reduced-motion:reduce){.bot,.bot-idle,.arm-wave,.eyes,.ant-glow,.shadow,.bubble,.msg1,.msg2{animation:none}}" &
+    "</style></defs>" &
+    "<ellipse class='shadow' cx='350' cy='226' rx='46' ry='7' fill='#000000' opacity='0.22'/>" &
+    "<g class='bot'><g class='bot-idle'>" &
+    "<g class='arm-wave'>" &
+    "<line x1='314' y1='162' x2='302' y2='190' stroke='#01A982' stroke-width='10' stroke-linecap='round'/>" &
+    "<circle cx='302' cy='192' r='6.5' fill='#00E0AF'/>" &
+    "</g>" &
+    "<line x1='386' y1='162' x2='398' y2='190' stroke='#01A982' stroke-width='10' stroke-linecap='round'/>" &
+    "<circle cx='398' cy='192' r='6.5' fill='#00E0AF'/>" &
+    "<rect x='328' y='204' width='11' height='18' rx='5' fill='#01A982'/>" &
+    "<rect x='361' y='204' width='11' height='18' rx='5' fill='#01A982'/>" &
+    "<rect x='314' y='148' width='72' height='60' rx='16' fill='#01A982'/>" &
+    "<rect x='330' y='162' width='40' height='30' rx='8' fill='#292D3A'/>" &
+    "<text x='350' y='184' font-family='Arial, Helvetica, sans-serif' font-size='17' font-weight='700' fill='#00E0AF' text-anchor='middle'>W</text>" &
+    "<line x1='350' y1='70' x2='350' y2='56' stroke='#01A982' stroke-width='4' stroke-linecap='round'/>" &
+    "<circle class='ant-glow' cx='350' cy='51' r='9' fill='#00E0AF'/>" &
+    "<circle cx='350' cy='51' r='4.5' fill='#00E0AF'/>" &
+    "<rect x='305' y='66' width='90' height='76' rx='20' fill='#01A982'/>" &
+    "<rect x='315' y='78' width='70' height='52' rx='12' fill='#292D3A'/>" &
+    "<g class='eyes'>" &
+    "<circle cx='333' cy='102' r='6.5' fill='#00E0AF'/>" &
+    "<circle cx='367' cy='102' r='6.5' fill='#00E0AF'/>" &
+    "</g>" &
+    "<path d='M337 116 Q350 124 363 116' fill='none' stroke='#00E0AF' stroke-width='2.5' stroke-linecap='round'/>" &
+    "</g></g>" &
+    "<g class='bubble'>" &
+    "<path d='M46 60 H254 Q270 60 270 76 V84 L298 98 L270 108 V114 Q270 130 254 130 H46 Q30 130 30 114 V76 Q30 60 46 60 Z' fill='#292D3A' stroke='#01A982' stroke-width='1.5'/>" &
+    "<text class='msg1' x='150' y='102' font-family='Arial, Helvetica, sans-serif' font-size='20' font-weight='700' fill='#FFFFFF' text-anchor='middle'>Hey, I'm Wiz!</text>" &
+    "<text class='msg2' x='150' y='102' font-family='Arial, Helvetica, sans-serif' font-size='19' font-weight='400' fill='#B1B9BE' text-anchor='middle'>How can I help?</text>" &
+    "</g>" &
+    "</svg>"
+)
