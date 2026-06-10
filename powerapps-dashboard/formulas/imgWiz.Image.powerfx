@@ -16,7 +16,7 @@
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 240' width='460' height='240'>" &
     "<!-- k=" & varAnimKey1 & " -->" &
     "<defs><style>" &
-    "@keyframes botEnter{0%{transform:translate(190px,0px) rotate(0deg)}12%{transform:translate(95px,0px) rotate(-14deg)}16%{transform:translate(98px,0px) rotate(-13deg)}60%{transform:translate(98px,0px) rotate(-13deg)}68%{transform:translate(40px,-55px) rotate(-4deg)}76%{transform:translate(0px,10px) rotate(0deg)}82%{transform:translate(0px,-8px) rotate(0deg)}88%{transform:translate(0px,3px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}" &
+    "@keyframes botEnter{0%{transform:translate(190px,0px) rotate(0deg)}12%{transform:translate(95px,0px) rotate(-14deg)}16%{transform:translate(98px,0px) rotate(-13deg)}60%{transform:translate(98px,0px) rotate(-13deg);animation-timing-function:cubic-bezier(0.25,0.6,0.45,1)}66%{transform:translate(58px,-62px) rotate(-7deg);animation-timing-function:cubic-bezier(0.55,0,0.75,0.4)}72%{transform:translate(0px,0px) rotate(0deg);animation-timing-function:cubic-bezier(0.25,0.6,0.45,1)}78%{transform:translate(0px,-14px) rotate(0deg);animation-timing-function:cubic-bezier(0.55,0,0.75,0.4)}84%{transform:translate(0px,0px) rotate(0deg);animation-timing-function:cubic-bezier(0.25,0.6,0.45,1)}89%{transform:translate(0px,-5px) rotate(0deg);animation-timing-function:cubic-bezier(0.55,0,0.75,0.4)}94%{transform:translate(0px,0px) rotate(0deg)}100%{transform:translate(0px,0px) rotate(0deg)}}" &
     "@keyframes waveIn{0%,14%{transform:rotate(0deg)}20%{transform:rotate(150deg)}26%{transform:rotate(115deg)}32%{transform:rotate(150deg)}38%{transform:rotate(115deg)}44%{transform:rotate(150deg)}50%{transform:rotate(125deg)}58%,100%{transform:rotate(0deg)}}" &
     "@keyframes idleWave{0%,80%,100%{transform:rotate(0deg)}86%{transform:rotate(140deg)}90%{transform:rotate(112deg)}94%{transform:rotate(140deg)}}" &
     "@keyframes idleBob{0%,100%{transform:translateY(0px)}50%{transform:translateY(-7px)}}" &
@@ -24,18 +24,18 @@
     "@keyframes antennaPulse{0%,100%{opacity:0.15}50%{opacity:0.55}}" &
     "@keyframes shadowIn{0%{opacity:0}100%{opacity:0.22}}" &
     "@keyframes shadowPulse{0%,100%{transform:scaleX(1)}50%{transform:scaleX(0.9)}}" &
-    "@keyframes bubblePop{0%{transform:scale(0);opacity:0}70%{transform:scale(1.08);opacity:1}100%{transform:scale(1);opacity:1}}" &
-    "@keyframes msgA{0%,40%{opacity:1}48%,92%{opacity:0}100%{opacity:1}}" &
-    "@keyframes msgB{0%,40%{opacity:0}48%,92%{opacity:1}100%{opacity:0}}" &
+    "@keyframes bubbleCycle{0%{transform:scale(0)}4%{transform:scale(1.08)}7%,42%{transform:scale(1)}47%,50%{transform:scale(0)}54%{transform:scale(1.08)}57%,92%{transform:scale(1)}97%,100%{transform:scale(0)}}" &
+    "@keyframes msgA{0%,49%{opacity:1}50%,99%{opacity:0}100%{opacity:1}}" &
+    "@keyframes msgB{0%,49%{opacity:0}50%,99%{opacity:1}100%{opacity:0}}" &
     ".bot{animation:botEnter 4.4s cubic-bezier(0.33,1,0.4,1) both;transform-origin:460px 240px}" &
     ".bot-idle{animation:idleBob 3.2s ease-in-out 4.6s infinite}" &
     ".arm-wave{animation:waveIn 4.4s ease-in-out both,idleWave 9s ease-in-out 7s infinite;transform-origin:314px 162px}" &
     ".eyes{animation:blink 4.5s ease-in-out 4.6s infinite;transform-origin:350px 102px}" &
     ".ant-glow{animation:antennaPulse 2.4s ease-in-out infinite}" &
     ".shadow{animation:shadowIn 0.4s ease 3.1s both,shadowPulse 3.2s ease-in-out 4.6s infinite;transform-origin:350px 226px}" &
-    ".bubble{animation:bubblePop 0.5s cubic-bezier(0.22,1,0.36,1) 4.8s both;transform-origin:280px 95px}" &
-    ".msg1{animation:msgA 8s ease-in-out 5.4s infinite}" &
-    ".msg2{animation:msgB 8s ease-in-out 5.4s infinite;opacity:0}" &
+    ".bubble{animation:bubbleCycle 8s ease-in-out 4.8s infinite both;transform-origin:280px 95px}" &
+    ".msg1{animation:msgA 8s linear 4.8s infinite}" &
+    ".msg2{animation:msgB 8s linear 4.8s infinite;opacity:0}" &
     "@media(prefers-reduced-motion:reduce){.bot,.bot-idle,.arm-wave,.eyes,.ant-glow,.shadow,.bubble,.msg1,.msg2{animation:none}}" &
     "</style></defs>" &
     "<ellipse class='shadow' cx='350' cy='226' rx='46' ry='7' fill='#000000' opacity='0.22'/>" &
