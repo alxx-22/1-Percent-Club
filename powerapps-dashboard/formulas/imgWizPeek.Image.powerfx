@@ -1,0 +1,70 @@
+// ============================================================================
+//  "WIZ" CEILING-PEEK MASCOT.  Control: Image "imgWizPeek"
+//  Geometry: any 23:12 box, e.g. Width=460 Height=240 (or 345x180)  ImagePosition=Fit
+//  Transparent background - floats over whatever is behind it.
+//
+//  20s loop: Wiz's head pops down UPSIDE-DOWN from the top edge, waves and
+//  retracts - four times.  On the fifth visit he slips ("!"), tumbles over
+//  the edge, hangs from the top by one stretched arm (scared face, swinging),
+//  loses his grip and plummets off the bottom of the screen.  Loop repeats.
+//
+//  The  k=varAnimKey1  comment makes the data-URI change when you bump the
+//  variable (Set(varAnimKey1, varAnimKey1+1)) so the loop restarts from zero.
+//  Delete that fragment if you don't use varAnimKey1 in your app.
+//  Honours prefers-reduced-motion (settles to the static peek pose).
+// ============================================================================
+"data:image/svg+xml;utf8, " & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 460 240' width='460' height='240'>" &
+    "<!-- k=" & varAnimKey1 & " -->" &
+    "<defs><style>" &
+    "@keyframes rigCycle{0%{transform:translate(0px,-240px) rotate(0deg)}2.25%{transform:translate(0px,-92px) rotate(0deg)}3%{transform:translate(0px,-100px) rotate(0deg)}12%{transform:translate(0px,-100px) rotate(0deg)}12.6%{transform:translate(0px,-94px) rotate(0deg)}14.25%{transform:translate(0px,-240px) rotate(0deg)}17.5%{transform:translate(0px,-240px) rotate(0deg)}19.75%{transform:translate(0px,-92px) rotate(0deg)}20.5%{transform:translate(0px,-100px) rotate(0deg)}29.5%{transform:translate(0px,-100px) rotate(0deg)}30.1%{transform:translate(0px,-94px) rotate(0deg)}31.75%{transform:translate(0px,-240px) rotate(0deg)}35%{transform:translate(0px,-240px) rotate(0deg)}37.25%{transform:translate(0px,-92px) rotate(0deg)}38%{transform:translate(0px,-100px) rotate(0deg)}47%{transform:translate(0px,-100px) rotate(0deg)}47.6%{transform:translate(0px,-94px) rotate(0deg)}49.25%{transform:translate(0px,-240px) rotate(0deg)}52.5%{transform:translate(0px,-240px) rotate(0deg)}54.75%{transform:translate(0px,-92px) rotate(0deg)}55.5%{transform:translate(0px,-100px) rotate(0deg)}64.5%{transform:translate(0px,-100px) rotate(0deg)}65.1%{transform:translate(0px,-94px) rotate(0deg)}66.75%{transform:translate(0px,-240px) rotate(0deg)}70%{transform:translate(0px,-240px) rotate(0deg)}72.25%{transform:translate(0px,-92px) rotate(0deg)}73%{transform:translate(0px,-100px) rotate(0deg)}76.75%{transform:translate(0px,-100px) rotate(0deg)}77.5%{transform:translate(0px,-84px) rotate(2deg)}78.25%{transform:translate(0px,-88px) rotate(1deg)}79%{transform:translate(0px,-78px) rotate(4deg);animation-timing-function:cubic-bezier(0.6,0,0.8,0.4)}81.25%{transform:translate(0px,208px) rotate(180deg)}82.25%{transform:translate(0px,208px) rotate(187deg)}83.75%{transform:translate(0px,208px) rotate(174deg)}85.25%{transform:translate(0px,208px) rotate(184deg)}86.75%{transform:translate(0px,208px) rotate(178deg)}88.25%{transform:translate(0px,208px) rotate(180deg)}89.5%{transform:translate(0px,208px) rotate(180deg);animation-timing-function:cubic-bezier(0.55,0,0.85,0.36)}93%{transform:translate(0px,640px) rotate(168deg)}100%{transform:translate(0px,640px) rotate(168deg)}}" &
+    "@keyframes waveCycle{0%{transform:rotate(0deg);opacity:1}3.5%{transform:rotate(0deg)}4.75%{transform:rotate(150deg)}6%{transform:rotate(118deg)}7.25%{transform:rotate(150deg)}8.5%{transform:rotate(118deg)}9.75%{transform:rotate(148deg)}11.5%{transform:rotate(0deg)}21%{transform:rotate(0deg)}22.25%{transform:rotate(150deg)}23.5%{transform:rotate(118deg)}24.75%{transform:rotate(150deg)}26%{transform:rotate(118deg)}27.25%{transform:rotate(148deg)}29%{transform:rotate(0deg)}38.5%{transform:rotate(0deg)}39.75%{transform:rotate(150deg)}41%{transform:rotate(118deg)}42.25%{transform:rotate(150deg)}43.5%{transform:rotate(118deg)}44.75%{transform:rotate(148deg)}46.5%{transform:rotate(0deg)}56%{transform:rotate(0deg)}57.25%{transform:rotate(150deg)}58.5%{transform:rotate(118deg)}59.75%{transform:rotate(150deg)}61%{transform:rotate(118deg)}62.25%{transform:rotate(148deg)}64%{transform:rotate(0deg)}73.5%{transform:rotate(0deg)}74.75%{transform:rotate(150deg)}76%{transform:rotate(120deg)}77%{transform:rotate(150deg)}78.9%{transform:rotate(150deg);opacity:1}79%{transform:rotate(150deg);opacity:0}100%{transform:rotate(150deg);opacity:0}}" &
+    "@keyframes hangCycle{0%,78.9%{opacity:0}79%,100%{opacity:1}}" &
+    "@keyframes alertCycle{0%,77%{opacity:0}77.6%,80.5%{opacity:1}81.5%,100%{opacity:0}}" &
+    "@keyframes smileCycle{0%,77%{opacity:1}77.5%,100%{opacity:0}}" &
+    "@keyframes mouthOCycle{0%,77%{opacity:0}77.5%,100%{opacity:1}}" &
+    "@keyframes blink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(0.08)}}" &
+    "@keyframes antennaPulse{0%,100%{opacity:0.15}50%{opacity:0.55}}" &
+    ".rig{animation:rigCycle 20s ease-in-out 0.6s infinite both;transform-origin:230px 0px}" &
+    ".arm-wave{animation:waveCycle 20s ease-in-out 0.6s infinite both;transform-origin:194px 162px}" &
+    ".arm-hang{animation:hangCycle 20s linear 0.6s infinite both}" &
+    ".alert{animation:alertCycle 20s linear 0.6s infinite both}" &
+    ".mouth-smile{animation:smileCycle 20s linear 0.6s infinite both}" &
+    ".mouth-o{animation:mouthOCycle 20s linear 0.6s infinite both}" &
+    ".eyes{animation:blink 4.5s ease-in-out infinite;transform-origin:230px 102px}" &
+    ".ant-glow{animation:antennaPulse 2.4s ease-in-out infinite}" &
+    "@media(prefers-reduced-motion:reduce){.rig,.arm-wave,.arm-hang,.alert,.mouth-smile,.mouth-o,.eyes,.ant-glow{animation:none}}" &
+    "</style></defs>" &
+    "<g class='rig' transform='translate(0,-100)'>" &
+    "<g transform='rotate(180 230 132)'>" &
+    "<g class='arm-wave'>" &
+    "<line x1='194' y1='162' x2='182' y2='190' stroke='#01A982' stroke-width='10' stroke-linecap='round'/>" &
+    "<circle cx='182' cy='192' r='6.5' fill='#00E0AF'/>" &
+    "</g>" &
+    "<g class='arm-hang' opacity='0'>" &
+    "<line x1='194' y1='162' x2='172' y2='64' stroke='#01A982' stroke-width='10' stroke-linecap='round'/>" &
+    "<circle cx='170' cy='60' r='6.5' fill='#00E0AF'/>" &
+    "</g>" &
+    "<line x1='266' y1='162' x2='278' y2='190' stroke='#01A982' stroke-width='10' stroke-linecap='round'/>" &
+    "<circle cx='278' cy='192' r='6.5' fill='#00E0AF'/>" &
+    "<rect x='208' y='204' width='11' height='18' rx='5' fill='#01A982'/>" &
+    "<rect x='241' y='204' width='11' height='18' rx='5' fill='#01A982'/>" &
+    "<rect x='194' y='148' width='72' height='60' rx='16' fill='#01A982'/>" &
+    "<rect x='210' y='162' width='40' height='30' rx='8' fill='#292D3A'/>" &
+    "<text x='230' y='184' font-family='Arial, Helvetica, sans-serif' font-size='17' font-weight='700' fill='#00E0AF' text-anchor='middle'>W</text>" &
+    "<line x1='230' y1='70' x2='230' y2='56' stroke='#01A982' stroke-width='4' stroke-linecap='round'/>" &
+    "<circle class='ant-glow' cx='230' cy='51' r='9' fill='#00E0AF'/>" &
+    "<circle cx='230' cy='51' r='4.5' fill='#00E0AF'/>" &
+    "<rect x='185' y='66' width='90' height='76' rx='20' fill='#01A982'/>" &
+    "<rect x='195' y='78' width='70' height='52' rx='12' fill='#292D3A'/>" &
+    "<g class='eyes'>" &
+    "<circle cx='213' cy='102' r='6.5' fill='#00E0AF'/>" &
+    "<circle cx='247' cy='102' r='6.5' fill='#00E0AF'/>" &
+    "</g>" &
+    "<path class='mouth-smile' d='M217 116 Q230 124 243 116' fill='none' stroke='#00E0AF' stroke-width='2.5' stroke-linecap='round'/>" &
+    "<ellipse class='mouth-o' cx='230' cy='119' rx='5' ry='6' fill='#00E0AF' opacity='0'/>" &
+    "</g>" &
+    "</g>" &
+    "<text class='alert' x='300' y='52' font-family='Arial, Helvetica, sans-serif' font-size='34' font-weight='700' fill='#00E0AF' opacity='0'>!</text>" &
+    "</svg>"
+)
