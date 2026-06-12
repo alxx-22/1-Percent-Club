@@ -48,8 +48,9 @@ ClearCollect(
 );
 
 // 2) crew totals — one row per distinct crew NAME --------------------------
-//    SortKey: bigger total => smaller key (sorts first ascending);
-//    equal totals fall back to the name alphabetically.
+//    SortKey: bigger total => smaller key (sorts first ascending). The base is
+//    fixed-width 8 digits so a 0-point crew (99999999) still sorts AFTER higher
+//    totals (99999xxx) instead of before them. Equal totals fall back to name A-Z.
 ClearCollect(
     colCrewAgg,
     ForAll(
@@ -62,7 +63,7 @@ ClearCollect(
                   CrewTotal:   t,
                   CrewPending: Sum( f, MemberPending ),
                   CrewSize:    CountRows( f ),
-                  SortKey:     Text( 10000000 - t, "0000000.00" ) & Lower( d.Value ) }
+                  SortKey:     Text( 99999999 - t, "00000000" ) & Lower( d.Value ) }
             )
         )
     )
@@ -84,7 +85,7 @@ ClearCollect(
         )
     )
 );
-Set( varLeaderMax, Coalesce( First( colCrew ).CrewTotal, 1 ) );
+Set( varLeaderMax, Max( 1, Coalesce( First( colCrew ).CrewTotal, 0 ) ) );  // >=1 so bars never divide by a 0 leader
 ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
 
 // 3) viewer role  (varMyCrew is now the crew NAME) --------------------------
