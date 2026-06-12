@@ -11,7 +11,8 @@ With(
         { th: Int( (244 - 26 - (rows-1)*8) / rows ) },
         "data:image/svg+xml;utf8," & EncodeUrl(
             "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 244' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
-            "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW " & Text(varMyCrew) & " · MEMBERS</text>" &
+            "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>" &
+                Substitute(Substitute(Substitute( Left(Upper(varMyCrew), 20), "&","&amp;"),"<","&lt;"),">","&gt;") & " · MEMBERS</text>" &
             "<text x='416' y='16' font-size='11' fill='#606a70' text-anchor='end'>" & Text(CountRows(colMyCrew)) & " people</text>" &
             Concat(
                 colMyCrew,
@@ -21,7 +22,7 @@ With(
                     "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='" & If(IsMe,"#d1ffee","#ffffff") & "' stroke='" & If(IsMe,"#01a982","#d4d8db") & "' stroke-width='" & If(IsMe,"2","1") & "'/>" &
                     If( IsMe, "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='none' stroke='#01a982' stroke-width='2' class='brz' opacity='0'/>", "" ) &
                     "<text x='" & Text(x+14) & "' y='" & Text(y+22) & "' font-size='12.5' font-weight='600' fill='" & If(IsMe,"#292d3a","#3e4550") & "'>" &
-                        Left( Substitute(Substitute(Substitute(Name,"&","&amp;"),"<","&lt;"),">","&gt;"), 22 ) & "</text>" &
+                        Substitute(Substitute(Substitute( Left(Name, 22), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                     If( IsMe, "<text x='" & Text(x+192) & "' y='" & Text(y+21) & "' font-size='9.5' font-weight='700' letter-spacing='.5' fill='#006750' text-anchor='end'>YOU</text>", "" ) &
                     "<text x='" & Text(x+14) & "' y='" & Text(y+th-11) & "' font-size='20' font-weight='700' fill='" & If(IsMe,"#006750","#292d3a") & "'>" & Text(MemberTotal) & "</text>" &
                     "<text x='" & Text(x+14 + Len(Text(MemberTotal))*12 + 5) & "' y='" & Text(y+th-11) & "' font-size='11' fill='#606a70'>pts</text>" &

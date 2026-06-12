@@ -1,13 +1,13 @@
 // ============================================================================
 //  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA.
 //
-//  Two things this version is hardened against (both seen in this app):
-//   1) Reading a BLANK numeric cell from PowerBIIntegration.Data throws
-//      ("expected 'number' but got 'string'"). So every point cell is read with
-//      IfError( pbi.col, 0 )  — value rows keep the number, blanks become 0.
-//   2) Your environment rejects GroupBy / SortByColumns string column names
-//      ("expected identifier name"). So this uses NO string column-name
-//      functions — only Distinct / Filter / Sum / Sort(<expression>) / ForAll.
+//  CREW IS NOW A NAME (text), not a number. Teams submitted names, so:
+//   - Crew is read as trimmed TEXT. (The old Value() coercion turned every
+//     name into 0 and collapsed the whole board into a single "Crew 0".)
+//   - Ranking: CrewTotal desc, ties alphabetical — done with ONE text SortKey,
+//     because this environment rejects GroupBy/SortByColumns string args.
+//   - CrewName is the name itself (no "Crew " prefix).
+//   - Blank numeric point cells still throw on read -> IfError(pbi.col, 0).
 // ============================================================================
 
 // 1) members (typed + totals) ---------------------------------------------
@@ -25,10 +25,11 @@ ClearCollect(
               ipg:  IfError(pbi.'IP in GL points', 0),
               cwp:  IfError(pbi.'Cap Won Points Pending', 0),
               crp:  IfError(pbi.'Cap Requests Pending', 0),
-              ccp:  IfError(pbi.'Customer Centricity Points Pending', 0) },
+              ccp:  IfError(pbi.'Customer Centricity Points Pending', 0),
+              crw:  Trim(pbi.Crew & "") },
             {
                 Name:          pbi.Name & "",
-                Crew:          IfError(Value(pbi.Crew & ""), 0),
+                Crew:          If(crw = "", "Unassigned", crw),
                 Email:         Lower(pbi.'User Email' & ""),
                 SponsorEmail:  Lower(pbi.'Manager Sponsor Email' & ""),
                 Sponsor:       pbi.'Manager Sponsor' & "",
@@ -46,33 +47,37 @@ ClearCollect(
     )
 );
 
-// 2) crew totals (NO GroupBy) — one row per distinct Crew -----------------
+// 2) crew totals — one row per distinct crew NAME --------------------------
+//    SortKey: bigger total => smaller key (sorts first ascending);
+//    equal totals fall back to the name alphabetically.
 ClearCollect(
     colCrewAgg,
     ForAll(
         Distinct( colMembers, Crew ) As d,
         With(
             { f: Filter( colMembers, Crew = d.Value ) },
-            { Crew:        d.Value,
-              CrewTotal:   Sum( f, MemberTotal ),
-              CrewPending: Sum( f, MemberPending ),
-              CrewSize:    CountRows( f ) }
+            With(
+                { t: Sum( f, MemberTotal ) },
+                { Crew:        d.Value,
+                  CrewTotal:   t,
+                  CrewPending: Sum( f, MemberPending ),
+                  CrewSize:    CountRows( f ),
+                  SortKey:     Text( 10000000 - t, "0000000.00" ) & Lower( d.Value ) }
+            )
         )
     )
 );
 
-// 2b) rank them (NO SortByColumns) — key = total desc, lower Crew breaks ties
+// 2b) rank them (ascending SortKey == total desc, name asc on ties) --------
 ClearCollect(
     colCrew,
     ForAll(
         Sequence( CountRows( colCrewAgg ) ),
         With(
-            { row: Last( FirstN(
-                       Sort( colCrewAgg, CrewTotal - Crew/1000, SortOrder.Descending ),
-                       Value )) },
+            { row: Last( FirstN( Sort( colCrewAgg, SortKey ), Value ) ) },
             { Rank:        Value,
               Crew:        row.Crew,
-              CrewName:    "Crew " & row.Crew,
+              CrewName:    row.Crew,
               CrewTotal:   row.CrewTotal,
               CrewPending: row.CrewPending,
               CrewSize:    row.CrewSize }
@@ -82,7 +87,7 @@ ClearCollect(
 Set( varLeaderMax, Coalesce( First( colCrew ).CrewTotal, 1 ) );
 ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
 
-// 3) viewer role -----------------------------------------------------------
+// 3) viewer role  (varMyCrew is now the crew NAME) --------------------------
 Set( varUserEmail, Lower( User().Email ) );
 Set( varMemberRec,  LookUp( colMembers, Email = varUserEmail ) );
 Set( varSponsorRec, LookUp( colMembers, SponsorEmail = varUserEmail ) );
@@ -97,7 +102,7 @@ Set( varMyInitials,
     Upper( Left( varDispName, 1 ) & Mid( varDispName & " ", Find( " ", varDispName & " " ) + 1, 1 ) ) );
 Set( varRibbonChip,
     Switch( varRole,
-        "member",  varDispName & " · Crew " & varMyCrew,
+        "member",  varDispName & " · " & varMyCrew,
         "sponsor", varDispName & " · Sponsor",
         "Guest Viewer · Spectator" ) );
 
@@ -138,7 +143,7 @@ ClearCollect(
 Set( varCB, LookUp( colCrewBreak, Crew = varMyCrew ) );
 Set( varBoxTitle,  If( varRole = "sponsor", "YOUR CREW", "YOUR PERFORMANCE" ) );
 Set( varBoxName,   If( varRole = "sponsor", varCB.CrewName, varMemberRec.Name ) );
-Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyCrew) & " people", "Crew " & varMyCrew & " · You" ) );
+Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyCrew) & " people", varMyCrew & " · You" ) );
 Set( varBoxTotLbl, If( varRole = "sponsor", "CREW TOTAL · EXCL PENDING", "TOTAL · EXCL PENDING" ) );
 Set( varBoxTotal,  If( varRole = "sponsor", varCB.Total,   varMemberRec.MemberTotal ) );
 Set( varBoxPending,If( varRole = "sponsor", varCB.Pending, varMemberRec.MemberPending ) );

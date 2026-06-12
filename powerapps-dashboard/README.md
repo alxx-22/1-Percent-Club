@@ -140,13 +140,19 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 `PowerBIIntegration.Data` columns arrive as in the sheet — note spaces / `&` / `?`, so Power Fx
 wraps them in single quotes, e.g. `'IB & NS Points'`.
 
+> **`Crew` holds the team's NAME (text)**, not a number. `OnVisible` reads it as trimmed text
+> (blank → "Unassigned"); grouping, the YOUR CREW / YOU SPONSOR flag and the left column all
+> match on the name. Names are human input, so every SVG that prints one truncates first, then
+> XML‑escapes (`&` `<` `>`): podium 16 chars · gallery rows 22 · grid title 20 · spectator 24.
+> Ranking ties break alphabetically via a text `SortKey` (no `SortByColumns`).
+
 **Counted toward totals:** `IB & NS Points` · `Manager Sponsor Points` · `New CC Logo Points` ·
 `Cap Won Points` · `Cap Requests` · `Customer Centricity Points` · `IP in GL points`.
 **Pending** = the three `*Pending` columns.
 
 ```
 MemberTotal = sum of the 7 point columns (excl. pending)
-CrewTotal   = sum of MemberTotal over the crew      Rank = crews by CrewTotal desc (ties: lower #)
+CrewTotal   = sum of MemberTotal over the crew      Rank = crews by CrewTotal desc (ties: A→Z)
 Pending     = sum of the *Pending columns           "points pending" = per-crew Pending
 ```
 

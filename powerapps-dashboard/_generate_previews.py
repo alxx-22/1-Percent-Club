@@ -161,7 +161,7 @@ def mypoints_inner(d):
 def grid_inner(crew_name, members, current):
     W, H = GR[2], GR[3]
     s = [DEFS, CSS]
-    s.append(eyebrow(4, 16, crew_name.upper() + " · MEMBERS"))
+    s.append(eyebrow(4, 16, crew_name.upper()[:20] + " · MEMBERS"))
     s.append(f"<text x='{W-4}' y='16' font-family='{FONT}' font-size='11' fill='{C['weak']}' text-anchor='end'>{len(members)} people</text>")
     n = len(members)
     rows = max(1, math.ceil(n / 2))
@@ -214,7 +214,7 @@ def podium_inner(top3, my_crew=None, tag="YOUR CREW"):
         g.append(f"<circle cx='{cx}' cy='{my}' r='22' fill='{tint}' stroke='{medal}' stroke-width='2'/>")
         g.append(f"<text x='{cx}' y='{my+1}' font-family='{FONT}' font-size='18' font-weight='700' fill='{medal}' text-anchor='middle' dominant-baseline='central'>{esc(crew['rank'])}</text>")
         g.append("</g>")
-        g.append(f"<text x='{cx}' y='{top+76}' font-family='{FONT}' font-size='17' font-weight='700' fill='{C['strong']}' text-anchor='middle'>{esc(crew['name'])}</text>")
+        g.append(f"<text x='{cx}' y='{top+76}' font-family='{FONT}' font-size='17' font-weight='700' fill='{C['strong']}' text-anchor='middle'>{esc(str(crew['name'])[:16])}</text>")
         g.append(f"<text x='{cx}' y='{top+112}' font-family='{FONT}' font-size='30' font-weight='700' fill='{C['greenDark']}' text-anchor='middle'>{esc(crew['pts'])}</text>")
         g.append(f"<text x='{cx}' y='{top+128}' font-family='{FONT}' font-size='9' font-weight='600' letter-spacing='1' fill='{C['weak']}' text-anchor='middle'>TOTAL POINTS</text>")
         pend = crew['pending']
@@ -257,9 +257,10 @@ def row_inner(r, leader_pts, my_crew=None, tag="YOUR CREW"):
     chipfg = "#ffffff" if match else C['strong']
     g.append(f"<rect x='10' y='5' width='20' height='20' rx='6' fill='{chipbg}'/>")
     g.append(f"<text x='20' y='15' font-family='{FONT}' font-size='11' font-weight='700' fill='{chipfg}' text-anchor='middle' dominant-baseline='central'>{esc(r['rank'])}</text>")
-    g.append(f"<text x='40' y='19' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['greenDark'] if match else C['strong']}'>{esc(r['name'])}</text>")
+    nm22 = str(r['name'])[:22]
+    g.append(f"<text x='40' y='19' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['greenDark'] if match else C['strong']}'>{esc(nm22)}</text>")
     if match:
-        nx = 40 + len(str(r['name'])) * 7 + 8
+        nx = 40 + len(nm22) * 7 + 8
         tw = 7 * len(tag) + 16
         g.append(f"<rect x='{nx:.0f}' y='8' width='{tw}' height='14' rx='7' fill='{C['greenTint']}' stroke='{C['brand']}'/>")
         g.append(f"<text x='{nx+tw/2:.0f}' y='15' font-family='{FONT}' font-size='8.5' font-weight='700' letter-spacing='.3' fill='{C['greenDark']}' text-anchor='middle' dominant-baseline='central'>{esc(tag)}</text>")
@@ -317,7 +318,7 @@ def spectator_inner(crews):
         medal = MEDALS[mi][0] if mi < 3 else C['weak']
         s.append(f"<circle cx='26' cy='28' r='15' fill='{MEDALS[mi][1] if mi<3 else C['contrast']}' stroke='{medal}' stroke-width='1.5'/>")
         s.append(f"<text x='26' y='29' font-family='{FONT}' font-size='13' font-weight='700' fill='{medal}' text-anchor='middle' dominant-baseline='central'>{cr['rank']}</text>")
-        s.append(f"<text x='50' y='24' font-family='{FONT}' font-size='16' font-weight='700' fill='{C['strong']}'>{esc(cr['name'])}</text>")
+        s.append(f"<text x='50' y='24' font-family='{FONT}' font-size='16' font-weight='700' fill='{C['strong']}'>{esc(str(cr['name'])[:24])}</text>")
         s.append(f"<text x='50' y='40' font-family='{FONT}' font-size='10.5' fill='{C['weak']}'>rank #{cr['rank']}</text>")
         s.append(f"<text x='{cw-14}' y='26' font-family='{FONT}' font-size='24' font-weight='700' fill='{C['greenDark']}' text-anchor='end'>{cr['total']}</text>")
         s.append(f"<text x='{cw-14}' y='40' font-family='{FONT}' font-size='8.5' font-weight='600' letter-spacing='.5' fill='{C['weak']}' text-anchor='end'>TOTAL POINTS</text>")
@@ -349,49 +350,49 @@ def save(name, svg):
 
 
 # ----------------------------- MOCK DATA -----------------------------
-TOP3 = [dict(rank=1, num=3, name="Crew 3", pts=580, pending=20),
-        dict(rank=2, num=5, name="Crew 5", pts=480, pending=0),
-        dict(rank=3, num=7, name="Crew 7", pts=480, pending=0)]
-REST = [dict(rank=4, num=10, name="Crew 10", pts=420, pending=0),
-        dict(rank=5, num=4, name="Crew 4", pts=410, pending=0),
-        dict(rank=6, num=1, name="Crew 1", pts=370, pending=0),
-        dict(rank=7, num=2, name="Crew 2", pts=270, pending=0),
-        dict(rank=8, num=9, name="Crew 9", pts=160, pending=0),
-        dict(rank=9, num=6, name="Crew 6", pts=60, pending=0),
-        dict(rank=10, num=8, name="Crew 8", pts=0, pending=0)]
+TOP3 = [dict(rank=1, num="Sharks & Minnows", name="Sharks & Minnows", pts=580, pending=20),
+        dict(rank=2, num="Apex Predators", name="Apex Predators", pts=480, pending=0),
+        dict(rank=3, num="Pipeline Pirates", name="Pipeline Pirates", pts=480, pending=0)]
+REST = [dict(rank=4, num="Quota Crushers", name="Quota Crushers", pts=420, pending=0),
+        dict(rank=5, num="Deal Hunters", name="Deal Hunters", pts=410, pending=0),
+        dict(rank=6, num="Green Machine", name="Green Machine", pts=370, pending=0),
+        dict(rank=7, num="The Closers", name="The Closers", pts=270, pending=0),
+        dict(rank=8, num="Cloud Surfers", name="Cloud Surfers", pts=160, pending=0),
+        dict(rank=9, num="Edge Runners", name="Edge Runners", pts=60, pending=0),
+        dict(rank=10, num="Momentum", name="Momentum", pts=0, pending=0)]
 MEMBERS = [dict(name="Alex Jackson", pts=310), dict(name="Rowan Johnson", pts=40),
            dict(name="Quinn White", pts=20), dict(name="Avery Anderson", pts=0),
            dict(name="Alex Brown", pts=0), dict(name="Jordan Brown", pts=0),
            dict(name="Jordan Smith", pts=0), dict(name="Morgan White", pts=0)]
-MEMBER_BOX = dict(title="YOUR PERFORMANCE", ini="AJ", name="Alex Jackson", sub="Crew 1 · You",
+MEMBER_BOX = dict(title="YOUR PERFORMANCE", ini="AJ", name="Alex Jackson", sub="Green Machine · You",
                   total=310, pending=30, totlbl="TOTAL · EXCL PENDING", vals=[120, 40, 60, 30, 20, 40])
-SPONSOR_BOX = dict(title="YOUR CREW", ini="RJ", name="Crew 3", sub="You sponsor · 9 people",
+SPONSOR_BOX = dict(title="YOUR CREW", ini="RJ", name="Sharks & Minnows", sub="You sponsor · 9 people",
                    total=580, pending=20, totlbl="CREW TOTAL · EXCL PENDING", vals=[120, 60, 80, 60, 40, 220])
 # all crews for the spectator tour (rank order)
-ALLCREWS = [dict(rank=1, name="Crew 3", total=580, vals=[120, 60, 80, 60, 40, 220]),
-            dict(rank=2, name="Crew 5", total=480, vals=[80, 40, 60, 40, 60, 200]),
-            dict(rank=3, name="Crew 7", total=480, vals=[60, 80, 40, 80, 20, 200]),
-            dict(rank=4, name="Crew 10", total=420, vals=[60, 40, 40, 40, 40, 200]),
-            dict(rank=5, name="Crew 4", total=410, vals=[40, 60, 50, 60, 40, 160]),
-            dict(rank=6, name="Crew 1", total=370, vals=[120, 40, 60, 30, 20, 100]),
-            dict(rank=7, name="Crew 2", total=270, vals=[40, 30, 40, 40, 20, 100]),
-            dict(rank=8, name="Crew 9", total=160, vals=[20, 20, 20, 20, 20, 60]),
-            dict(rank=9, name="Crew 6", total=60, vals=[10, 10, 10, 10, 10, 10]),
-            dict(rank=10, name="Crew 8", total=0, vals=[0, 0, 0, 0, 0, 0])]
-RIB = dict(ini="AJ", chip="Alex Jackson · Crew 1")
+ALLCREWS = [dict(rank=1, name="Sharks & Minnows", total=580, vals=[120, 60, 80, 60, 40, 220]),
+            dict(rank=2, name="Apex Predators", total=480, vals=[80, 40, 60, 40, 60, 200]),
+            dict(rank=3, name="Pipeline Pirates", total=480, vals=[60, 80, 40, 80, 20, 200]),
+            dict(rank=4, name="Quota Crushers", total=420, vals=[60, 40, 40, 40, 40, 200]),
+            dict(rank=5, name="Deal Hunters", total=410, vals=[40, 60, 50, 60, 40, 160]),
+            dict(rank=6, name="Green Machine", total=370, vals=[120, 40, 60, 30, 20, 100]),
+            dict(rank=7, name="The Closers", total=270, vals=[40, 30, 40, 40, 20, 100]),
+            dict(rank=8, name="Cloud Surfers", total=160, vals=[20, 20, 20, 20, 20, 60]),
+            dict(rank=9, name="Edge Runners", total=60, vals=[10, 10, 10, 10, 10, 10]),
+            dict(rank=10, name="Momentum", total=0, vals=[0, 0, 0, 0, 0, 0])]
+RIB = dict(ini="AJ", chip="Alex Jackson · Green Machine")
 
 # standalone component previews
 save("ribbon", wrap(*ribbon_inner(RIB)))
 save("my-points", wrap(*mypoints_inner(MEMBER_BOX)))
 save("crew-summary", wrap(*mypoints_inner(SPONSOR_BOX)))
-save("crew-grid", wrap(*grid_inner("Crew 1", MEMBERS, "Alex Jackson")))
-save("podium", wrap(*podium_inner(TOP3, my_crew=3, tag="YOU SPONSOR")))
+save("crew-grid", wrap(*grid_inner("Green Machine", MEMBERS, "Alex Jackson")))
+save("podium", wrap(*podium_inner(TOP3, my_crew="Sharks & Minnows", tag="YOU SPONSOR")))
 save("ranks-header", wrap(*ranks_header_inner(10)))
-save("leaderboard-row", wrap(*row_inner(REST[2], TOP3[0]['pts'], my_crew=1, tag="YOUR CREW")))
+save("leaderboard-row", wrap(*row_inner(REST[2], TOP3[0]['pts'], my_crew="Green Machine", tag="YOUR CREW")))
 save("spectator", wrap(*spectator_inner(ALLCREWS)))
 stack = []
 for i, r in enumerate(REST):
-    _, _, ri = row_inner(r, TOP3[0]['pts'], my_crew=1)
+    _, _, ri = row_inner(r, TOP3[0]['pts'], my_crew="Green Machine")
     stack.append(f"<svg x='0' y='{i*ROW_H}' width='{RW}' height='{ROW_H}' viewBox='0 0 {RW} {ROW_H}'>{ri}</svg>")
 save("leaderboard-gallery", wrap(RW, ROW_H*len(REST), "".join(stack)))
 
@@ -404,9 +405,9 @@ def place(x, y, w, h, vw, vh, inner):
 def page(role):
     s = [DEFS, f"<rect x='0' y='0' width='{PAGE_W}' height='{PAGE_H}' fill='{C['canvas']}'/>"]
     if role == "member":
-        rib = dict(ini="AJ", chip="Alex Jackson · Crew 1"); myc, tag = 1, "YOUR CREW"
+        rib = dict(ini="AJ", chip="Alex Jackson · Green Machine"); myc, tag = "Green Machine", "YOUR CREW"
     elif role == "sponsor":
-        rib = dict(ini="RJ", chip="Rowan Jackson · Sponsor"); myc, tag = 3, "YOU SPONSOR"
+        rib = dict(ini="RJ", chip="Rowan Jackson · Sponsor"); myc, tag = "Sharks & Minnows", "YOU SPONSOR"
     else:
         rib = dict(ini="GV", chip="Guest Viewer · Spectator"); myc, tag = None, ""
     s.append(place(0, 0, PAGE_W, RIB_H, PAGE_W, RIB_H, ribbon_inner(rib)[2]))
@@ -414,10 +415,10 @@ def page(role):
         s.append(place(*SPEC, SPEC[2], SPEC[3], spectator_inner(ALLCREWS)[2]))
     elif role == "sponsor":
         s.append(place(*MP, MP[2], MP[3], mypoints_inner(SPONSOR_BOX)[2]))
-        s.append(place(*GR, GR[2], GR[3], grid_inner("Crew 3", MEMBERS, None)[2]))
+        s.append(place(*GR, GR[2], GR[3], grid_inner("Sharks & Minnows", MEMBERS, None)[2]))
     else:
         s.append(place(*MP, MP[2], MP[3], mypoints_inner(MEMBER_BOX)[2]))
-        s.append(place(*GR, GR[2], GR[3], grid_inner("Crew 1", MEMBERS, "Alex Jackson")[2]))
+        s.append(place(*GR, GR[2], GR[3], grid_inner("Green Machine", MEMBERS, "Alex Jackson")[2]))
     s.append(place(*PD, PD[2], PD[3], podium_inner(TOP3, my_crew=myc, tag=tag)[2]))
     s.append(place(*RH, RH[2], RH[3], ranks_header_inner(10)[2]))
     for i, r in enumerate(REST):

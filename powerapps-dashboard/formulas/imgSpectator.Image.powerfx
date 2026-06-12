@@ -25,7 +25,8 @@ With(
                       medal: Switch( Rank, 1, "#E0A300", 2, "#8C99A4", 3, "#B5742E", "#606a70" ),
                       mbg:   Switch( Rank, 1, "#FBF1D6", 2, "#EDEFF1", 3, "#F4E9DD", "#f2f3f4" ),
                       mx:    Max( 1, NewCC, CapEng, CapOrd, CC, Accred, IP ),
-                      v1:NewCC, v2:CapEng, v3:CapOrd, v4:CC, v5:Accred, v6:IP, tot:Total, rk:Rank, nm:CrewName },
+                      v1:NewCC, v2:CapEng, v3:CapOrd, v4:CC, v5:Accred, v6:IP, tot:Total, rk:Rank,
+                      nm: Substitute(Substitute(Substitute( Left(CrewName, 24), "&","&amp;"),"<","&lt;"),">","&gt;") },
                     "<g transform='translate(12," & Text(yc) & ")'>" &
                     "<rect x='0' y='0' width='396' height='150' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
                     "<circle cx='26' cy='28' r='15' fill='" & mbg & "' stroke='" & medal & "' stroke-width='1.5'/>" &
