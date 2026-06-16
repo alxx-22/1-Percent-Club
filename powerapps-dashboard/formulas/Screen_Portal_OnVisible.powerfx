@@ -20,26 +20,27 @@ Set( varSelOpp, Blank() );      // open on the pipeline overview, not a stale de
 Clear( colSelLines );
 
 // 1) parse the crew's opportunity pack -> colCrewOpps ----------------------
-//    (the exact split formula: rows on "||", columns on "//")
-With(
-    { pack: LookUp( Teams, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' },
-    Clear( colCrewOpps );
-    If( !IsBlank( pack ),
-        ForAll( Split( pack, "||" ) As Row,
-            With( { cols: Split( Row.Result, "//" ) },
-                Collect( colCrewOpps, {
-                    FunnelType:       Index( cols, 1 ).Result,
-                    OppId:            Index( cols, 2 ).Result,
-                    OppName:          Index( cols, 3 ).Result,
-                    AccountName:      Index( cols, 4 ).Result,
-                    ForecastCategory: Index( cols, 5 ).Result,
-                    CloseDate:        DateValue( Index( cols, 6 ).Result ),
-                    TotalValue:       Value( Index( cols, 7 ).Result ),
-                    MemberName:       Index( cols, 8 ).Result,
-                    OppUpdate:        Index( cols, 9 ).Result
-                } )
-            )
-        )
+//    Your exact split: rows on "||", columns on "//"; runs every time the
+//    portal opens. IMPORTANT: do NOT wrap the Clear/Collect in With(...) —
+//    Power Apps rejects semicolon-chained behaviour inside With() (that single
+//    error reds the whole formula). We use a plain variable for the pack instead.
+Set( varCrewPack, LookUp( Teams, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' );
+Clear( colCrewOpps );
+If(
+    !IsBlank( varCrewPack ),
+    ForAll(
+        Split( varCrewPack, "||" ) As Row,
+        Collect( colCrewOpps, {
+            FunnelType:       Index( Split( Row.Result, "//" ), 1 ).Result,
+            OppId:            Index( Split( Row.Result, "//" ), 2 ).Result,
+            OppName:          Index( Split( Row.Result, "//" ), 3 ).Result,
+            AccountName:      Index( Split( Row.Result, "//" ), 4 ).Result,
+            ForecastCategory: Index( Split( Row.Result, "//" ), 5 ).Result,
+            CloseDate:        DateValue( Index( Split( Row.Result, "//" ), 6 ).Result ),
+            TotalValue:       Value( Index( Split( Row.Result, "//" ), 7 ).Result ),
+            MemberName:       Index( Split( Row.Result, "//" ), 8 ).Result,
+            OppUpdate:        Index( Split( Row.Result, "//" ), 9 ).Result
+        } )
     )
 );
 

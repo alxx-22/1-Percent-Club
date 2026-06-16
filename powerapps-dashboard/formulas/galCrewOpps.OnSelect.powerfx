@@ -15,10 +15,9 @@
 Set( varSelOpp, ThisItem );
 
 // word-wrap OppUpdate into ~64-char lines, keeping whole words ---------------
-With(
-    { u: Substitute( Substitute( Substitute( ThisItem.OppUpdate & "", "&", "&amp;" ), "<", "&lt;" ), ">", "&gt;" ) },
-    ClearCollect( colSelWordsRaw, ForAll( Split( u, " " ) As w, { Word: w.Result } ) )
-);
+// (plain Set for the escaped text — no behaviour wrapped in With())
+Set( varUpd, Substitute( Substitute( Substitute( ThisItem.OppUpdate & "", "&", "&amp;" ), "<", "&lt;" ), ">", "&gt;" ) );
+ClearCollect( colSelWordsRaw, ForAll( Split( varUpd, " " ) As w, { Word: w.Result } ) );
 ClearCollect(
     colSelWords,
     ForAll(
