@@ -20,12 +20,13 @@ Set( varSelOpp, Blank() );      // open on the pipeline overview, not a stale de
 Clear( colSelLines );
 
 // 1) parse the crew's opportunity pack -> colCrewOpps ----------------------
-//    Rows on "||", columns on "//". The pack comes from PowerBIIntegration.Data
-//    (the same feed as everything else — 'Crew Funnel Pack' must be in the
-//    visual's data well). NB: in this environment Split()'s column is .Value
-//    (older Power Fx uses .Result — if you see "Value isn't recognized", swap
-//    every .Value below back to .Result).
-Set( varCrewPack, LookUp( PowerBIIntegration.Data, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' );
+//    Rows on "||", columns on "//". The 'Crew Funnel Pack' is replicated on
+//    EVERY member row of a crew, so look it up by CREW (varMyCrew) — not by
+//    email (member emails are blank, and crew-lookup also follows the diagnostic
+//    impersonation). 'Crew Funnel Pack' must be in the visual's data well.
+//    NB: Split()'s column is .Value here (older Power Fx uses .Result — if you
+//    see "Value isn't recognized", swap every .Value below back to .Result).
+Set( varCrewPack, LookUp( PowerBIIntegration.Data, Trim( Crew & "" ) = varMyCrew ).'Crew Funnel Pack' );
 Clear( colCrewOpps );
 If(
     !IsBlank( varCrewPack ),
