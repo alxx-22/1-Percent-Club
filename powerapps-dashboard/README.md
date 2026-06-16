@@ -141,9 +141,14 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 
 > **Test a role** without changing accounts: drop a **diagnostic button** with `OnSelect` =
 > [`btnTestRole.OnSelect.powerfx`](formulas/btnTestRole.OnSelect.powerfx). Each tap cycles the
-> viewer through *Guest → crew #1 → crew #2 → … → back to you*, overriding `varUserEmail` to a
-> real crew member and recomputing the role/grid/box state — so the whole dashboard (and the
-> YOUR CREW flag) renders as that person. Remove the button before shipping.
+> viewer through *Guest → crew #1 → crew #2 → … → back to you*. It only sets an override email
+> (`varTestEmail`) and **re-runs `OnVisible`** (via the loading screen) — it does **not** recompute
+> state itself, so it can't half-break the UI. Needs two one-time lines (both production-safe,
+> since `varTestEmail` is blank in production):
+> - `App.OnStart`: `Set( varTestEmail, Blank() )`
+> - `scrDashboard.OnVisible` step 3: `Set( varUserEmail, If( IsBlank( varTestEmail ), Lower( User().Email ), Lower( varTestEmail ) ) )`
+>
+> Remove the button before shipping.
 
 ---
 

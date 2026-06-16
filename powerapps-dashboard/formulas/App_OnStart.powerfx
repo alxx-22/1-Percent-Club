@@ -12,3 +12,4 @@ Set( varReady, false );
 Set( varSelOpp, Blank() );
 Set( varLeafKey, 0 );
 Set( varLeafBusy, false );
+Set( varTestEmail, Blank() );   // diagnostic role-override (blank = the real signed-in user)

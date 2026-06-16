@@ -92,7 +92,8 @@ Set( varLeaderMax, Max( 1, Coalesce( First( colCrew ).CrewTotal, 0 ) ) );  // >=
 ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
 
 // 3) viewer role  (varMyCrew is now the crew NAME) --------------------------
-Set( varUserEmail, Lower( User().Email ) );
+//    varTestEmail is the DIAGNOSTIC override (blank in production -> real user).
+Set( varUserEmail, If( IsBlank( varTestEmail ), Lower( User().Email ), Lower( varTestEmail ) ) );
 Set( varMemberRec,  LookUp( colMembers, Email = varUserEmail ) );
 Set( varSponsorRec, LookUp( colMembers, SponsorEmail = varUserEmail ) );
 Set( varRole,
