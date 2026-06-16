@@ -1,0 +1,87 @@
+// ============================================================================
+//  btnTestRole.OnSelect  —  DIAGNOSTIC ONLY (remove before shipping).
+//
+//  You're detected as a Guest/spectator because your email isn't in any crew.
+//  This button lets you *impersonate* a real crew member so you can see the
+//  member + crew views (and the YOUR CREW flag) exactly as they do — without
+//  changing accounts or data.
+//
+//  Each tap CYCLES:  real you (Guest) -> crew #1 -> crew #2 -> ... -> crew #N
+//  -> back to the real you.  It overrides varUserEmail to that crew's top
+//  member, then recomputes the same role / grid / box state that
+//  scrDashboard.OnVisible builds, so every visual updates reactively.
+//
+//  PLACEMENT: a Button on scrDashboard (e.g. on the ribbon). Suggested Text:
+//     "Test view: " & If( varRole = "spectator", "Guest (real you)",
+//                          varDispName & " (" & varMyCrew & ")" )
+//  TO TEST THE SPONSOR VIEW instead of member: see the note at the bottom.
+// ============================================================================
+
+// 1) pick who to impersonate (cycle crews by rank; 0 = the real you) ---------
+Set( varTestIdx, Mod( varTestIdx + 1, CountRows( colCrew ) + 1 ) );
+Set(
+    varUserEmail,
+    If( varTestIdx = 0,
+        Lower( User().Email ),
+        First(
+            Sort(
+                Filter( colMembers, Crew = LookUp( colCrew, Rank = varTestIdx ).Crew && Len( Email ) > 0 ),
+                MemberTotal, SortOrder.Descending
+            )
+        ).Email
+    )
+);
+
+// 2) recompute role  (mirrors scrDashboard.OnVisible step 3) -----------------
+Set( varMemberRec,  LookUp( colMembers, Email = varUserEmail ) );
+Set( varSponsorRec, LookUp( colMembers, SponsorEmail = varUserEmail ) );
+Set( varRole,
+    If( !IsBlank( varMemberRec.Name ), "member",
+        If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) );
+Set( varMyCrew,    Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) );
+Set( varMyCrewTag, If( varRole = "sponsor", "YOU SPONSOR", "YOUR CREW" ) );
+Set( varDispName,  Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.Sponsor, "Guest Viewer" ) );
+Set( varMyInitials,
+    Upper( Left( varDispName, 1 ) & Mid( varDispName & " ", Find( " ", varDispName & " " ) + 1, 1 ) ) );
+Set( varRibbonChip,
+    Switch( varRole,
+        "member",  varDispName & " · " & varMyCrew,
+        "sponsor", varDispName & " · Sponsor",
+        "Guest Viewer · Spectator" ) );
+
+// 3) rebuild the viewer's crew grid  (mirrors OnVisible step 5) --------------
+ClearCollect( colMyCrewSorted, Sort( Filter( colMembers, Crew = varMyCrew ), MemberTotal, SortOrder.Descending ) );
+ClearCollect(
+    colMyCrew,
+    ForAll(
+        Sequence( CountRows( colMyCrewSorted ) ),
+        With( { row: Last( FirstN( colMyCrewSorted, Value ) ) },
+            { Idx: Value - 1, Name: row.Name, Role: row.Role, MemberTotal: row.MemberTotal,
+              IsMe: row.Email = varUserEmail } )
+    )
+);
+
+// 4) recompute the left "box" values  (mirrors OnVisible step 6) -------------
+Set( varCB, LookUp( colCrewBreak, Crew = varMyCrew ) );
+Set( varBoxTitle,  If( varRole = "sponsor", "YOUR CREW", "YOUR PERFORMANCE" ) );
+Set( varBoxName,   If( varRole = "sponsor", varCB.CrewName, varMemberRec.Name ) );
+Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyCrew) & " people", varMyCrew & " · You" ) );
+Set( varBoxTotLbl, If( varRole = "sponsor", "CREW TOTAL · EXCL PENDING", "TOTAL · EXCL PENDING" ) );
+Set( varBoxTotal,  If( varRole = "sponsor", varCB.Total,   varMemberRec.MemberTotal ) );
+Set( varBoxPending,If( varRole = "sponsor", varCB.Pending, varMemberRec.MemberPending ) );
+Set( varB1, If( varRole = "sponsor", varCB.NewCC,  varMemberRec.IBNS + varMemberRec.NewCCLogo ) );
+Set( varB2, If( varRole = "sponsor", varCB.CapEng, varMemberRec.CapReq ) );
+Set( varB3, If( varRole = "sponsor", varCB.CapOrd, varMemberRec.CapWon ) );
+Set( varB4, If( varRole = "sponsor", varCB.CC,     varMemberRec.CustCent ) );
+Set( varB5, If( varRole = "sponsor", varCB.Accred, varMemberRec.MgrPts ) );
+Set( varB6, If( varRole = "sponsor", varCB.IP,     varMemberRec.IPgl ) )
+
+// ----------------------------------------------------------------------------
+//  TEST THE SPONSOR VIEW: replace the Set(varUserEmail,...) in step 1 with a
+//  sponsor's email, e.g. (impersonate the sponsor of the rank-1 crew):
+//    Set( varUserEmail,
+//         First( Filter( colMembers,
+//                  Crew = LookUp(colCrew, Rank = 1).Crew && Len(SponsorEmail) > 0
+//                ) ).SponsorEmail );
+//  ...then keep steps 2-4 exactly as above (varRole becomes "sponsor").
+// ----------------------------------------------------------------------------

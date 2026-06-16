@@ -139,9 +139,11 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 - **Crew flag** → on the podium and gallery, the row/card whose `Crew = varMyCrew` gets a green
   outline + a `varMyCrewTag` chip. Spectators see no flag.
 
-> **Test a role** without changing accounts: after `OnVisible` runs, set
-> `Set(varUserEmail, "jordan.smith@example.com")` (member) /
-> a `Manager Sponsor Email` value (sponsor) / a non‑existent email (spectator) and re‑run.
+> **Test a role** without changing accounts: drop a **diagnostic button** with `OnSelect` =
+> [`btnTestRole.OnSelect.powerfx`](formulas/btnTestRole.OnSelect.powerfx). Each tap cycles the
+> viewer through *Guest → crew #1 → crew #2 → … → back to you*, overriding `varUserEmail` to a
+> real crew member and recomputing the role/grid/box state — so the whole dashboard (and the
+> YOUR CREW flag) renders as that person. Remove the button before shipping.
 
 ---
 
