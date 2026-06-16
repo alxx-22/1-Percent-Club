@@ -12,9 +12,9 @@
 //  -> back to Guest.  Brief splash on each tap while OnVisible re-runs.
 //
 //  REQUIRES (both already added):
-//   - App.OnStart:        Set( varTestEmail, Blank() )
+//   - App.OnStart:        Set( varTestEmail, "" )      // "" not Blank(), so it has a Text type
 //   - scrDashboard.OnVisible step 3:
-//        Set( varUserEmail, If( IsBlank( varTestEmail ), Lower( User().Email ), Lower( varTestEmail ) ) );
+//        Set( varUserEmail, If( Len( varTestEmail ) > 0, Lower( varTestEmail ), Lower( User().Email ) ) );
 //
 //  PLACEMENT: a Button on scrDashboard (e.g. on the ribbon). Suggested Text:
 //     "Test view: " & If( varRole = "spectator", "Guest (real you)",
@@ -26,13 +26,16 @@ Set( varTestIdx, Mod( Coalesce( varTestIdx, 0 ) + 1, CountRows( colCrew ) + 1 ) 
 Set(
     varTestEmail,
     If( varTestIdx = 0,
-        Blank(),    // back to the real signed-in user (Guest)
-        First(
-            Sort(
-                Filter( colMembers, Crew = LookUp( colCrew, Rank = varTestIdx ).Crew && Len( Email ) > 0 ),
-                MemberTotal, SortOrder.Descending
-            )
-        ).Email
+        "",    // back to the real signed-in user (Guest)
+        Coalesce(
+            First(
+                Sort(
+                    Filter( colMembers, Crew = LookUp( colCrew, Rank = varTestIdx ).Crew && Len( Email ) > 0 ),
+                    MemberTotal, SortOrder.Descending
+                )
+            ).Email,
+            ""
+        )
     )
 );
 

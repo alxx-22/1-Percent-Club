@@ -145,8 +145,8 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 > (`varTestEmail`) and **re-runs `OnVisible`** (via the loading screen) — it does **not** recompute
 > state itself, so it can't half-break the UI. Needs two one-time lines (both production-safe,
 > since `varTestEmail` is blank in production):
-> - `App.OnStart`: `Set( varTestEmail, Blank() )`
-> - `scrDashboard.OnVisible` step 3: `Set( varUserEmail, If( IsBlank( varTestEmail ), Lower( User().Email ), Lower( varTestEmail ) ) )`
+> - `App.OnStart`: `Set( varTestEmail, "" )`  (use `""`, not `Blank()`, so the var has a Text type — otherwise you get *"No type found for variable 'varTestEmail'"*)
+> - `scrDashboard.OnVisible` step 3: `Set( varUserEmail, If( Len( varTestEmail ) > 0, Lower( varTestEmail ), Lower( User().Email ) ) )`
 >
 > Remove the button before shipping.
 
