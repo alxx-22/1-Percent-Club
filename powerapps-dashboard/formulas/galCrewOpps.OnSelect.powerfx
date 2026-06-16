@@ -17,7 +17,8 @@ Set( varSelOpp, ThisItem );
 // word-wrap OppUpdate into ~64-char lines, keeping whole words ---------------
 // (plain Set for the escaped text — no behaviour wrapped in With())
 Set( varUpd, Substitute( Substitute( Substitute( ThisItem.OppUpdate & "", "&", "&amp;" ), "<", "&lt;" ), ">", "&gt;" ) );
-ClearCollect( colSelWordsRaw, ForAll( Split( varUpd, " " ) As w, { Word: w.Result } ) );
+// Split()'s column is .Value in this environment (swap to .Result on older Power Fx)
+ClearCollect( colSelWordsRaw, ForAll( Split( varUpd, " " ) As w, { Word: w.Value } ) );
 ClearCollect(
     colSelWords,
     ForAll(

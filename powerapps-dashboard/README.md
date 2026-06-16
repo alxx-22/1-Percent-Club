@@ -298,11 +298,15 @@ rule — selecting an opp shows the detail and hides the overview; clearing it r
 
 ### 8.3 The opportunity data
 
-**`scrPortal.OnVisible`** runs your exact pack‑parsing formula (so it rebuilds every time the portal
-opens — the button just navigates): it reads the signed‑in user's **`Crew Funnel Pack`** from the
-`Teams` source, splits it on `||` (rows) then `//` (columns), and `Collect`s `colCrewOpps` with
-`FunnelType · OppId · OppName · AccountName · ForecastCategory · CloseDate · TotalValue ·
-MemberName · OppUpdate`. The same `OnVisible` then turns that into:
+**`scrPortal.OnVisible`** runs your pack‑parsing formula (so it rebuilds every time the portal
+opens — the button just navigates): it reads the signed‑in user's **`Crew Funnel Pack`** from
+**`PowerBIIntegration.Data`** (so that column must be in the visual's data well), splits it on `||`
+(rows) then `//` (columns), and `Collect`s `colCrewOpps` with `FunnelType · OppId · OppName ·
+AccountName · ForecastCategory · CloseDate · TotalValue · MemberName · OppUpdate`. The same
+`OnVisible` then turns that into:
+
+> **`Split()` column name:** this environment returns `.Value` (e.g. `Index(Split(row,"//"),2).Value`);
+> some Power Fx builds use `.Result`. If you hit "Value/Result isn't recognized", swap the suffix.
 
 ```
 colOpps   = colCrewOpps + a 0-based Idx           (list rows: stagger + selection)

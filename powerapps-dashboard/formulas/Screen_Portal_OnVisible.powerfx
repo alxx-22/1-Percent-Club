@@ -20,26 +20,27 @@ Set( varSelOpp, Blank() );      // open on the pipeline overview, not a stale de
 Clear( colSelLines );
 
 // 1) parse the crew's opportunity pack -> colCrewOpps ----------------------
-//    Your exact split: rows on "||", columns on "//"; runs every time the
-//    portal opens. IMPORTANT: do NOT wrap the Clear/Collect in With(...) —
-//    Power Apps rejects semicolon-chained behaviour inside With() (that single
-//    error reds the whole formula). We use a plain variable for the pack instead.
-Set( varCrewPack, LookUp( Teams, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' );
+//    Rows on "||", columns on "//". The pack comes from PowerBIIntegration.Data
+//    (the same feed as everything else — 'Crew Funnel Pack' must be in the
+//    visual's data well). NB: in this environment Split()'s column is .Value
+//    (older Power Fx uses .Result — if you see "Value isn't recognized", swap
+//    every .Value below back to .Result).
+Set( varCrewPack, LookUp( PowerBIIntegration.Data, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' );
 Clear( colCrewOpps );
 If(
     !IsBlank( varCrewPack ),
     ForAll(
         Split( varCrewPack, "||" ) As Row,
         Collect( colCrewOpps, {
-            FunnelType:       Index( Split( Row.Result, "//" ), 1 ).Result,
-            OppId:            Index( Split( Row.Result, "//" ), 2 ).Result,
-            OppName:          Index( Split( Row.Result, "//" ), 3 ).Result,
-            AccountName:      Index( Split( Row.Result, "//" ), 4 ).Result,
-            ForecastCategory: Index( Split( Row.Result, "//" ), 5 ).Result,
-            CloseDate:        DateValue( Index( Split( Row.Result, "//" ), 6 ).Result ),
-            TotalValue:       Value( Index( Split( Row.Result, "//" ), 7 ).Result ),
-            MemberName:       Index( Split( Row.Result, "//" ), 8 ).Result,
-            OppUpdate:        Index( Split( Row.Result, "//" ), 9 ).Result
+            FunnelType:       Index( Split( Row.Value, "//" ), 1 ).Value,
+            OppId:            Index( Split( Row.Value, "//" ), 2 ).Value,
+            OppName:          Index( Split( Row.Value, "//" ), 3 ).Value,
+            AccountName:      Index( Split( Row.Value, "//" ), 4 ).Value,
+            ForecastCategory: Index( Split( Row.Value, "//" ), 5 ).Value,
+            CloseDate:        DateValue( Index( Split( Row.Value, "//" ), 6 ).Value ),
+            TotalValue:       Value( Index( Split( Row.Value, "//" ), 7 ).Value ),
+            MemberName:       Index( Split( Row.Value, "//" ), 8 ).Value,
+            OppUpdate:        Index( Split( Row.Value, "//" ), 9 ).Value
         } )
     )
 );
