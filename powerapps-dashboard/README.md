@@ -45,7 +45,7 @@ between the two pages.
 | `imgRanksHeader` | Image | `Image` | [`imgRanksHeader.Image.powerfx`](formulas/imgRanksHeader.Image.powerfx) |
 | `galLeaderboard` | Gallery (blank vertical) | `Items` | `colCrewRest` |
 | `imgRow` (in gallery) | Image | `Image` | [`imgRow.Image.powerfx`](formulas/imgRow.Image.powerfx) |
-| `btnCrewPortal` (on ribbon) | Button | `OnSelect` | [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — open the **Crew Portal** (§8) |
+| `imgCrewPortalBtn` (on ribbon) | Image | `Image` + `OnSelect` | [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx) (SVG) · OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — open the **Crew Portal** (§8) |
 | `imgLeafWipe` | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/imgLeafWipe.Image.powerfx) — page‑transition overlay (§8) |
 | `tmrLeaf` | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/tmrLeaf.OnTimerEnd.powerfx) — dismisses the overlay (§8) |
 
@@ -255,7 +255,7 @@ the **full detail** of the opportunity you select.
 
 | Control | Screen | Type | Property | Formula |
 |---|---|---|---|---|
-| `btnCrewPortal` | scrDashboard (ribbon) | Button | `OnSelect` | [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — build `colCrewOpps`, arm transition, `Navigate(scrPortal)` |
+| `imgCrewPortalBtn` | scrDashboard (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx); OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — build `colCrewOpps`, arm transition, `Navigate(scrPortal)` |
 | **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/Screen_Portal_OnVisible.powerfx) — builds `colCrewCards` / `colOpps` / `colPipe` |
 | `imgPortalRibbon` | scrPortal | Image | `Image` | [`imgPortalRibbon.Image.powerfx`](formulas/imgPortalRibbon.Image.powerfx) |
 | `btnBack` | scrPortal (ribbon) | Button | `OnSelect` | [`btnBack.OnSelect.powerfx`](formulas/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
@@ -284,8 +284,11 @@ Every Image: `ImagePosition = Fit` (except `imgLeafWipe` = **`Fill`**).
 | `imgPipeline` | 452 | 230 | 668 | 394 | `IsBlank(varSelOpp.OppId)` |
 | `imgLeafWipe` (top of z‑order, both screens) | 0 | 0 | 1136 | 640 | `varLeafBusy` |
 
-On the **dashboard ribbon**, place `btnCrewPortal` (e.g. `X=720 Y=11 W=140 H=30`, fill brand green
-`RGBA(1,169,130,1)`, white text "Crew Portal", radius 15, no border).
+On the **dashboard ribbon**, place the SVG button **`imgCrewPortalBtn`** at `X=720 Y=11 W=140 H=30`
+(`ImagePosition=Fit`) and paste the `btnCrewPortal.OnSelect` formula straight onto the image's
+**`OnSelect`** — Image controls are tappable, so no separate Button is needed. (Prefer a real
+Button? Use one with that OnSelect: fill brand green `RGBA(1,169,130,1)`, white text "Crew Portal",
+radius 15, no border — or lay a transparent Button over the SVG for hover/press feedback.)
 
 **Gallery** `galCrewOpps`: `Items = colOpps`, `TemplateSize = 64`, `TemplatePadding = 0`,
 `ShowScrollbar = false`. Inside it, one Image `imgOppRow`: `X=0 Y=0 Width=Parent.TemplateWidth
@@ -353,7 +356,7 @@ replays the detail's entrance**, and clearing the selection **replays the pipeli
 
 | | |
 |---|---|
-| Portal ribbon | ![portal ribbon](previews/portal-ribbon.png) |
+| Crew Portal button (SVG) · Portal ribbon | ![portal button](previews/portal-button.png) ![portal ribbon](previews/portal-ribbon.png) |
 | Crew roster cards (viewer larger) | ![portal cards](previews/portal-cards.png) |
 | Opp row (selected) · Opp detail | ![opp row](previews/portal-opp-row.png) ![opp detail](previews/portal-opp-detail.png) |
 | Pipeline overview · Leaf‑wipe (mid‑sweep) | ![pipeline](previews/portal-pipeline.png) ![leaf](previews/leaf-transition.png) |

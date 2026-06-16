@@ -1,11 +1,16 @@
 // ============================================================================
 //  btnCrewPortal.OnSelect  —  the "Crew Portal" button on the dashboard ribbon.
 //
-//  PLACEMENT: a Button on scrDashboard sitting on the ribbon, e.g.
-//    X=720  Y=11  Width=140  Height=30
-//    Text="Crew Portal"  (or use a borderless Image button to match the SVG ribbon)
-//    Fill=RGBA(1,169,130,1)  Color=White  HoverFill=RGBA(0,103,80,1)
-//    RadiusTopLeft=15 (…all four = 15)  BorderThickness=0
+//  RECOMMENDED PLACEMENT (matches the SVG design language): put the SVG button
+//  image "imgCrewPortalBtn" (see imgCrewPortalBtn.Image.powerfx) on the ribbon at
+//    X=720  Y=11  Width=140  Height=30   ImagePosition=Fit
+//  and paste THIS formula into imgCrewPortalBtn.OnSelect (Image controls are
+//  tappable — no separate Button needed).
+//
+//  ALTERNATIVE: a plain Button with this OnSelect (Text="Crew Portal",
+//  Fill=RGBA(1,169,130,1), Color=White, HoverFill=RGBA(0,103,80,1), radius 15,
+//  BorderThickness=0) — or a transparent Button laid over imgCrewPortalBtn if you
+//  want hover/press feedback on the SVG.
 //
 //  Builds the crew's opportunity pack (the user's own formula) into colCrewOpps,
 //  clears any previous selection, then plays the leaf-wipe transition and

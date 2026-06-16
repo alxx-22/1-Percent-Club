@@ -1,0 +1,28 @@
+// ============================================================================
+//  CREW PORTAL BUTTON (SVG).  Control: Image "imgCrewPortalBtn"
+//  Geometry on the dashboard ribbon:  X=720  Y=11  Width=140  Height=30
+//        ImagePosition = Fit
+//
+//  An Image, NOT a Button — so it matches the rest of the SVG design language.
+//  Image controls are tappable, so put the navigation formula straight on this
+//  control's OnSelect:
+//        imgCrewPortalBtn.OnSelect = (the contents of btnCrewPortal.OnSelect.powerfx)
+//  (If you want hover/press feedback too, drop a transparent Button with the same
+//   size/position on top of this image and put the OnSelect there instead.)
+//
+//  Green HPE pill, a leaf glyph (nods to the leaf-wipe transition), "Crew Portal",
+//  and a chevron that gently nudges to signal "go". Fades up on load (varSvgCss
+//  .fu); honours prefers-reduced-motion.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<style>.nudge{animation:nudge 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}@media(prefers-reduced-motion:reduce){.nudge{animation:none}}</style>" &
+    "<g class='fu'>" &
+    "<rect x='1' y='1' width='138' height='28' rx='14' fill='#01a982'/>" &
+    "<rect x='1' y='1' width='138' height='14' rx='13' fill='#ffffff' opacity='.12'/>" &
+    "<g transform='translate(20,15)'><path d='M0,-7 C4,-5 4,3 0,7 C-4,3 -4,-5 0,-7 Z' fill='#ffffff' opacity='.95'/><path d='M0,-6 L0,6' stroke='#01a982' stroke-width='.8' opacity='.5'/></g>" &
+    "<text x='36' y='16' font-size='13' font-weight='600' fill='#ffffff' dominant-baseline='central'>Crew Portal</text>" &
+    "<path d='M122,11 l5,4 l-5,4' fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudge'/>" &
+    "</g>" &
+    "</svg>"
+)

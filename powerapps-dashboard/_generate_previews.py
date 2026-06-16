@@ -486,6 +486,25 @@ def chip(x, y, label, col, fg="#ffffff"):
 
 
 # ---------------------------------------------------------------- PORTAL RIBBON
+def portal_button_inner():
+    """The 'Crew Portal' ribbon button — an SVG (Image control with its own OnSelect)."""
+    W, H = 140, 30
+    s = [CSS,
+         "<style>.nudge{animation:nudge 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}"
+         "@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}"
+         "@media(prefers-reduced-motion:reduce){.nudge{animation:none}}</style>",
+         "<g class='fu'>"]
+    s.append(f"<rect x='1' y='1' width='138' height='28' rx='14' fill='{C['brand']}'/>")
+    s.append(f"<rect x='1' y='1' width='138' height='14' rx='13' fill='#ffffff' opacity='.12'/>")
+    # leaf glyph (ties into the leaf-wipe transition)
+    s.append(f"<g transform='translate(20,15)'><path d='M0,-7 C4,-5 4,3 0,7 C-4,3 -4,-5 0,-7 Z' fill='#ffffff' opacity='.95'/>"
+             f"<path d='M0,-6 L0,6' stroke='{C['brand']}' stroke-width='.8' opacity='.5'/></g>")
+    s.append(f"<text x='36' y='16' font-family='{FONT}' font-size='13' font-weight='600' fill='#ffffff' dominant-baseline='central'>Crew Portal</text>")
+    s.append("<path d='M122,11 l5,4 l-5,4' fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudge'/>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
 def portal_ribbon_inner(u):
     W, H = PAGE_W, RIB_H
     s = [DEFS, CSS, "<g class='fu'>"]
@@ -748,6 +767,7 @@ P_OPPS = [
 P_RIB = dict(ini="AJ", chip="Alex Jackson · AE", crew="Green Machine")
 
 # standalone portal component previews
+save("portal-button", wrap(*portal_button_inner()))
 save("portal-ribbon", wrap(*portal_ribbon_inner(P_RIB)))
 save("portal-cards", wrap(*crew_cards_inner(P_MEMBERS, "Alex Jackson"), bg=C['canvas']))
 save("portal-opp-row", wrap(*opp_row_inner(P_OPPS[0], selected=True)))
