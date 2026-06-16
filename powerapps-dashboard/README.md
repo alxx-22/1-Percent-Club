@@ -19,13 +19,20 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 ![sponsor](previews/full-page-sponsor.png)
 ![spectator](previews/full-page-spectator.png)
 
+There's also a **second page — the [Crew Portal](#8-crew-portal-second-page)** — opened from a
+button on the ribbon: crew profile cards along the top, the crew's opportunity pipeline on the
+left, and a per‑opportunity detail panel on the right, with a branded **leaf‑wipe** transition
+between the two pages.
+
+![crew portal](previews/full-portal.png)
+
 ---
 
 ## 1. Controls & formulas
 
 | Control | Type | Property | Formula |
 |---|---|---|---|
-| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — `Set(varReady,false)` |
+| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — `varReady` + portal/transition vars |
 | `imgLoading` (on **scrLoading**, the 1st screen) | Image | `Image` | [`imgLoading.Image.powerfx`](formulas/imgLoading.Image.powerfx) |
 | `tmrGo` (on scrLoading) | Timer | `OnTimerEnd` | [`tmrGo.OnTimerEnd.powerfx`](formulas/tmrGo.OnTimerEnd.powerfx) — auto‑enter when data ready |
 | `btnEnter` (on scrLoading) | Button | `OnSelect` | [`btnEnter.OnSelect.powerfx`](formulas/btnEnter.OnSelect.powerfx) — manual fallback |
@@ -38,6 +45,9 @@ colours are the HPE [semantic / dataVis tokens (light)](https://design-system.hp
 | `imgRanksHeader` | Image | `Image` | [`imgRanksHeader.Image.powerfx`](formulas/imgRanksHeader.Image.powerfx) |
 | `galLeaderboard` | Gallery (blank vertical) | `Items` | `colCrewRest` |
 | `imgRow` (in gallery) | Image | `Image` | [`imgRow.Image.powerfx`](formulas/imgRow.Image.powerfx) |
+| `btnCrewPortal` (on ribbon) | Button | `OnSelect` | [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — open the **Crew Portal** (§8) |
+| `imgLeafWipe` | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/imgLeafWipe.Image.powerfx) — page‑transition overlay (§8) |
+| `tmrLeaf` | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/tmrLeaf.OnTimerEnd.powerfx) — dismisses the overlay (§8) |
 
 Every Image: **`ImagePosition = ImagePosition.Fit`**.
 
@@ -171,6 +181,11 @@ Collections built in `OnVisible`: `colMembers` → `colCrew` (ranked) → `colCr
 `colCrewBreak` (per‑crew category sums, for sponsor box + spectator), `colMyCrew` (viewer's crew,
 grid), plus the role / box / `varSvgCss` variables.
 
+> **Job role** — `colMembers` also carries `Role` (read from the **`Job Family`** column), used by
+> the Crew Portal cards (§8). If your column has a different name (e.g. `'Job Role'`), change the
+> one line in [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) and make sure the
+> field is in the visual's data well.
+
 ### Components
 | | |
 |---|---|
@@ -224,10 +239,131 @@ static/`reduced-motion` renders show the settled design. **Honours `prefers-redu
 
 ---
 
-## 8. Regenerate / verify (optional)
+## 8. Crew Portal (second page)
+
+A second screen, **`scrPortal`**, opened from a **Crew Portal** button on the dashboard ribbon.
+Same locked **1136 × 640**, same HPE tokens and motion language. It shows the viewer's crew as
+**profile cards** along the top, a **brief opportunity list** on the left (Name · Funnel Type ·
+Account Name), and on the right either a **pipeline overview** (the default "underneath" visual) or
+the **full detail** of the opportunity you select.
+
+**Nothing selected** (pipeline overview) &nbsp;·&nbsp; **Opportunity selected** (detail)
+![portal overview](previews/full-portal-empty.png)
+![portal detail](previews/full-portal.png)
+
+### 8.1 Controls & formulas
+
+| Control | Screen | Type | Property | Formula |
+|---|---|---|---|---|
+| `btnCrewPortal` | scrDashboard (ribbon) | Button | `OnSelect` | [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — build `colCrewOpps`, arm transition, `Navigate(scrPortal)` |
+| **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/Screen_Portal_OnVisible.powerfx) — builds `colCrewCards` / `colOpps` / `colPipe` |
+| `imgPortalRibbon` | scrPortal | Image | `Image` | [`imgPortalRibbon.Image.powerfx`](formulas/imgPortalRibbon.Image.powerfx) |
+| `btnBack` | scrPortal (ribbon) | Button | `OnSelect` | [`btnBack.OnSelect.powerfx`](formulas/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
+| `imgCrewCards` | scrPortal | Image | `Image` | [`imgCrewCards.Image.powerfx`](formulas/imgCrewCards.Image.powerfx) — roster cards |
+| `imgOppHeader` | scrPortal | Image | `Image` | [`imgOppHeader.Image.powerfx`](formulas/imgOppHeader.Image.powerfx) |
+| `galCrewOpps` | scrPortal | Gallery (blank vertical) | `Items` | `colOpps` |
+| `galCrewOpps` | scrPortal | Gallery | `OnSelect` | [`galCrewOpps.OnSelect.powerfx`](formulas/galCrewOpps.OnSelect.powerfx) — set `varSelOpp` + wrap update text |
+| `imgOppRow` (in gallery) | scrPortal | Image | `Image` | [`imgOppRow.Image.powerfx`](formulas/imgOppRow.Image.powerfx) |
+| `imgOppDetail` | scrPortal | Image | `Image` | [`imgOppDetail.Image.powerfx`](formulas/imgOppDetail.Image.powerfx) |
+| `imgPipeline` | scrPortal | Image | `Image` | [`imgPipeline.Image.powerfx`](formulas/imgPipeline.Image.powerfx) |
+| `imgLeafWipe` | both screens | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/imgLeafWipe.Image.powerfx) — transition overlay |
+| `tmrLeaf` | both screens | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/tmrLeaf.OnTimerEnd.powerfx) |
+
+Every Image: `ImagePosition = Fit` (except `imgLeafWipe` = **`Fill`**).
+
+### 8.2 Layout — locked 1136 × 640
+
+| Control | X | Y | Width | Height | Visible |
+|---|---:|---:|---:|---:|---|
+| `imgPortalRibbon` | 0 | 0 | 1136 | 52 | `true` |
+| `btnBack` (transparent, over the back‑pill) | 16 | 11 | 132 | 30 | `true` |
+| `imgCrewCards` | 16 | 68 | 1104 | 150 | `true` |
+| `imgOppHeader` | 16 | 230 | 420 | 30 | `true` |
+| `galCrewOpps` | 16 | 262 | 420 | 362 | `true` |
+| `imgOppDetail` | 452 | 230 | 668 | 394 | `!IsBlank(varSelOpp.OppId)` |
+| `imgPipeline` | 452 | 230 | 668 | 394 | `IsBlank(varSelOpp.OppId)` |
+| `imgLeafWipe` (top of z‑order, both screens) | 0 | 0 | 1136 | 640 | `varLeafBusy` |
+
+On the **dashboard ribbon**, place `btnCrewPortal` (e.g. `X=720 Y=11 W=140 H=30`, fill brand green
+`RGBA(1,169,130,1)`, white text "Crew Portal", radius 15, no border).
+
+**Gallery** `galCrewOpps`: `Items = colOpps`, `TemplateSize = 64`, `TemplatePadding = 0`,
+`ShowScrollbar = false`. Inside it, one Image `imgOppRow`: `X=0 Y=0 Width=Parent.TemplateWidth
+Height=Parent.TemplateHeight ImagePosition=Fit`. Set the gallery's `OnSelect` to the formula above
+(it also fires `Select(galCrewOpps)`‑style when a row image is tapped).
+
+`imgOppDetail` and `imgPipeline` occupy the **same** rectangle and swap purely by their `Visible`
+rule — selecting an opp shows the detail and hides the overview; clearing it reverses.
+
+### 8.3 The opportunity data
+
+`btnCrewPortal.OnSelect` runs your exact pack‑parsing formula: it reads the signed‑in user's
+**`Crew Funnel Pack`** from the `Teams` source, splits it on `||` (rows) then `//` (columns), and
+`Collect`s `colCrewOpps` with `FunnelType · OppId · OppName · AccountName · ForecastCategory ·
+CloseDate · TotalValue · MemberName · OppUpdate`. `scrPortal.OnVisible` then turns that into:
+
+```
+colOpps   = colCrewOpps + a 0-based Idx           (list rows: stagger + selection)
+colPipe   = value + count per Forecast Category    (the overview bars; ordered
+            Commit → Best Case → Pipeline → Upside → Omitted, then by value)
+varPipeTotal / varPipeMax  = hero total + bar scaling
+colCrewCards = the crew roster, viewer first + larger (name · Role · MemberTotal)
+```
+
+The roster cards reuse `colMembers` (so the **`Role`** field from §4 is required). The feature card
+(index 0 — the viewer for a member, or the top scorer otherwise) is 1.5× wide; the viewer's own
+card is green with a **YOU** tag. Card widths come from `varCardBig / varCardSmall / varCardGap`, so
+the strip always fills 1104 px for any crew size.
+
+### 8.4 The leaf‑wipe page transition
+
+The "universal transition" between the two pages. `imgLeafWipe` is a full‑screen overlay (on both
+screens, top of z‑order, `Visible = varLeafBusy`): a branded green panel sweeps across while leaves
+tumble, then exits to clear. Its `<desc>` holds **`varLeafKey`** — every navigation bumps the key,
+which changes the Image string so the control **reloads and replays** the CSS animation from the
+start (the same `<desc>`/reload trick your original leaf SVG used, but with a richer, self‑contained
+vector animation — no external PNG needed).
+
+```
+btnCrewPortal / btnBack:  Set(varLeafKey, varLeafKey+1); Set(varLeafBusy, true);
+                          Navigate(scr…, ScreenTransition.Cover | .UnCover)
+tmrLeaf (both screens):   Duration=1100  Repeat=false  Start=varLeafBusy  Reset=!varLeafBusy
+                          OnTimerEnd → Set(varLeafBusy, false)   // removes the overlay
+```
+
+**Navigation never depends on the timer** — `Navigate(…, ScreenTransition.Cover/UnCover)` already
+runs in the button, so the leaf‑wipe is a flourish on top of a reliable built‑in transition. If
+timers are unreliable in your Power BI visual, set `imgLeafWipe.Visible = false` and you still get
+the Cover/UnCover transition. To use **your own leaf PNG** instead of the vector leaves, swap the
+two `<path>` leaf shapes in `imgLeafWipe.Image.powerfx` for an `<image href='data:image/png;base64,…'/>`
+(send me the file and I'll embed the exact base64).
+
+### 8.5 Animations — entrance + the "exit" question
+
+Every portal SVG has an **entrance** animation in the shared `varSvgCss` language: ribbon & cards
+**fade‑up** (staggered), opp rows **slide in**, the detail card **fades up** with its tiles, the
+pipeline bars **grow**. Because each Image re‑renders when its data changes, **switching opportunity
+replays the detail's entrance**, and clearing the selection **replays the pipeline's entrance**.
+
+> PowerApps has **no per‑control "exit" animation** (you can't animate a control while
+> `Visible` flips to false — it just disappears). The design covers this two ways: the
+> **leaf‑wipe** is the real exit/enter for the *page* change, and within the page the right‑panel
+> swap is instant with the *incoming* visual animating in. That's the closest faithful equivalent
+> to the requested entrance/exit feel that the platform allows.
+
+| | |
+|---|---|
+| Portal ribbon | ![portal ribbon](previews/portal-ribbon.png) |
+| Crew roster cards (viewer larger) | ![portal cards](previews/portal-cards.png) |
+| Opp row (selected) · Opp detail | ![opp row](previews/portal-opp-row.png) ![opp detail](previews/portal-opp-detail.png) |
+| Pipeline overview · Leaf‑wipe (mid‑sweep) | ![pipeline](previews/portal-pipeline.png) ![leaf](previews/leaf-transition.png) |
+
+---
+
+## 9. Regenerate / verify (optional)
 
 ```bash
 pip install cairosvg openpyxl
-python3 _generate_previews.py    # writes svg/ + previews/ (member, sponsor, spectator)
+python3 _generate_previews.py    # writes svg/ + previews/ (dashboard + portal + transition)
 python3 _verify_powerfx_svg.py   # XML-validates the SVGs + structural-checks the .powerfx
 ```

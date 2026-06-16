@@ -1,0 +1,19 @@
+// ============================================================================
+//  tmrLeaf.OnTimerEnd  —  dismisses the leaf-wipe transition overlay.
+//
+//  PLACEMENT: one Timer "tmrLeaf" on EACH screen that shows imgLeafWipe
+//  (scrDashboard + scrPortal):
+//    Duration = 1100        (matches the leaf-wipe animation length, ms)
+//    Repeat   = false
+//    AutoStart= false
+//    Start    = varLeafBusy   <-- runs whenever a transition is armed
+//    Reset    = !varLeafBusy
+//    Visible  = false
+//  OnTimerEnd (below) clears the flag, which hides imgLeafWipe and resets the timer.
+//
+//  Note: this dismiss relies on a timer tick. The NAVIGATION itself never depends
+//  on it (Navigate + ScreenTransition.Cover/UnCover already ran in the button), so
+//  if timers are unreliable in your Power BI visual you can simply set
+//  imgLeafWipe.Visible=false and keep the built-in Cover/UnCover transition.
+// ============================================================================
+Set( varLeafBusy, false )

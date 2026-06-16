@@ -1,0 +1,65 @@
+// ============================================================================
+//  OPPORTUNITY DETAIL (NON-gallery).  Control: Image "imgOppDetail"
+//  Geometry: X=452  Y=230  Width=668  Height=394   ImagePosition=Fit
+//  Visible:  !IsBlank( varSelOpp.OppId )       <-- appears when an opp is picked
+//  (the pipeline overview imgPipeline uses the opposite rule and sits in the same
+//  rectangle, so selecting an opp swaps overview -> detail).
+//  Renders the full record in varSelOpp; the update text is pre-wrapped into
+//  colSelLines by galCrewOpps.OnSelect. The Image string changes per selection,
+//  so the 'fu' entrance animation replays each time a new opp is opened.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 394' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<desc>" & (varSelOpp.OppId & "") & "</desc>" &
+    With(
+        { fc:  Switch( varSelOpp.ForecastCategory, "Commit","#009a71", "Best Case","#0070f8", "Pipeline","#04909d", "Upside","#7764fc", "Omitted","#606a70", "#606a70" ),
+          ftc: Switch( varSelOpp.FunnelType, "Upsell","#0070f8", "New Logo","#009a71", "Renewal","#04909d", "Cross-sell","#7764fc", "Expansion","#cc54a4", "#606a70" ),
+          nm:  Substitute(Substitute(Substitute( Left(varSelOpp.OppName & "", 52), "&","&amp;"),"<","&lt;"),">","&gt;"),
+          ac:  Substitute(Substitute(Substitute( Left(varSelOpp.AccountName & "", 70), "&","&amp;"),"<","&lt;"),">","&gt;"),
+          ftt: Substitute(Substitute(Substitute( varSelOpp.FunnelType & "", "&","&amp;"),"<","&lt;"),">","&gt;"),
+          fcat:Substitute(Substitute(Substitute( varSelOpp.ForecastCategory & "", "&","&amp;"),"<","&lt;"),">","&gt;"),
+          own: Substitute(Substitute(Substitute( Left(varSelOpp.MemberName & "", 16), "&","&amp;"),"<","&lt;"),">","&gt;") },
+        "<g class='fu'>" &
+        "<rect x='0' y='0' width='668' height='394' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
+        "<rect x='0' y='0' width='668' height='6' rx='3' fill='" & fc & "'/>" &
+        "<text x='28' y='38' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>OPPORTUNITY DETAIL</text>" &
+        "<text x='28' y='68' font-size='20' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+        "<text x='28' y='90' font-size='13' fill='#606a70'>" & ac & "</text>" &
+        // chips
+        With(
+            { fw: 7*Len(varSelOpp.ForecastCategory & "") + 20 },
+            "<rect x='28' y='104' width='" & Text(fw) & "' height='20' rx='10' fill='" & fc & "'/>" &
+            "<text x='" & Text( Round(28 + fw/2, 0) ) & "' y='114' font-size='10.5' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & fcat & "</text>" &
+            "<rect x='" & Text(28 + fw + 8) & "' y='104' width='" & Text(7*Len(varSelOpp.FunnelType & "") + 20) & "' height='20' rx='10' fill='#eef2f5'/>" &
+            "<text x='" & Text( Round(28 + fw + 8 + (7*Len(varSelOpp.FunnelType & "") + 20)/2, 0) ) & "' y='114' font-size='10.5' font-weight='700' fill='" & ftc & "' text-anchor='middle' dominant-baseline='central'>" & ftt & "</text>"
+        ) &
+        // stat tiles
+        "<g class='fo' style='animation-delay:.20s'>" &
+        "<rect x='28' y='138' width='196' height='70' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+        "<text x='44' y='162' font-size='9' font-weight='700' letter-spacing='.6' fill='#606a70'>TOTAL VALUE</text>" &
+        "<text x='44' y='190' font-size='22' font-weight='700' fill='#006750'>" & Text( varSelOpp.TotalValue, "#,##0" ) & "</text>" &
+        "</g>" &
+        "<g class='fo' style='animation-delay:.28s'>" &
+        "<rect x='236' y='138' width='196' height='70' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+        "<text x='252' y='162' font-size='9' font-weight='700' letter-spacing='.6' fill='#606a70'>CLOSE DATE</text>" &
+        "<text x='252' y='190' font-size='17' font-weight='700' fill='#292d3a'>" & Text( varSelOpp.CloseDate, "dd mmm yyyy" ) & "</text>" &
+        "</g>" &
+        "<g class='fo' style='animation-delay:.36s'>" &
+        "<rect x='444' y='138' width='196' height='70' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+        "<text x='460' y='162' font-size='9' font-weight='700' letter-spacing='.6' fill='#606a70'>OPP OWNER</text>" &
+        "<text x='460' y='190' font-size='17' font-weight='700' fill='#292d3a'>" & own & "</text>" &
+        "</g>" &
+        // latest-update panel (lines pre-wrapped in colSelLines)
+        "<g class='fu' style='animation-delay:.34s'>" &
+        "<rect x='28' y='224' width='612' height='146' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+        "<rect x='28' y='224' width='5' height='146' rx='2.5' fill='#01a982'/>" &
+        "<text x='46' y='248' font-size='9.5' font-weight='700' letter-spacing='.6' fill='#606a70'>LATEST UPDATE</text>" &
+        Concat(
+            Sort( colSelLines, Line ),
+            "<text x='46' y='" & Text( 270 + ThisRecord.Line*18 ) & "' font-size='12' fill='#3e4550'>" & ThisRecord.Text & "</text>"
+        ) &
+        "</g>" &
+        "</g>"
+    ) &
+    "</svg>"
+)

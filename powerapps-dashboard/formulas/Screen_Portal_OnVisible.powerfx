@@ -1,0 +1,88 @@
+// ============================================================================
+//  scrPortal.OnVisible  —  builds the CREW PORTAL page data.
+//
+//  Reached only via the "Crew Portal" ribbon button (btnCrewPortal), which has
+//  already collected colCrewOpps (the crew's opportunity pack) and cleared
+//  varSelOpp before navigating here. This screen turns that raw data into:
+//    colCrewCards — the crew roster cards (current user first + larger)
+//    colOpps      — the opportunity list (adds a 0-based Idx for stagger + select)
+//    colPipe      — pipeline totals grouped by Forecast Category (the overview)
+//
+//  Same environment quirks as the dashboard apply: no GroupBy/SortByColumns with
+//  string column names -> aggregate with Distinct/Filter/Sum/Sort(<expression>);
+//  With() rebinds ThisRecord -> use ForAll(... As alias) + alias.col.
+// ============================================================================
+
+// 1) crew roster cards — current user first, then by points desc -------------
+//    CardKey sorts the viewer to the front ("0..."), everyone else by points
+//    ("1" + a fixed-width 8-digit "bigger total => smaller key").
+ClearCollect(
+    colCrewCardsRaw,
+    ForAll(
+        Filter( colMembers, Crew = varMyCrew ) As mm,
+        { Name:        mm.Name,
+          Role:        mm.Role,
+          MemberTotal: mm.MemberTotal,
+          IsMe:        mm.Email = varUserEmail,
+          CardKey:     If( mm.Email = varUserEmail, "0", "1" ) & Text( 99999999 - mm.MemberTotal, "00000000" ) }
+    )
+);
+ClearCollect(
+    colCrewCards,
+    ForAll(
+        Sequence( CountRows( colCrewCardsRaw ) ),
+        With( { row: Last( FirstN( Sort( colCrewCardsRaw, CardKey ), Value ) ) },
+            { Idx: Value - 1, Name: row.Name, Role: row.Role,
+              MemberTotal: row.MemberTotal, IsMe: row.IsMe } )
+    )
+);
+// card geometry (the strip is 1104 wide; card 0 is 1.5x the others) ----------
+Set( varCardN,     CountRows( colCrewCards ) );
+Set( varCardGap,   12 );
+Set( varCardSmall, Round( (1104 - (Max(varCardN,1)-1)*varCardGap) / (Max(varCardN,1) + 0.5), 0 ) );
+Set( varCardBig,   Round( varCardSmall * 1.5, 0 ) );
+
+// 2) opportunity list — add a 0-based Idx (stagger + selection) --------------
+ClearCollect(
+    colOpps,
+    ForAll(
+        Sequence( CountRows( colCrewOpps ) ),
+        With( { row: Last( FirstN( colCrewOpps, Value ) ) },
+            { Idx:             Value - 1,
+              OppId:           row.OppId & "",
+              OppName:         row.OppName & "",
+              AccountName:     row.AccountName & "",
+              FunnelType:      row.FunnelType & "",
+              ForecastCategory:row.ForecastCategory & "",
+              CloseDate:       row.CloseDate,
+              TotalValue:      IfError( row.TotalValue, 0 ),
+              MemberName:      row.MemberName & "",
+              OppUpdate:       row.OppUpdate & "" } )
+    )
+);
+
+// 3) pipeline overview — value + count per Forecast Category -----------------
+ClearCollect(
+    colPipeAgg,
+    ForAll(
+        Distinct( colOpps, ForecastCategory ) As d,
+        With(
+            { f: Filter( colOpps, ForecastCategory = d.Value ) },
+            { Cat: d.Value,
+              Val: Sum( f, TotalValue ),
+              Cnt: CountRows( f ),
+              Ord: Switch( d.Value, "Commit", 1, "Best Case", 2, "Pipeline", 3, "Upside", 4, "Omitted", 5, 9 ) }
+        )
+    )
+);
+ClearCollect(
+    colPipe,
+    ForAll(
+        Sequence( CountRows( colPipeAgg ) ),
+        With( { row: Last( FirstN( Sort( colPipeAgg, Ord ), Value ) ) },
+            { Idx: Value - 1, Cat: row.Cat, Val: row.Val, Cnt: row.Cnt } )
+    )
+);
+Set( varPipeN,     CountRows( colPipe ) );
+Set( varPipeTotal, Sum( colOpps, TotalValue ) );
+Set( varPipeMax,   Max( 1, Max( colPipeAgg, Val ) ) );

@@ -429,4 +429,350 @@ def page(role):
 save("full-page-mockup", wrap(*page("member"), bg=C['canvas']))
 save("full-page-sponsor", wrap(*page("sponsor"), bg=C['canvas']))
 save("full-page-spectator", wrap(*page("spectator"), bg=C['canvas']))
+
+
+# ============================================================================
+#  CREW PORTAL  (second page) — locked 1136 x 640
+#    ribbon (back to dashboard)         0,0,1136,52
+#    crew member cards strip            16,68,1104,150   (current user larger)
+#    opp-list header                    16,230,420,30
+#    opp list (gallery)                 16,262,420,362   rows 420x64
+#    right panel                        452,230,668,394
+#       - opp DETAIL   (shown when an opp is selected)
+#       - pipeline OVERVIEW (the "underneath" visual, shown when nothing selected)
+#    leaf-wipe transition overlay       full screen, plays on entry
+# ============================================================================
+P_CARDS = (16, 68, 1104, 150)
+P_HEAD  = (16, 230, 420, 30)
+P_LIST  = (16, 262, 420, 362)
+P_RIGHT = (452, 230, 668, 394)
+OPPROW_H = 64
+FUNNELCOL = {"Upsell": C["blue"], "New Logo": C["ok"], "Renewal": C["teal"],
+             "Cross-sell": C["purple"], "Expansion": C["magenta"]}
+FCCOL = {"Commit": C["ok"], "Best Case": C["blue"], "Pipeline": C["teal"],
+         "Upside": C["purple"], "Omitted": C["weak"]}
+
+
+def money(v):
+    return f"{int(v):,}"
+
+
+def wrap_text(s, maxchars, maxlines=3):
+    words, lines, cur = str(s).split(), [], ""
+    for w in words:
+        if len(cur) + len(w) + (1 if cur else 0) <= maxchars:
+            cur = (cur + " " + w).strip()
+        else:
+            lines.append(cur); cur = w
+            if len(lines) == maxlines - 1:
+                break
+    if cur and len(lines) < maxlines:
+        lines.append(cur)
+    if len(lines) == maxlines and len("".join(words)) > maxchars * maxlines:
+        lines[-1] = lines[-1][:maxchars - 1].rstrip() + "…"
+    return lines
+
+
+def trunc(s, n):
+    s = str(s)
+    return s if len(s) <= n else s[:n - 1] + "…"
+
+
+def chip(x, y, label, col, fg="#ffffff"):
+    w = 7 * len(str(label)) + 20
+    return (f"<rect x='{x:.0f}' y='{y:.0f}' width='{w:.0f}' height='20' rx='10' fill='{col}'/>"
+            f"<text x='{x+w/2:.0f}' y='{y+10:.0f}' font-family='{FONT}' font-size='10.5' font-weight='700' "
+            f"fill='{fg}' text-anchor='middle' dominant-baseline='central'>{esc(label)}</text>"), w
+
+
+# ---------------------------------------------------------------- PORTAL RIBBON
+def portal_ribbon_inner(u):
+    W, H = PAGE_W, RIB_H
+    s = [DEFS, CSS, "<g class='fu'>"]
+    s.append(f"<rect x='0' y='0' width='{W}' height='{H}' fill='{C['card']}'/>")
+    s.append(f"<line x1='0' y1='{H-1}' x2='{W}' y2='{H-1}' stroke='{C['border']}'/>")
+    # back pill (a transparent btnBack sits over this in PowerApps)
+    s.append(f"<rect x='16' y='11' width='132' height='30' rx='15' fill='{C['contrast']}' stroke='{C['border']}'/>")
+    s.append(f"<path d='M34,26 l7,-6 m-7,6 l7,6 m-7,-6 h12' fill='none' stroke='{C['greenDark']}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>")
+    s.append(f"<text x='54' y='27' font-family='{FONT}' font-size='12.5' font-weight='600' fill='{C['greenDark']}' dominant-baseline='central'>Dashboard</text>")
+    # title
+    s.append(f"<rect x='164' y='13' width='26' height='26' rx='7' fill='{C['brand']}'/>")
+    s.append(f"<text x='177' y='27' font-family='{FONT}' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>")
+    s.append(f"<text x='202' y='32' font-family='{FONT}' font-size='17' font-weight='700' fill='{C['strong']}'>Crew Portal <tspan fill='{C['weak']}' font-weight='400'>&#183; {esc(u.get('crew',''))}</tspan></text>")
+    cw = 244; cx = W - 16 - cw
+    s.append(f"<rect x='{cx}' y='10' width='{cw}' height='32' rx='16' fill='{C['contrast']}'/>")
+    s.append(f"<circle cx='{cx+20}' cy='26' r='12' fill='{C['brand']}'/>")
+    s.append(f"<text x='{cx+20}' y='27' font-family='{FONT}' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>{esc(u['ini'])}</text>")
+    s.append(f"<text x='{cx+40}' y='30' font-family='{FONT}' font-size='13' fill='{C['text']}'>{esc(u['chip'])}</text>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- CREW CARDS
+def crew_cards_inner(members, current):
+    W, H = P_CARDS[2], P_CARDS[3]
+    n = max(1, len(members)); gap = 12
+    small = (W - (n - 1) * gap) / (n + 0.5)
+    big = small * 1.5
+    s = [DEFS, CSS]
+    s.append(eyebrow(4, 15, "CREW ROSTER"))
+    s.append(f"<text x='{W-4}' y='15' font-family='{FONT}' font-size='11' fill='{C['weak']}' text-anchor='end'>{n} members</text>")
+    ry, ch = 24, H - 26
+    x = 0.0
+    for i, m in enumerate(members):
+        me = (m['name'] == current)
+        cwid = big if me else small
+        cx = x + cwid / 2
+        fill = C['greenTint'] if me else C['card']
+        stroke = C['brand'] if me else C['border']
+        ar = 20 if me else 18
+        acy = ry + (30 if me else 34)
+        s.append(f"<g class='fu' style='animation-delay:{0.10+i*0.06:.2f}s'>")
+        s.append(shadow(x, ry, cwid, ch, 13, op=0.06))
+        s.append(f"<rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='{ch}' rx='13' fill='{fill}' stroke='{stroke}' stroke-width='{2 if me else 1}'/>")
+        s.append(f"<rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='4' rx='2' fill='{C['brand'] if me else C['contrast']}'/>")
+        if me:
+            s.append(f"<circle cx='{cx:.0f}' cy='{acy}' r='{ar+4}' fill='none' stroke='{C['brand']}' stroke-width='2' class='ring' opacity='0'/>")
+        s.append(f"<circle cx='{cx:.0f}' cy='{acy}' r='{ar}' fill='{C['brand'] if me else C['contrast']}'/>")
+        s.append(f"<text x='{cx:.0f}' y='{acy+1}' font-family='{FONT}' font-size='{14 if me else 12}' font-weight='700' fill='{'#ffffff' if me else C['greenDark']}' text-anchor='middle' dominant-baseline='central'>{esc(initials(m['name']))}</text>")
+        nm = trunc(m['name'], int(cwid / 7.5))
+        s.append(f"<text x='{cx:.0f}' y='{ry+(66 if me else 68)}' font-family='{FONT}' font-size='{14 if me else 12}' font-weight='700' fill='{C['strong']}' text-anchor='middle'>{esc(nm)}</text>")
+        rl = trunc(m['role'], int(cwid / 6.2))
+        s.append(f"<text x='{cx:.0f}' y='{ry+(82 if me else 84)}' font-family='{FONT}' font-size='{10.5 if me else 9.5}' fill='{C['weak']}' text-anchor='middle'>{esc(rl)}</text>")
+        s.append(f"<text x='{cx:.0f}' y='{ry+ch-(16 if me else 14)}' font-family='{FONT}' font-size='{26 if me else 22}' font-weight='700' fill='{C['greenDark']}' text-anchor='middle'>{esc(m['pts'])}</text>")
+        s.append(f"<text x='{cx:.0f}' y='{ry+ch-(4 if me else 3)}' font-family='{FONT}' font-size='8' font-weight='600' letter-spacing='1' fill='{C['weak']}' text-anchor='middle'>POINTS</text>")
+        if me:
+            s.append(f"<rect x='{x+cwid-44:.0f}' y='{ry+8}' width='36' height='16' rx='8' fill='{C['brand']}'/>")
+            s.append(f"<text x='{x+cwid-26:.0f}' y='{ry+16}' font-family='{FONT}' font-size='9' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>YOU</text>")
+        s.append("</g>")
+        x += cwid + gap
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- OPP LIST HEADER
+def opp_header_inner(count):
+    W, H = P_HEAD[2], P_HEAD[3]
+    s = [DEFS, CSS]
+    s.append(eyebrow(4, 19, "CREW PIPELINE"))
+    s.append(f"<text x='{W-4}' y='19' font-family='{FONT}' font-size='11' fill='{C['weak']}' text-anchor='end'>{count} opportunities</text>")
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- OPP ROW
+def opp_row_inner(o, selected=False, idx=0):
+    W, H = P_LIST[2], OPPROW_H
+    fc = FCCOL.get(o['forecast'], C['weak'])
+    s = [DEFS, CSS]
+    s.append(f"<g class='rw' style='animation-delay:{0.06+idx*0.05:.2f}s'>")
+    s.append(f"<rect x='2' y='3' width='{W-4}' height='{H-8}' rx='11' fill='{C['greenTint'] if selected else C['card']}' stroke='{C['brand'] if selected else C['border']}' stroke-width='{2 if selected else 1}'/>")
+    s.append(f"<rect x='2' y='3' width='5' height='{H-8}' rx='2.5' fill='{fc}'/>")
+    s.append(f"<text x='18' y='25' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['strong']}'>{esc(trunc(o['name'], 34))}</text>")
+    s.append(f"<text x='18' y='44' font-family='{FONT}' font-size='10.5' fill='{C['weak']}'>{esc(trunc(o['account'], 30))}</text>")
+    ftc = FUNNELCOL.get(o['funnel'], C['weak'])
+    ch, cw = chip(18, 48, o['funnel'], "#eef2f5", fg=ftc)
+    # value, right aligned
+    s.append(f"<text x='{W-16}' y='27' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['greenDark']}' text-anchor='end'>{money(o['value'])}</text>")
+    fch, fcw = chip(W - 16 - (7 * len(o['forecast']) + 20), 44, o['forecast'], fc)
+    s.append(ch); s.append(fch)
+    if selected:
+        s.append(f"<path d='M{W-14},28 l6,5 l-6,5' fill='none' stroke='{C['brand']}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- OPP DETAIL
+def opp_detail_inner(o):
+    W, H = P_RIGHT[2], P_RIGHT[3]
+    fc = FCCOL.get(o['forecast'], C['weak'])
+    ftc = FUNNELCOL.get(o['funnel'], C['weak'])
+    s = [DEFS, CSS, "<g class='fu'>"]
+    s.append(shadow(0, 0, W, H, 16, op=0.07))
+    s.append(f"<rect x='0' y='0' width='{W}' height='{H}' rx='16' fill='{C['card']}' stroke='{C['border']}'/>")
+    s.append(f"<rect x='0' y='0' width='{W}' height='6' rx='3' fill='{fc}'/>")
+    s.append(eyebrow(28, 38, "OPPORTUNITY DETAIL"))
+    # title (wrap up to 2 lines)
+    tl = wrap_text(o['name'], 46, 2)
+    for i, ln in enumerate(tl):
+        s.append(f"<text x='28' y='{70+i*26}' font-family='{FONT}' font-size='22' font-weight='700' fill='{C['strong']}'>{esc(ln)}</text>")
+    ay = 70 + len(tl) * 26
+    s.append(f"<text x='28' y='{ay}' font-family='{FONT}' font-size='13' fill='{C['weak']}'>{esc(o['account'])}</text>")
+    # chips row
+    cy = ay + 14
+    fch, fcw = chip(28, cy, o['forecast'], fc)
+    s.append(fch)
+    uch, ucw = chip(28 + fcw + 8, cy, o['funnel'], "#eef2f5", fg=ftc)
+    s.append(uch)
+    # stat tiles
+    ty = cy + 34
+    tiles = [("TOTAL VALUE", money(o['value']), C['greenDark']),
+             ("CLOSE DATE", o['close'], C['strong']),
+             ("OPP OWNER", trunc(o['owner'], 16), C['strong'])]
+    tw = (W - 56 - 2 * 12) / 3
+    for i, (lbl, val, col) in enumerate(tiles):
+        x = 28 + i * (tw + 12)
+        s.append(f"<g class='fo' style='animation-delay:{0.20+i*0.08:.2f}s'>")
+        s.append(f"<rect x='{x:.0f}' y='{ty}' width='{tw:.0f}' height='70' rx='12' fill='#fbfcfc' stroke='{C['border']}'/>")
+        s.append(f"<text x='{x+16:.0f}' y='{ty+24}' font-family='{FONT}' font-size='9' font-weight='700' letter-spacing='.6' fill='{C['weak']}'>{esc(lbl)}</text>")
+        s.append(f"<text x='{x+16:.0f}' y='{ty+52}' font-family='{FONT}' font-size='{22 if i==0 else 17}' font-weight='700' fill='{col}'>{esc(val)}</text>")
+        s.append("</g>")
+    # latest update panel
+    uy = ty + 86
+    s.append(f"<g class='fu' style='animation-delay:0.34s'>")
+    s.append(f"<rect x='28' y='{uy}' width='{W-56}' height='{H-uy-24}' rx='12' fill='#fbfcfc' stroke='{C['border']}'/>")
+    s.append(f"<rect x='28' y='{uy}' width='5' height='{H-uy-24}' rx='2.5' fill='{C['brand']}'/>")
+    s.append(f"<text x='46' y='{uy+24}' font-family='{FONT}' font-size='9.5' font-weight='700' letter-spacing='.6' fill='{C['weak']}'>LATEST UPDATE</text>")
+    for i, ln in enumerate(wrap_text(o['update'], 64, 4)):
+        s.append(f"<text x='46' y='{uy+46+i*18}' font-family='{FONT}' font-size='12' fill='{C['text']}'>{esc(ln)}</text>")
+    s.append("</g>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- PIPELINE OVERVIEW (underneath)
+def pipeline_inner(opps):
+    W, H = P_RIGHT[2], P_RIGHT[3]
+    total = sum(o['value'] for o in opps)
+    # group by forecast category, preserve a sensible order
+    order = ["Commit", "Best Case", "Pipeline", "Upside", "Omitted"]
+    groups = {}
+    for o in opps:
+        groups.setdefault(o['forecast'], [0, 0])
+        groups[o['forecast']][0] += o['value']
+        groups[o['forecast']][1] += 1
+    cats = sorted(groups.items(), key=lambda kv: (order.index(kv[0]) if kv[0] in order else 99))
+    mx = max([1] + [v[0] for v in groups.values()])
+    s = [DEFS, CSS, "<g class='fu'>"]
+    s.append(shadow(0, 0, W, H, 16, op=0.07))
+    s.append(f"<rect x='0' y='0' width='{W}' height='{H}' rx='16' fill='{C['card']}' stroke='{C['border']}'/>")
+    s.append(eyebrow(28, 38, "CREW PIPELINE OVERVIEW"))
+    s.append(f"<text x='{W-28}' y='38' font-family='{FONT}' font-size='11' fill='{C['weak']}' text-anchor='end'>{len(opps)} open opps</text>")
+    # hero
+    s.append(f"<text x='28' y='86' font-family='{FONT}' font-size='40' font-weight='700' fill='{C['greenDark']}'>{money(total)}</text>")
+    s.append(f"<text x='28' y='106' font-family='{FONT}' font-size='11' font-weight='600' letter-spacing='.6' fill='{C['weak']}'>TOTAL PIPELINE VALUE</text>")
+    s.append(f"<line x1='28' y1='124' x2='{W-28}' y2='124' stroke='{C['border']}'/>")
+    s.append(f"<text x='28' y='148' font-family='{FONT}' font-size='10' font-weight='700' letter-spacing='.6' fill='{C['weak']}'>BY FORECAST CATEGORY</text>")
+    by = 162
+    rowh = (H - by - 56) / max(1, len(cats))
+    for i, (cat, (val, cnt)) in enumerate(cats):
+        y = by + i * rowh
+        col = FCCOL.get(cat, C['weak'])
+        s.append(f"<g class='fo' style='animation-delay:{0.18+i*0.08:.2f}s'>")
+        s.append(f"<circle cx='36' cy='{y+13:.0f}' r='4' fill='{col}'/>")
+        s.append(f"<text x='48' y='{y+17:.0f}' font-family='{FONT}' font-size='12.5' font-weight='600' fill='{C['strong']}'>{esc(cat)}</text>")
+        s.append(f"<text x='{W-28}' y='{y+17:.0f}' font-family='{FONT}' font-size='12.5' font-weight='700' fill='{C['strong']}' text-anchor='end'>{money(val)} <tspan fill='{C['weak']}' font-weight='400'>&#183; {cnt}</tspan></text>")
+        bw = W - 28 - 48
+        s.append(f"<rect x='48' y='{y+22:.0f}' width='{bw}' height='8' rx='4' fill='{C['contrast']}'/>")
+        s.append(f"<rect x='48' y='{y+22:.0f}' width='{max(6, bw*val/mx):.0f}' height='8' rx='4' fill='{col}' class='gx' style='animation-delay:{0.30+i*0.08:.2f}s'/>")
+        s.append("</g>")
+    # footer hint
+    s.append(f"<rect x='28' y='{H-44}' width='{W-56}' height='24' rx='12' fill='{C['contrast']}'/>")
+    s.append(f"<circle cx='48' cy='{H-32}' r='3' fill='{C['brand']}' class='brz'/>")
+    s.append(f"<text x='60' y='{H-28}' font-family='{FONT}' font-size='11' font-weight='600' fill='{C['weak']}'>Select an opportunity on the left to see full details</text>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+# ---------------------------------------------------------------- LEAF-WIPE TRANSITION
+LEAF_PATH = "M0,-15 C9,-11 9,7 0,15 C-9,7 -9,-11 0,-15 Z"
+
+
+def leafwipe_inner(static=False):
+    W, H = PAGE_W, PAGE_H
+    css = (
+        "<style>"
+        ".wipe{" + ("" if static else "animation:wipe 1.05s cubic-bezier(.5,0,.2,1) both") + "}"
+        ".lf{transform-box:fill-box;transform-origin:center;" + ("" if static else "animation:lf 1.05s ease-in-out both") + "}"
+        "@keyframes wipe{0%{transform:translateX(-112%)}42%{transform:translateX(0)}56%{transform:translateX(0)}100%{transform:translateX(112%)}}"
+        "@keyframes lf{0%{transform:rotate(-50deg) scale(.6)}100%{transform:rotate(340deg) scale(1)}}"
+        "@media(prefers-reduced-motion:reduce){.wipe{animation:none;transform:translateX(112%)}.lf{animation:none}}"
+        "</style>")
+    s = [css, "<g class='wipe'>"]
+    # leading-edge gradient panel
+    s.append(f"<defs><linearGradient id='lg' x1='0' y1='0' x2='1' y2='0'>"
+             f"<stop offset='0' stop-color='{C['greenDark']}'/><stop offset='1' stop-color='{C['brand']}'/></linearGradient></defs>")
+    s.append(f"<rect x='-40' y='0' width='{W+80}' height='{H}' fill='url(#lg)'/>")
+    # diagonal leading edge highlight
+    s.append(f"<polygon points='{W-2},0 {W+90},0 {W+50},{H} {W-42},{H}' fill='{C['brand']}' opacity='.55'/>")
+    # tumbling leaves scattered across the panel
+    leaves = [(140, 150, 1.6, GOLD, .00), (320, 470, 1.2, "#ffffff", .10),
+              (520, 120, 2.0, "#bdf5e4", .04), (700, 400, 1.4, GOLD, .14),
+              (880, 230, 1.7, "#ffffff", .08), (1030, 520, 1.1, "#bdf5e4", .12),
+              (250, 320, 1.0, "#ffffff", .16), (640, 560, 1.3, GOLD, .06),
+              (980, 80, 1.5, "#bdf5e4", .02)]
+    for (lx, ly, sc, col, dl) in leaves:
+        style = "" if static else f" style='animation-delay:{dl}s'"
+        s.append(f"<g transform='translate({lx},{ly}) scale({sc})'><g class='lf'{style}>"
+                 f"<path d='{LEAF_PATH}' fill='{col}' opacity='.92'/>"
+                 f"<path d='M0,-13 L0,13' stroke='{C['greenDark']}' stroke-width='.8' opacity='.35'/>"
+                 f"</g></g>")
+    # brand mark riding the wipe
+    s.append(f"<g transform='translate({W/2:.0f},{H/2:.0f})'>"
+             f"<rect x='-30' y='-30' width='60' height='60' rx='16' fill='#ffffff' opacity='.95'/>"
+             f"<text x='0' y='2' font-family='{FONT}' font-size='26' font-weight='700' fill='{C['greenDark']}' text-anchor='middle' dominant-baseline='central'>1%</text></g>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+# ----------------------------- PORTAL MOCK DATA -----------------------------
+P_MEMBERS = [
+    dict(name="Alex Jackson", role="Account Executive", pts=310),
+    dict(name="Rowan Johnson", role="Solutions Architect", pts=40),
+    dict(name="Quinn White", role="Inside Sales Rep", pts=20),
+    dict(name="Avery Anderson", role="Customer Success", pts=0),
+    dict(name="Alex Brown", role="Sales Engineer", pts=0),
+    dict(name="Jordan Brown", role="BDR", pts=0),
+]
+P_OPPS = [
+    dict(name="Cloud Migration – Phase 2", funnel="Upsell", account="Northwind Trading", forecast="Commit",
+         close="31 Jul 2026", value=185000, owner="Alex Jackson",
+         update="Signed SOW received; legal is reviewing MSA redlines and we expect a countersignature next week. Procurement aligned on budget."),
+    dict(name="GreenLake Edge Rollout", funnel="New Logo", account="Helios Manufacturing", forecast="Best Case",
+         close="14 Aug 2026", value=240000, owner="Rowan Johnson",
+         update="Technical validation passed. Champion presenting business case to CFO Friday; pricing approval pending."),
+    dict(name="Storage Refresh", funnel="Renewal", account="Atlas Logistics", forecast="Commit",
+         close="30 Jun 2026", value=96000, owner="Quinn White",
+         update="Renewal quote accepted verbally, awaiting PO. Low risk."),
+    dict(name="Data Platform Expansion", funnel="Expansion", account="Vertex Health", forecast="Pipeline",
+         close="22 Sep 2026", value=410000, owner="Alex Jackson",
+         update="Discovery workshops scheduled. Multiple stakeholders; needs exec sponsor mapping."),
+    dict(name="Security Suite Add-on", funnel="Cross-sell", account="Northwind Trading", forecast="Best Case",
+         close="05 Sep 2026", value=72000, owner="Avery Anderson",
+         update="POC in flight, positive early feedback from the SecOps team."),
+    dict(name="AI Workloads Net-New", funnel="New Logo", account="Lumen Robotics", forecast="Upside",
+         close="18 Oct 2026", value=320000, owner="Alex Brown",
+         update="Early-stage; intro call booked through partner referral."),
+    dict(name="Backup-as-a-Service", funnel="Upsell", account="Atlas Logistics", forecast="Pipeline",
+         close="11 Nov 2026", value=58000, owner="Quinn White",
+         update="Awaiting current contract end date to time the proposal."),
+]
+P_RIB = dict(ini="AJ", chip="Alex Jackson · AE", crew="Green Machine")
+
+# standalone portal component previews
+save("portal-ribbon", wrap(*portal_ribbon_inner(P_RIB)))
+save("portal-cards", wrap(*crew_cards_inner(P_MEMBERS, "Alex Jackson"), bg=C['canvas']))
+save("portal-opp-row", wrap(*opp_row_inner(P_OPPS[0], selected=True)))
+save("portal-opp-detail", wrap(*opp_detail_inner(P_OPPS[0])))
+save("portal-pipeline", wrap(*pipeline_inner(P_OPPS)))
+save("leaf-transition", wrap(*leafwipe_inner(static=True)))
+
+
+def page_portal(sel=None):
+    s = [DEFS, f"<rect x='0' y='0' width='{PAGE_W}' height='{PAGE_H}' fill='{C['canvas']}'/>"]
+    s.append(place(0, 0, PAGE_W, RIB_H, PAGE_W, RIB_H, portal_ribbon_inner(P_RIB)[2]))
+    s.append(place(*P_CARDS, P_CARDS[2], P_CARDS[3], crew_cards_inner(P_MEMBERS, "Alex Jackson")[2]))
+    s.append(place(*P_HEAD, P_HEAD[2], P_HEAD[3], opp_header_inner(len(P_OPPS))[2]))
+    for i, o in enumerate(P_OPPS):
+        if i * OPPROW_H + OPPROW_H > P_LIST[3]:
+            break
+        s.append(place(P_LIST[0], P_LIST[1] + i * OPPROW_H, P_LIST[2], OPPROW_H,
+                       P_LIST[2], OPPROW_H, opp_row_inner(o, selected=(i == sel), idx=i)[2]))
+    if sel is not None:
+        s.append(place(*P_RIGHT, P_RIGHT[2], P_RIGHT[3], opp_detail_inner(P_OPPS[sel])[2]))
+    else:
+        s.append(place(*P_RIGHT, P_RIGHT[2], P_RIGHT[3], pipeline_inner(P_OPPS)[2]))
+    return PAGE_W, PAGE_H, "".join(s)
+
+
+save("full-portal", wrap(*page_portal(sel=0), bg=C['canvas']))
+save("full-portal-empty", wrap(*page_portal(sel=None), bg=C['canvas']))
 print("done")

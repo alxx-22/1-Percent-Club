@@ -1,5 +1,14 @@
 // ============================================================================
-//  App.OnStart  —  just the loading flag. The build runs in Screen.OnVisible.
-//  While !varReady, the optional recLoading overlay shows "Loading…".
+//  App.OnStart  —  loading flag + Crew Portal / transition state.
+//  The data build runs in Screen.OnVisible; this just primes the variables so
+//  references never start blank.
+//    varReady    — drives the optional loading overlay (set true once built)
+//    varSelOpp   — the selected opportunity record on the Crew Portal (blank = none)
+//    varLeafKey  — bumped on every page transition to force the leaf-wipe overlay
+//                  to reload and replay its animation
+//    varLeafBusy — true while the leaf-wipe transition overlay is showing
 // ============================================================================
 Set( varReady, false );
+Set( varSelOpp, Blank() );
+Set( varLeafKey, 0 );
+Set( varLeafBusy, false );

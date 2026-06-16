@@ -1,0 +1,14 @@
+// ============================================================================
+//  btnBack.OnSelect  —  "← Dashboard" on the Crew Portal ribbon.
+//
+//  PLACEMENT: a transparent Button sitting over the back-pill drawn into
+//  imgPortalRibbon, e.g.  X=16  Y=11  Width=132  Height=30
+//    Fill=Transparent  Color=Transparent  HoverFill=RGBA(0,0,0,0.04)
+//    (the pill graphic lives in the ribbon SVG; this is just the tap target)
+//
+//  Plays the leaf-wipe transition and returns to the dashboard. UnCover mirrors
+//  the Cover used on the way in.
+// ============================================================================
+Set( varLeafKey, varLeafKey + 1 );
+Set( varLeafBusy, true );
+Navigate( scrDashboard, ScreenTransition.UnCover )

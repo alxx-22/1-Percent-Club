@@ -1,0 +1,41 @@
+// ============================================================================
+//  CREW PIPELINE OVERVIEW (NON-gallery).  Control: Image "imgPipeline"
+//  Geometry: X=452  Y=230  Width=668  Height=394   ImagePosition=Fit
+//  Visible:  IsBlank( varSelOpp.OppId )      <-- the "underneath" default visual;
+//  it disappears the moment an opportunity is selected (imgOppDetail takes over
+//  the same rectangle). Summarises colPipe (value + count per Forecast Category).
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 394' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<g class='fu'>" &
+    "<rect x='0' y='0' width='668' height='394' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
+    "<text x='28' y='38' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW PIPELINE OVERVIEW</text>" &
+    "<text x='640' y='38' font-size='11' fill='#606a70' text-anchor='end'>" & Text( CountRows( colOpps ) ) & " open opps</text>" &
+    "<text x='28' y='86' font-size='40' font-weight='700' fill='#006750'>" & Text( varPipeTotal, "#,##0" ) & "</text>" &
+    "<text x='28' y='106' font-size='11' font-weight='600' letter-spacing='.6' fill='#606a70'>TOTAL PIPELINE VALUE</text>" &
+    "<line x1='28' y1='124' x2='640' y2='124' stroke='#d4d8db'/>" &
+    "<text x='28' y='148' font-size='10' font-weight='700' letter-spacing='.6' fill='#606a70'>BY FORECAST CATEGORY</text>" &
+    With(
+        { rowh: Round( 176 / Max( varPipeN, 1 ), 0 ) },
+        Concat(
+            colPipe,
+            With(
+                { y:   162 + Idx*rowh,
+                  col: Switch( Cat, "Commit","#009a71", "Best Case","#0070f8", "Pipeline","#04909d", "Upside","#7764fc", "Omitted","#606a70", "#606a70" ),
+                  ct:  Substitute(Substitute(Substitute( Cat, "&","&amp;"),"<","&lt;"),">","&gt;") },
+                "<g class='fo' style='animation-delay:" & Text( 180 + Idx*80 ) & "ms'>" &
+                "<circle cx='36' cy='" & Text(y+13) & "' r='4' fill='" & col & "'/>" &
+                "<text x='48' y='" & Text(y+17) & "' font-size='12.5' font-weight='600' fill='#292d3a'>" & ct & "</text>" &
+                "<text x='640' y='" & Text(y+17) & "' font-size='12.5' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text( Val, "#,##0" ) & " <tspan fill='#606a70' font-weight='400'>&#183; " & Text(Cnt) & "</tspan></text>" &
+                "<rect x='48' y='" & Text(y+22) & "' width='592' height='8' rx='4' fill='#f2f3f4'/>" &
+                "<rect x='48' y='" & Text(y+22) & "' width='" & Text( Round( Max( 6, 592 * Val / varPipeMax ), 0 ) ) & "' height='8' rx='4' fill='" & col & "' class='gx' style='animation-delay:" & Text( 300 + Idx*80 ) & "ms'/>" &
+                "</g>"
+            )
+        )
+    ) &
+    "<rect x='28' y='350' width='612' height='24' rx='12' fill='#f2f3f4'/>" &
+    "<circle cx='48' cy='362' r='3' fill='#01a982' class='brz'/>" &
+    "<text x='60' y='366' font-size='11' font-weight='600' fill='#606a70'>Select an opportunity on the left to see full details</text>" &
+    "</g>" &
+    "</svg>"
+)

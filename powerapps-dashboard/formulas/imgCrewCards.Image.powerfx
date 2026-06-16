@@ -1,0 +1,47 @@
+// ============================================================================
+//  CREW ROSTER CARDS (NON-gallery).  Control: Image "imgCrewCards"
+//  Geometry: X=16  Y=68  Width=1104  Height=150   ImagePosition=Fit
+//  One card per crew member, laid out left->right across the strip. The feature
+//  card (Idx 0 = the current user, or top scorer for a sponsor) is 1.5x wide and
+//  shows name · job role · total points; the viewer's own card is green + "YOU".
+//  Card widths/positions come from varCardBig / varCardSmall / varCardGap (set
+//  in scrPortal.OnVisible) so the row always fills 1104px for any crew size.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 150' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<text x='4' y='15' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW ROSTER</text>" &
+    "<text x='1100' y='15' font-size='11' fill='#606a70' text-anchor='end'>" & Text(varCardN) & " members</text>" &
+    Concat(
+        colCrewCards,
+        With(
+            { big: Idx = 0,
+              me:  IsMe,
+              w:   If( Idx = 0, varCardBig, varCardSmall ),
+              x:   If( Idx = 0, 0, varCardBig + varCardGap + (Idx-1)*(varCardSmall + varCardGap) ) },
+            With(
+                { cx:   Round( x + w/2, 0 ),
+                  ar:   If( big, 20, 18 ),
+                  acy:  If( big, 54, 58 ),
+                  ini:  Upper( Left( Name, 1 ) & Mid( Name & " ", Find( " ", Name & " " ) + 1, 1 ) ),
+                  nm:   Substitute(Substitute(Substitute( Left( Name, RoundDown( w/7.5, 0 ) ), "&","&amp;"),"<","&lt;"),">","&gt;"),
+                  rl:   Substitute(Substitute(Substitute( Left( Role, RoundDown( w/6.2, 0 ) ), "&","&amp;"),"<","&lt;"),">","&gt;") },
+                "<g class='fu' style='animation-delay:" & Text( 100 + Idx*60 ) & "ms'>" &
+                "<rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='124' rx='13' fill='" & If(me,"#d1ffee","#ffffff") & "' stroke='" & If(me,"#01a982","#d4d8db") & "' stroke-width='" & If(me,"2","1") & "'/>" &
+                "<rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='4' rx='2' fill='" & If(me,"#01a982","#f2f3f4") & "'/>" &
+                If( me, "<circle cx='" & Text(cx) & "' cy='" & Text(acy) & "' r='" & Text(ar+4) & "' fill='none' stroke='#01a982' stroke-width='2' class='ring' opacity='0'/>", "" ) &
+                "<circle cx='" & Text(cx) & "' cy='" & Text(acy) & "' r='" & Text(ar) & "' fill='" & If(me,"#01a982","#f2f3f4") & "'/>" &
+                "<text x='" & Text(cx) & "' y='" & Text(acy+1) & "' font-size='" & If(big,"14","12") & "' font-weight='700' fill='" & If(me,"#ffffff","#006750") & "' text-anchor='middle' dominant-baseline='central'>" & ini & "</text>" &
+                "<text x='" & Text(cx) & "' y='" & Text(24 + If(big,66,68)) & "' font-size='" & If(big,"14","12") & "' font-weight='700' fill='#292d3a' text-anchor='middle'>" & nm & "</text>" &
+                "<text x='" & Text(cx) & "' y='" & Text(24 + If(big,82,84)) & "' font-size='" & If(big,"10.5","9.5") & "' fill='#606a70' text-anchor='middle'>" & rl & "</text>" &
+                "<text x='" & Text(cx) & "' y='" & Text(24 + 124 - If(big,16,14)) & "' font-size='" & If(big,"26","22") & "' font-weight='700' fill='#006750' text-anchor='middle'>" & Text(MemberTotal) & "</text>" &
+                "<text x='" & Text(cx) & "' y='" & Text(24 + 124 - If(big,4,3)) & "' font-size='8' font-weight='600' letter-spacing='1' fill='#606a70' text-anchor='middle'>POINTS</text>" &
+                If( me,
+                    "<rect x='" & Text(x + w - 44) & "' y='32' width='36' height='16' rx='8' fill='#01a982'/>" &
+                    "<text x='" & Text(x + w - 26) & "' y='40' font-size='9' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>YOU</text>",
+                    "" ) &
+                "</g>"
+            )
+        )
+    ) &
+    "</svg>"
+)

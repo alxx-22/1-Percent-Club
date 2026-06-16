@@ -30,6 +30,10 @@ ClearCollect(
             {
                 Name:          pbi.Name & "",
                 Crew:          If(crw = "", "Unassigned", crw),
+                // Job role for the Crew Portal cards. If your column is named
+                // differently (e.g. 'Job Role'/'Role'), change it here and add it
+                // to the PowerApps visual's data well.
+                Role:          pbi.'Job Family' & "",
                 Email:         Lower(pbi.'User Email' & ""),
                 SponsorEmail:  Lower(pbi.'Manager Sponsor Email' & ""),
                 Sponsor:       pbi.'Manager Sponsor' & "",
@@ -135,7 +139,7 @@ ClearCollect(
     ForAll(
         Sequence( CountRows( colMyCrewSorted ) ),
         With( { row: Last( FirstN( colMyCrewSorted, Value ) ) },
-            { Idx: Value - 1, Name: row.Name, MemberTotal: row.MemberTotal,
+            { Idx: Value - 1, Name: row.Name, Role: row.Role, MemberTotal: row.MemberTotal,
               IsMe: row.Email = varUserEmail } )
     )
 );

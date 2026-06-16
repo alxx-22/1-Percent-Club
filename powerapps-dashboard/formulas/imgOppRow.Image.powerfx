@@ -1,0 +1,40 @@
+// ============================================================================
+//  OPPORTUNITY ROW (GALLERY template).  Control: Image "imgOppRow"
+//  Gallery "galCrewOpps":  Items = colOpps   X=16 Y=262 Width=420 Height=362
+//        TemplateSize=64   TemplatePadding=0   ShowScrollbar=false
+//  Inside template, Image "imgOppRow": X=0 Y=0 Width=Parent.TemplateWidth
+//        Height=Parent.TemplateHeight  ImagePosition=Fit  Image = (below)
+//  Columns shown: Name (OppName) · Funnel Type · Account Name (+ value & forecast).
+//  The selected row (varSelOpp.OppId = ThisItem.OppId) tints green + draws its bar.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 64' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { sel: varSelOpp.OppId = ThisItem.OppId,
+          fc:  Switch( ThisItem.ForecastCategory, "Commit","#009a71", "Best Case","#0070f8", "Pipeline","#04909d", "Upside","#7764fc", "Omitted","#606a70", "#606a70" ),
+          ftc: Switch( ThisItem.FunnelType, "Upsell","#0070f8", "New Logo","#009a71", "Renewal","#04909d", "Cross-sell","#7764fc", "Expansion","#cc54a4", "#606a70" ),
+          nm:  Substitute(Substitute(Substitute( Left(ThisItem.OppName, 30), "&","&amp;"),"<","&lt;"),">","&gt;"),
+          ac:  Substitute(Substitute(Substitute( Left(ThisItem.AccountName, 30), "&","&amp;"),"<","&lt;"),">","&gt;"),
+          ft:  Left(ThisItem.FunnelType, 18),
+          fcat:Substitute(Substitute(Substitute( ThisItem.ForecastCategory, "&","&amp;"),"<","&lt;"),">","&gt;") },
+        "<g class='rw' style='animation-delay:" & Text( 60 + ThisItem.Idx*50 ) & "ms'>" &
+        "<rect x='2' y='2' width='416' height='60' rx='11' fill='" & If(sel,"#d1ffee","#ffffff") & "' stroke='" & If(sel,"#01a982","#d4d8db") & "' stroke-width='" & If(sel,"2","1") & "'/>" &
+        "<rect x='2' y='2' width='5' height='60' rx='2.5' fill='" & fc & "'/>" &
+        "<text x='16' y='24' font-size='13' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+        "<text x='16' y='43' font-size='10.5' fill='#606a70'>" & ac & "</text>" &
+        With(
+            { fw: 6*Len(ft) + 16 },
+            "<rect x='16' y='47' width='" & Text(fw) & "' height='14' rx='7' fill='#eef2f5'/>" &
+            "<text x='" & Text( Round(16 + fw/2, 0) ) & "' y='54' font-size='9' font-weight='700' fill='" & ftc & "' text-anchor='middle' dominant-baseline='central'>" &
+                Substitute(Substitute(Substitute( ft, "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>"
+        ) &
+        "<text x='404' y='26' font-size='14' font-weight='700' fill='#006750' text-anchor='end'>" & Text( ThisItem.TotalValue, "#,##0" ) & "</text>" &
+        With(
+            { fw: 7*Len(ThisItem.ForecastCategory) + 18 },
+            "<rect x='" & Text(404 - fw) & "' y='9' width='" & Text(fw) & "' height='16' rx='8' fill='" & fc & "'/>" &
+            "<text x='" & Text( Round(404 - fw/2, 0) ) & "' y='17' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & fcat & "</text>"
+        ) &
+        "</g>"
+    ) &
+    "</svg>"
+)

@@ -1,0 +1,57 @@
+// ============================================================================
+//  LEAF-WIPE TRANSITION OVERLAY (NON-gallery).  Control: Image "imgLeafWipe"
+//  Geometry: X=0  Y=0  Width=1136  Height=640   ImagePosition=Fill
+//  Visible:  varLeafBusy        (placed on BOTH scrDashboard + scrPortal, on top)
+//
+//  A branded green panel sweeps across the screen while leaves tumble, then exits
+//  to clear — the "universal transition" between the dashboard and the portal.
+//  The <desc> holds varLeafKey: every transition bumps the key, which changes the
+//  Image string so the control RELOADS and the CSS animation replays from the
+//  start. tmrLeaf flips varLeafBusy off after ~1.1s to remove the overlay.
+//
+//  Self-contained (vector leaves, no external asset). To use YOUR leaf PNG, swap
+//  the two "<path d='M0,-15 ...'/>" leaf shapes below for:
+//     <image href='data:image/png;base64,<<<LEAF_BASE64>>>' x='-15' y='-15'
+//            width='30' height='30'/>
+//  (send me the PNG and I'll embed the exact base64.)
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 640' preserveAspectRatio='xMidYMid slice'>" &
+    "<desc>" & Text(varLeafKey) & "</desc>" &
+    "<style>" &
+    ".wipe{animation:wipe 1.05s cubic-bezier(.5,0,.2,1) both}" &
+    ".lf{transform-box:fill-box;transform-origin:center;animation:lf 1.05s ease-in-out both}" &
+    "@keyframes wipe{0%{transform:translateX(-1280px)}42%{transform:translateX(0)}56%{transform:translateX(0)}100%{transform:translateX(1280px)}}" &
+    "@keyframes lf{0%{transform:rotate(-50deg) scale(.6)}100%{transform:rotate(340deg) scale(1)}}" &
+    "@media(prefers-reduced-motion:reduce){.wipe{animation:none;transform:translateX(1280px)}.lf{animation:none}}" &
+    "</style>" &
+    "<defs><linearGradient id='lg' x1='0' y1='0' x2='1' y2='0'>" &
+    "<stop offset='0' stop-color='#006750'/><stop offset='1' stop-color='#01a982'/></linearGradient></defs>" &
+    "<g class='wipe'>" &
+    "<rect x='-40' y='0' width='1216' height='640' fill='url(#lg)'/>" &
+    "<polygon points='1134,0 1226,0 1186,640 1094,640' fill='#01a982' opacity='.55'/>" &
+    Concat(
+        Table(
+            { lx:140,  ly:150, sc:"1.6", col:"#E0A300", dl:0 },
+            { lx:320,  ly:470, sc:"1.2", col:"#ffffff", dl:100 },
+            { lx:520,  ly:120, sc:"2.0", col:"#bdf5e4", dl:40 },
+            { lx:700,  ly:400, sc:"1.4", col:"#E0A300", dl:140 },
+            { lx:880,  ly:230, sc:"1.7", col:"#ffffff", dl:80 },
+            { lx:1030, ly:520, sc:"1.1", col:"#bdf5e4", dl:120 },
+            { lx:250,  ly:320, sc:"1.0", col:"#ffffff", dl:160 },
+            { lx:640,  ly:560, sc:"1.3", col:"#E0A300", dl:60 },
+            { lx:980,  ly:80,  sc:"1.5", col:"#bdf5e4", dl:20 }
+        ),
+        "<g transform='translate(" & Text(lx) & "," & Text(ly) & ") scale(" & sc & ")'>" &
+        "<g class='lf' style='animation-delay:" & Text(dl) & "ms'>" &
+        "<path d='M0,-15 C9,-11 9,7 0,15 C-9,7 -9,-11 0,-15 Z' fill='" & col & "' opacity='.92'/>" &
+        "<path d='M0,-13 L0,13' stroke='#006750' stroke-width='.8' opacity='.35'/>" &
+        "</g></g>"
+    ) &
+    "<g transform='translate(568,320)'>" &
+    "<rect x='-30' y='-30' width='60' height='60' rx='16' fill='#ffffff' opacity='.95'/>" &
+    "<text x='0' y='2' font-family='Segoe UI, Arial, sans-serif' font-size='26' font-weight='700' fill='#006750' text-anchor='middle' dominant-baseline='central'>1%</text>" &
+    "</g>" &
+    "</g>" &
+    "</svg>"
+)

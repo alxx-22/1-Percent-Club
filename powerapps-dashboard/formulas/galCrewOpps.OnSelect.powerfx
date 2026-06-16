@@ -1,0 +1,41 @@
+// ============================================================================
+//  galCrewOpps.OnSelect  —  selecting an opportunity in the list.
+//
+//  PLACEMENT: the opportunity list is a blank vertical Gallery "galCrewOpps":
+//    Items = colOpps   X=16 Y=262 Width=420 Height=362
+//    TemplateSize=64   TemplatePadding=0   ShowScrollbar=false
+//    Inside it one Image "imgOppRow" (X=0 Y=0 W=Parent.TemplateWidth
+//    H=Parent.TemplateHeight  ImagePosition=Fit).  OnSelect (below) runs when a
+//    row is tapped — it records the opp and pre-wraps its update text so the
+//    detail card can render it across lines (SVG <text> can't auto-wrap).
+//
+//  Setting varSelOpp swaps the right panel from the pipeline overview to the
+//  opportunity detail (imgOppDetail.Visible = !IsBlank(varSelOpp.OppId)).
+// ============================================================================
+Set( varSelOpp, ThisItem );
+
+// word-wrap OppUpdate into ~64-char lines, keeping whole words ---------------
+With(
+    { u: Substitute( Substitute( Substitute( ThisItem.OppUpdate & "", "&", "&amp;" ), "<", "&lt;" ), ">", "&gt;" ) },
+    ClearCollect( colSelWordsRaw, ForAll( Split( u, " " ) As w, { Word: w.Result } ) )
+);
+ClearCollect(
+    colSelWords,
+    ForAll(
+        Sequence( CountRows( colSelWordsRaw ) ),
+        With( { wd: Last( FirstN( colSelWordsRaw, Value ) ).Word },
+            // Cum = running character count through this word; Line = which 64-col
+            // line it lands on (whole words never split across lines).
+            { Ord:  Value,
+              Word: wd,
+              Line: RoundDown( (Sum( FirstN( colSelWordsRaw, Value ), Len( Word ) + 1 ) - 1) / 64, 0 ) } )
+    )
+);
+ClearCollect(
+    colSelLines,
+    ForAll(
+        Distinct( Filter( colSelWords, Line < 5 ), Line ) As d,
+        { Line: d.Value,
+          Text: Concat( Sort( Filter( colSelWords, Line = d.Value ), Ord ), Word & " " ) }
+    )
+)
