@@ -505,15 +505,27 @@ def portal_button_inner():
     return W, H, "".join(s)
 
 
+def back_button_inner():
+    """The '< Dashboard' back button on the Crew Portal ribbon (SVG, secondary/ghost)."""
+    W, H = 132, 30
+    s = [CSS,
+         "<style>.nudgeL{animation:nudgeL 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}"
+         "@keyframes nudgeL{0%,100%{transform:translateX(0)}50%{transform:translateX(-3px)}}"
+         "@media(prefers-reduced-motion:reduce){.nudgeL{animation:none}}</style>",
+         "<g class='fu'>"]
+    s.append(f"<rect x='1' y='1' width='130' height='28' rx='14' fill='{C['contrast']}' stroke='{C['border']}'/>")
+    s.append(f"<path d='M26,9 l-6,6 l6,6' fill='none' stroke='{C['greenDark']}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudgeL'/>")
+    s.append(f"<text x='40' y='16' font-family='{FONT}' font-size='12.5' font-weight='600' fill='{C['greenDark']}' dominant-baseline='central'>Dashboard</text>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
 def portal_ribbon_inner(u):
     W, H = PAGE_W, RIB_H
     s = [DEFS, CSS, "<g class='fu'>"]
     s.append(f"<rect x='0' y='0' width='{W}' height='{H}' fill='{C['card']}'/>")
     s.append(f"<line x1='0' y1='{H-1}' x2='{W}' y2='{H-1}' stroke='{C['border']}'/>")
-    # back pill (a transparent btnBack sits over this in PowerApps)
-    s.append(f"<rect x='16' y='11' width='132' height='30' rx='15' fill='{C['contrast']}' stroke='{C['border']}'/>")
-    s.append(f"<path d='M34,26 l7,-6 m-7,6 l7,6 m-7,-6 h12' fill='none' stroke='{C['greenDark']}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>")
-    s.append(f"<text x='54' y='27' font-family='{FONT}' font-size='12.5' font-weight='600' fill='{C['greenDark']}' dominant-baseline='central'>Dashboard</text>")
+    # (the back button is a separate SVG control, imgBackBtn, placed at 16,11,132,30)
     # title
     s.append(f"<rect x='164' y='13' width='26' height='26' rx='7' fill='{C['brand']}'/>")
     s.append(f"<text x='177' y='27' font-family='{FONT}' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>")
@@ -768,6 +780,7 @@ P_RIB = dict(ini="AJ", chip="Alex Jackson · AE", crew="Green Machine")
 
 # standalone portal component previews
 save("portal-button", wrap(*portal_button_inner()))
+save("portal-back-button", wrap(*back_button_inner()))
 save("portal-ribbon", wrap(*portal_ribbon_inner(P_RIB)))
 save("portal-cards", wrap(*crew_cards_inner(P_MEMBERS, "Alex Jackson"), bg=C['canvas']))
 save("portal-opp-row", wrap(*opp_row_inner(P_OPPS[0], selected=True)))
@@ -779,6 +792,7 @@ save("leaf-transition", wrap(*leafwipe_inner(static=True)))
 def page_portal(sel=None):
     s = [DEFS, f"<rect x='0' y='0' width='{PAGE_W}' height='{PAGE_H}' fill='{C['canvas']}'/>"]
     s.append(place(0, 0, PAGE_W, RIB_H, PAGE_W, RIB_H, portal_ribbon_inner(P_RIB)[2]))
+    s.append(place(16, 11, 132, 30, 132, 30, back_button_inner()[2]))
     s.append(place(*P_CARDS, P_CARDS[2], P_CARDS[3], crew_cards_inner(P_MEMBERS, "Alex Jackson")[2]))
     s.append(place(*P_HEAD, P_HEAD[2], P_HEAD[3], opp_header_inner(len(P_OPPS))[2]))
     for i, o in enumerate(P_OPPS):

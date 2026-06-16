@@ -1,19 +1,49 @@
 // ============================================================================
 //  scrPortal.OnVisible  —  builds the CREW PORTAL page data.
 //
-//  Reached only via the "Crew Portal" ribbon button (btnCrewPortal), which has
-//  already collected colCrewOpps (the crew's opportunity pack) and cleared
-//  varSelOpp before navigating here. This screen turns that raw data into:
-//    colCrewCards — the crew roster cards (current user first + larger)
+//  This is where the opportunity Collect lives: it parses the signed-in user's
+//  'Crew Funnel Pack' into colCrewOpps EVERY time the portal opens, so the page
+//  always shows fresh data regardless of how you got here. From that it builds:
+//    colCrewOpps  — the parsed opportunity rows (your pack-split formula)
 //    colOpps      — the opportunity list (adds a 0-based Idx for stagger + select)
 //    colPipe      — pipeline totals grouped by Forecast Category (the overview)
+//    colCrewCards — the crew roster cards (current user first + larger)
+//  (the "Crew Portal" button just arms the transition and navigates here.)
 //
 //  Same environment quirks as the dashboard apply: no GroupBy/SortByColumns with
 //  string column names -> aggregate with Distinct/Filter/Sum/Sort(<expression>);
 //  With() rebinds ThisRecord -> use ForAll(... As alias) + alias.col.
 // ============================================================================
 
-// 1) crew roster cards — current user first, then by points desc -------------
+// 0) reset page state ------------------------------------------------------
+Set( varSelOpp, Blank() );      // open on the pipeline overview, not a stale detail
+Clear( colSelLines );
+
+// 1) parse the crew's opportunity pack -> colCrewOpps ----------------------
+//    (the exact split formula: rows on "||", columns on "//")
+With(
+    { pack: LookUp( Teams, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' },
+    Clear( colCrewOpps );
+    If( !IsBlank( pack ),
+        ForAll( Split( pack, "||" ) As Row,
+            With( { cols: Split( Row.Result, "//" ) },
+                Collect( colCrewOpps, {
+                    FunnelType:       Index( cols, 1 ).Result,
+                    OppId:            Index( cols, 2 ).Result,
+                    OppName:          Index( cols, 3 ).Result,
+                    AccountName:      Index( cols, 4 ).Result,
+                    ForecastCategory: Index( cols, 5 ).Result,
+                    CloseDate:        DateValue( Index( cols, 6 ).Result ),
+                    TotalValue:       Value( Index( cols, 7 ).Result ),
+                    MemberName:       Index( cols, 8 ).Result,
+                    OppUpdate:        Index( cols, 9 ).Result
+                } )
+            )
+        )
+    )
+);
+
+// 2) crew roster cards — current user first, then by points desc -------------
 //    CardKey sorts the viewer to the front ("0..."), everyone else by points
 //    ("1" + a fixed-width 8-digit "bigger total => smaller key").
 ClearCollect(
@@ -42,7 +72,7 @@ Set( varCardGap,   12 );
 Set( varCardSmall, Round( (1104 - (Max(varCardN,1)-1)*varCardGap) / (Max(varCardN,1) + 0.5), 0 ) );
 Set( varCardBig,   Round( varCardSmall * 1.5, 0 ) );
 
-// 2) opportunity list — add a 0-based Idx (stagger + selection) --------------
+// 3) opportunity list — add a 0-based Idx (stagger + selection) --------------
 ClearCollect(
     colOpps,
     ForAll(
@@ -61,7 +91,7 @@ ClearCollect(
     )
 );
 
-// 3) pipeline overview — value + count per Forecast Category -----------------
+// 4) pipeline overview — value + count per Forecast Category -----------------
 ClearCollect(
     colPipeAgg,
     ForAll(

@@ -30,9 +30,8 @@ ClearCollect(
             {
                 Name:          pbi.Name & "",
                 Crew:          If(crw = "", "Unassigned", crw),
-                // Job role for the Crew Portal cards. If your column is named
-                // differently (e.g. 'Job Role'/'Role'), change it here and add it
-                // to the PowerApps visual's data well.
+                // Job role for the Crew Portal cards — from the 'Job Family' column.
+                // (Make sure 'Job Family' is in the PowerApps visual's data well.)
                 Role:          pbi.'Job Family' & "",
                 Email:         Lower(pbi.'User Email' & ""),
                 SponsorEmail:  Lower(pbi.'Manager Sponsor Email' & ""),

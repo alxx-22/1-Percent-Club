@@ -181,10 +181,8 @@ Collections built in `OnVisible`: `colMembers` → `colCrew` (ranked) → `colCr
 `colCrewBreak` (per‑crew category sums, for sponsor box + spectator), `colMyCrew` (viewer's crew,
 grid), plus the role / box / `varSvgCss` variables.
 
-> **Job role** — `colMembers` also carries `Role` (read from the **`Job Family`** column), used by
-> the Crew Portal cards (§8). If your column has a different name (e.g. `'Job Role'`), change the
-> one line in [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) and make sure the
-> field is in the visual's data well.
+> **Job role** — `colMembers` also carries `Role`, read from the **`Job Family`** column, used by
+> the Crew Portal cards (§8). Make sure `Job Family` is in the PowerApps visual's data well.
 
 ### Components
 | | |
@@ -255,10 +253,10 @@ the **full detail** of the opportunity you select.
 
 | Control | Screen | Type | Property | Formula |
 |---|---|---|---|---|
-| `imgCrewPortalBtn` | scrDashboard (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx); OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — build `colCrewOpps`, arm transition, `Navigate(scrPortal)` |
-| **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/Screen_Portal_OnVisible.powerfx) — builds `colCrewCards` / `colOpps` / `colPipe` |
+| `imgCrewPortalBtn` | scrDashboard (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx); OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — arm transition, `Navigate(scrPortal)` |
+| **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/Screen_Portal_OnVisible.powerfx) — **parses the pack into `colCrewOpps`** then builds `colOpps` / `colPipe` / `colCrewCards` |
 | `imgPortalRibbon` | scrPortal | Image | `Image` | [`imgPortalRibbon.Image.powerfx`](formulas/imgPortalRibbon.Image.powerfx) |
-| `btnBack` | scrPortal (ribbon) | Button | `OnSelect` | [`btnBack.OnSelect.powerfx`](formulas/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
+| `imgBackBtn` | scrPortal (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgBackBtn.Image.powerfx`](formulas/imgBackBtn.Image.powerfx); OnSelect = [`btnBack.OnSelect.powerfx`](formulas/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
 | `imgCrewCards` | scrPortal | Image | `Image` | [`imgCrewCards.Image.powerfx`](formulas/imgCrewCards.Image.powerfx) — roster cards |
 | `imgOppHeader` | scrPortal | Image | `Image` | [`imgOppHeader.Image.powerfx`](formulas/imgOppHeader.Image.powerfx) |
 | `galCrewOpps` | scrPortal | Gallery (blank vertical) | `Items` | `colOpps` |
@@ -276,7 +274,7 @@ Every Image: `ImagePosition = Fit` (except `imgLeafWipe` = **`Fill`**).
 | Control | X | Y | Width | Height | Visible |
 |---|---:|---:|---:|---:|---|
 | `imgPortalRibbon` | 0 | 0 | 1136 | 52 | `true` |
-| `btnBack` (transparent, over the back‑pill) | 16 | 11 | 132 | 30 | `true` |
+| `imgBackBtn` (SVG, OnSelect = back) | 16 | 11 | 132 | 30 | `true` |
 | `imgCrewCards` | 16 | 68 | 1104 | 150 | `true` |
 | `imgOppHeader` | 16 | 230 | 420 | 30 | `true` |
 | `galCrewOpps` | 16 | 262 | 420 | 362 | `true` |
@@ -300,10 +298,11 @@ rule — selecting an opp shows the detail and hides the overview; clearing it r
 
 ### 8.3 The opportunity data
 
-`btnCrewPortal.OnSelect` runs your exact pack‑parsing formula: it reads the signed‑in user's
-**`Crew Funnel Pack`** from the `Teams` source, splits it on `||` (rows) then `//` (columns), and
-`Collect`s `colCrewOpps` with `FunnelType · OppId · OppName · AccountName · ForecastCategory ·
-CloseDate · TotalValue · MemberName · OppUpdate`. `scrPortal.OnVisible` then turns that into:
+**`scrPortal.OnVisible`** runs your exact pack‑parsing formula (so it rebuilds every time the portal
+opens — the button just navigates): it reads the signed‑in user's **`Crew Funnel Pack`** from the
+`Teams` source, splits it on `||` (rows) then `//` (columns), and `Collect`s `colCrewOpps` with
+`FunnelType · OppId · OppName · AccountName · ForecastCategory · CloseDate · TotalValue ·
+MemberName · OppUpdate`. The same `OnVisible` then turns that into:
 
 ```
 colOpps   = colCrewOpps + a 0-based Idx           (list rows: stagger + selection)
@@ -356,7 +355,8 @@ replays the detail's entrance**, and clearing the selection **replays the pipeli
 
 | | |
 |---|---|
-| Crew Portal button (SVG) · Portal ribbon | ![portal button](previews/portal-button.png) ![portal ribbon](previews/portal-ribbon.png) |
+| Crew Portal button · Back button (SVG) | ![portal button](previews/portal-button.png) ![back button](previews/portal-back-button.png) |
+| Portal ribbon | ![portal ribbon](previews/portal-ribbon.png) |
 | Crew roster cards (viewer larger) | ![portal cards](previews/portal-cards.png) |
 | Opp row (selected) · Opp detail | ![opp row](previews/portal-opp-row.png) ![opp detail](previews/portal-opp-detail.png) |
 | Pipeline overview · Leaf‑wipe (mid‑sweep) | ![pipeline](previews/portal-pipeline.png) ![leaf](previews/leaf-transition.png) |

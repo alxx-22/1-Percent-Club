@@ -1,10 +1,10 @@
 // ============================================================================
 //  btnBack.OnSelect  —  "← Dashboard" on the Crew Portal ribbon.
 //
-//  PLACEMENT: a transparent Button sitting over the back-pill drawn into
-//  imgPortalRibbon, e.g.  X=16  Y=11  Width=132  Height=30
-//    Fill=Transparent  Color=Transparent  HoverFill=RGBA(0,0,0,0.04)
-//    (the pill graphic lives in the ribbon SVG; this is just the tap target)
+//  RECOMMENDED PLACEMENT: put the SVG button image "imgBackBtn" (see
+//  imgBackBtn.Image.powerfx) at X=16 Y=11 W=132 H=30 (ImagePosition=Fit) and
+//  paste THIS formula into imgBackBtn.OnSelect (Image controls are tappable).
+//  ALTERNATIVE: a transparent Button over imgBackBtn for hover/press feedback.
 //
 //  Plays the leaf-wipe transition and returns to the dashboard. UnCover mirrors
 //  the Cover used on the way in.

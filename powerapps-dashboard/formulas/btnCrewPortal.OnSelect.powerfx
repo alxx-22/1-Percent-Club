@@ -12,35 +12,12 @@
 //  BorderThickness=0) — or a transparent Button laid over imgCrewPortalBtn if you
 //  want hover/press feedback on the SVG.
 //
-//  Builds the crew's opportunity pack (the user's own formula) into colCrewOpps,
-//  clears any previous selection, then plays the leaf-wipe transition and
-//  navigates to the Crew Portal. ScreenTransition.Cover is the reliable base
-//  transition; the leaf-wipe overlay (imgLeafWipe + varLeafBusy) is the flourish.
+//  This just arms the leaf-wipe transition and navigates. The opportunity pack
+//  Collect (your pack-split formula) now runs in scrPortal.OnVisible, so it
+//  rebuilds every time the portal opens — see Screen_Portal_OnVisible.powerfx.
+//  ScreenTransition.Cover is the reliable base transition; the leaf-wipe overlay
+//  (imgLeafWipe + varLeafBusy) is the flourish on top.
 // ============================================================================
-With(
-    { pack: LookUp( Teams, Lower( 'User Email' ) = Lower( User().Email ) ).'Crew Funnel Pack' },
-    Clear( colCrewOpps );
-    If( !IsBlank( pack ),
-        ForAll( Split( pack, "||" ) As Row,
-            With( { cols: Split( Row.Result, "//" ) },
-                Collect( colCrewOpps, {
-                    FunnelType:       Index( cols, 1 ).Result,
-                    OppId:            Index( cols, 2 ).Result,
-                    OppName:          Index( cols, 3 ).Result,
-                    AccountName:      Index( cols, 4 ).Result,
-                    ForecastCategory: Index( cols, 5 ).Result,
-                    CloseDate:        DateValue( Index( cols, 6 ).Result ),
-                    TotalValue:       Value( Index( cols, 7 ).Result ),
-                    MemberName:       Index( cols, 8 ).Result,
-                    OppUpdate:        Index( cols, 9 ).Result
-                } )
-            )
-        )
-    )
-);
-// reset selection + arm the leaf-wipe transition, then go ---------------------
-Set( varSelOpp, Blank() );
-Clear( colSelLines );
 Set( varLeafKey, varLeafKey + 1 );
 Set( varLeafBusy, true );
 Navigate( scrPortal, ScreenTransition.Cover )
