@@ -12,4 +12,4 @@ Set( varReady, false );
 Set( varSelOpp, Blank() );
 Set( varLeafKey, 0 );
 Set( varLeafBusy, false );
-Set( varTestEmail, "" );        // diagnostic role-override ("" = the real signed-in user). Use "" (not Blank()) so the var has a Text type.
+Set( varTestCrew, "" );         // diagnostic role-override: a crew NAME to impersonate ("" = the real signed-in user). Use "" (not Blank()) so the var has a Text type.

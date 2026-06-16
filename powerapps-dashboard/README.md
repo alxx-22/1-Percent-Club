@@ -141,14 +141,16 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
 
 > **Test a role** without changing accounts: drop a **diagnostic button** with `OnSelect` =
 > [`btnTestRole.OnSelect.powerfx`](formulas/btnTestRole.OnSelect.powerfx). Each tap cycles the
-> viewer through *Guest → crew #1 → crew #2 → … → back to you*. It only sets an override email
-> (`varTestEmail`) and **re-runs `OnVisible`** (via the loading screen) — it does **not** recompute
-> state itself, so it can't half-break the UI. Needs two one-time lines (both production-safe,
-> since `varTestEmail` is blank in production):
-> - `App.OnStart`: `Set( varTestEmail, "" )`  (use `""`, not `Blank()`, so the var has a Text type — otherwise you get *"No type found for variable 'varTestEmail'"*)
-> - `scrDashboard.OnVisible` step 3: `Set( varUserEmail, If( Len( varTestEmail ) > 0, Lower( varTestEmail ), Lower( User().Email ) ) )`
+> viewer through *Guest → crew #1 → crew #2 → … → back to you*. It impersonates a crew **by name**
+> (`varTestCrew`) — not by email, so it works even when member `User Email` values are blank — and
+> **re-runs `OnVisible`** (via the loading screen), which features that crew's top member. It does
+> **not** recompute state itself, so it can't half-break the UI. Needs two one-time additions (both
+> production-safe — `varTestCrew` is `""` in production):
+> - `App.OnStart`: `Set( varTestCrew, "" )`  (use `""`, not `Blank()`, so the var has a Text type — otherwise *"No type found for variable"*)
+> - `scrDashboard.OnVisible` step 3: the `varTestActive` / `varTestMember` override block (see [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
 >
-> Remove the button before shipping.
+> Remove the button before shipping. (`varUserEmail` follows the impersonated member, so the grid
+> **YOU** tile only pinpoints them when member emails are populated; the rest of the view is exact.)
 
 ---
 

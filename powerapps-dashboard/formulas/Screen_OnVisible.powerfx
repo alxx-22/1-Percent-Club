@@ -92,14 +92,24 @@ Set( varLeaderMax, Max( 1, Coalesce( First( colCrew ).CrewTotal, 0 ) ) );  // >=
 ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
 
 // 3) viewer role  (varMyCrew is now the crew NAME) --------------------------
-//    varTestEmail is the DIAGNOSTIC override ("" in production -> real user).
-Set( varUserEmail, If( Len( varTestEmail ) > 0, Lower( varTestEmail ), Lower( User().Email ) ) );
-Set( varMemberRec,  LookUp( colMembers, Email = varUserEmail ) );
-Set( varSponsorRec, LookUp( colMembers, SponsorEmail = varUserEmail ) );
+//    DIAGNOSTIC override: when varTestCrew is set ("" in production), impersonate
+//    that crew's top member BY RECORD — works even if member emails are blank.
+//    Production path is unchanged: detect the role from the signed-in user's email.
+Set( varTestActive, Len( varTestCrew ) > 0 );
+Set( varTestMember,
+    If( varTestActive,
+        First( Sort( Filter( colMembers, Crew = varTestCrew ), MemberTotal, SortOrder.Descending ) ),
+        Blank() ) );
+Set( varUserEmail,  If( varTestActive, Lower( varTestMember.Email ), Lower( User().Email ) ) );
+Set( varMemberRec,  If( varTestActive, varTestMember, LookUp( colMembers, Email = varUserEmail ) ) );
+Set( varSponsorRec, If( varTestActive, Blank(), LookUp( colMembers, SponsorEmail = varUserEmail ) ) );
 Set( varRole,
-    If( !IsBlank( varMemberRec.Name ), "member",
-        If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) );
-Set( varMyCrew,    Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) );
+    If( varTestActive, "member",
+        If( !IsBlank( varMemberRec.Name ), "member",
+            If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) ) );
+Set( varMyCrew,
+    If( varTestActive, varTestCrew,
+        Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) ) );
 Set( varMyCrewTag, If( varRole = "sponsor", "YOU SPONSOR", "YOUR CREW" ) );
 Set( varDispName,
     Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.Sponsor, "Guest Viewer" ) );

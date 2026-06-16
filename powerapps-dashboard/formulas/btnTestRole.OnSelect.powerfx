@@ -1,54 +1,36 @@
 // ============================================================================
 //  btnTestRole.OnSelect  —  DIAGNOSTIC ONLY (remove the button before shipping).
 //
-//  You're a Guest/spectator because your email isn't in any crew. This lets you
-//  preview the member views by *impersonating* a real crew member — WITHOUT
-//  recomputing anything itself. It only sets an override email (varTestEmail)
-//  and re-runs the dashboard's OnVisible (via the loading screen), so the views
-//  are built by the exact same logic that already works. That's why it can't
-//  half-break the ribbon the way the old recompute version did.
+//  You're a Guest/spectator because your email isn't matched in any crew (and if
+//  member 'User Email' values are blank, NOBODY matches by email). So this
+//  impersonates a crew by NAME, not by email: it sets varTestCrew and re-runs the
+//  dashboard's OnVisible (via the loading screen), which then features that crew's
+//  top member. It doesn't recompute state itself, so it can't half-break the UI.
 //
 //  Each tap CYCLES:  Guest (real you) -> crew #1 -> crew #2 -> ... -> crew #N
 //  -> back to Guest.  Brief splash on each tap while OnVisible re-runs.
 //
 //  REQUIRES (both already added):
-//   - App.OnStart:        Set( varTestEmail, "" )      // "" not Blank(), so it has a Text type
-//   - scrDashboard.OnVisible step 3:
-//        Set( varUserEmail, If( Len( varTestEmail ) > 0, Lower( varTestEmail ), Lower( User().Email ) ) );
+//   - App.OnStart:        Set( varTestCrew, "" )      // "" not Blank(), so it has a Text type
+//   - scrDashboard.OnVisible step 3: the varTestActive / varTestMember override block
 //
 //  PLACEMENT: a Button on scrDashboard (e.g. on the ribbon). Suggested Text:
 //     "Test view: " & If( varRole = "spectator", "Guest (real you)",
 //                          varDispName & " (" & varMyCrew & ")" )
 // ============================================================================
 
-// 1) pick the next crew to impersonate (0 = the real you) --------------------
+// cycle the crew to impersonate by rank (0 = the real you) -------------------
 Set( varTestIdx, Mod( Coalesce( varTestIdx, 0 ) + 1, CountRows( colCrew ) + 1 ) );
-Set(
-    varTestEmail,
-    If( varTestIdx = 0,
-        "",    // back to the real signed-in user (Guest)
-        Coalesce(
-            First(
-                Sort(
-                    Filter( colMembers, Crew = LookUp( colCrew, Rank = varTestIdx ).Crew && Len( Email ) > 0 ),
-                    MemberTotal, SortOrder.Descending
-                )
-            ).Email,
-            ""
-        )
-    )
-);
+Set( varTestCrew, If( varTestIdx = 0, "", LookUp( colCrew, Rank = varTestIdx ).Crew ) );
 
-// 2) re-run the dashboard build with that identity ---------------------------
-//    Bounce through the loading screen; its timer re-enters scrDashboard, whose
-//    OnVisible rebuilds everything using varTestEmail. (One source of truth.)
+// re-run the dashboard build with that identity ------------------------------
+//   Bounce through the loading screen; its timer re-enters scrDashboard, whose
+//   OnVisible applies the override. (If the timer is slow in your visual, the
+//   loading screen's "View dashboard" button does the same thing.)
 Navigate( scrLoading )
 
 // ----------------------------------------------------------------------------
-//  TEST THE SPONSOR VIEW: in step 1 set varTestEmail to a sponsor's email, e.g.
-//    Set( varTestEmail,
-//         First( Filter( colMembers,
-//                  Crew = LookUp(colCrew, Rank = 1).Crew && Len(SponsorEmail) > 0
-//                ) ).SponsorEmail );
-//  then Navigate( scrLoading ) — OnVisible will detect it as "sponsor".
+//  TEST THE SPONSOR VIEW: the override always sets role = "member". To preview
+//  the sponsor layout, temporarily change the OnVisible override block to set
+//  varRole = "sponsor" (and varSponsorRec = varTestMember) while varTestActive.
 // ----------------------------------------------------------------------------
