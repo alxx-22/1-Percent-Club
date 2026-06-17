@@ -3,11 +3,21 @@
 //  Geometry (over the chat header, top-right):
 //        X=container.X+324  Y=container.Y+16  Width=28  Height=28
 //        ImagePosition=Fit   OnSelect = imgClose.OnSelect.powerfx
-//  A soft white ghost circle + X; sits on the green header.
+//  Animates IN/OUT in sync with imgChatBg — same vars (varChatClosing keyed by
+//  varChatKey via <desc>): plays 'cin' on open, 'cout' on close, so the button
+//  scales away together with the window instead of vanishing abruptly.
 // ============================================================================
 "data:image/svg+xml;utf8," & EncodeUrl(
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 28'>" &
+    "<desc>" & Text(varChatKey) & If(varChatClosing,"-out","-in") & "</desc>" &
+    "<style>" &
+    ".cin{transform-box:fill-box;transform-origin:center;animation:cin .42s cubic-bezier(.2,.8,.2,1) both}@keyframes cin{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}" &
+    ".cout{transform-box:fill-box;transform-origin:center;animation:cout .34s ease-in both}@keyframes cout{from{opacity:1;transform:none}to{opacity:0;transform:scale(.4)}}" &
+    "@media(prefers-reduced-motion:reduce){.cin,.cout{animation:none}}" &
+    "</style>" &
+    "<g class='" & If(varChatClosing,"cout","cin") & "'>" &
     "<circle cx='14' cy='14' r='13' fill='#ffffff' opacity='.20'/>" &
     "<path d='M9,9 L19,19 M19,9 L9,19' stroke='#ffffff' stroke-width='2.2' stroke-linecap='round'/>" &
+    "</g>" &
     "</svg>"
 )
