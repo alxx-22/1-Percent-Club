@@ -49,12 +49,12 @@ Children use coordinates **relative to the container**:
 | `imgClose` | 324 | 16 | 28 | 28 | on the green header — animates in/out with the bg |
 | `galChat` | 16 | 72 | 336 | 374 | messages · **`Visible = !varChatClosing`** |
 | `txtChat` | 28 | 470 | 264 | 36 | transparent over the baked pill · **`Visible = !varChatClosing`** |
-| `imgSend` | 312 | 470 | 40 | 40 | send · **`Visible = !varChatClosing`** |
+| `imgSend` | 312 | 470 | 40 | 40 | send — animates in/out with the bg (leave `Visible` default) |
 | `tmrCloseChat` | 0 | 0 | 0 | 0 | `Visible=false` |
 
-> **Smooth close:** the gallery / input / send use `Visible = !varChatClosing`, so they vanish
-> the instant you press close; only `imgChatBg` + `imgClose` (driven by the same `varChatClosing`
-> / `varChatKey`) animate away, then `tmrCloseChat` hides the container.
+> **Smooth close:** the gallery + text input use `Visible = !varChatClosing`, so they vanish the
+> instant you press close; `imgChatBg`, `imgClose` and `imgSend` (all driven by the same
+> `varChatClosing` / `varChatKey`) animate away together, then `tmrCloseChat` hides the container.
 
 `galChat`: blank **vertical** gallery, `TemplatePadding=2`. Inside it one **HTML text**
 control `htmlBubble` (`X=0 Y=0 Width=Parent.TemplateWidth`, **`AutoHeight=true`**) with
@@ -71,9 +71,9 @@ size to their text.
   bumps `varChatKey`. `imgChatBg`'s `<desc>` contains `varChatKey`, so the image reloads
   and replays its **`cin`** (scale‑up from the top‑right) animation.
 - **Close:** `imgClose.OnSelect` sets `varChatClosing=true` (+ bumps `varChatKey`). The
-  gallery / input / send hide instantly (`Visible = !varChatClosing`), and **both** `imgChatBg`
-  and `imgClose` reload and play **`cout`** (scale‑down) — same vars, so they move together.
-  The container is *still visible*.
+  gallery + text input hide instantly (`Visible = !varChatClosing`), while `imgChatBg`,
+  `imgClose` and `imgSend` reload and play **`cout`** (scale‑down) — same vars, so they move
+  together. The container is *still visible*.
 - **Then hide:** `tmrCloseChat` (`Start=varChatClosing`, `Duration=360`, `Repeat=false`)
   fires when the exit finishes and sets `varPercyOpen=false` (and clears `varChatClosing`).
   Navigation never depends on the timer — only the final hide does.
