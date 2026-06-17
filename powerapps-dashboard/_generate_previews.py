@@ -105,7 +105,7 @@ def ribbon_inner(u):
     s.append(f"<rect x='16' y='13' width='26' height='26' rx='7' fill='{C['brand']}'/>")
     s.append(f"<text x='29' y='27' font-family='{FONT}' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>")
     s.append(f"<text x='54' y='32' font-family='{FONT}' font-size='17' font-weight='700' fill='{C['strong']}'>1% Club <tspan fill='{C['weak']}' font-weight='400'>&#183; Crew Dashboard</tspan></text>")
-    cw = 244
+    cw = min(600, max(150, round(54 + len(u['chip']) * 6.8)))
     cx = W - 16 - cw
     s.append(f"<rect x='{cx}' y='10' width='{cw}' height='32' rx='16' fill='{C['contrast']}'/>")
     s.append(f"<circle cx='{cx+20}' cy='26' r='12' fill='{C['brand']}'/>")
@@ -530,7 +530,8 @@ def portal_ribbon_inner(u):
     s.append(f"<rect x='164' y='13' width='26' height='26' rx='7' fill='{C['brand']}'/>")
     s.append(f"<text x='177' y='27' font-family='{FONT}' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>")
     s.append(f"<text x='202' y='32' font-family='{FONT}' font-size='17' font-weight='700' fill='{C['strong']}'>Crew Portal <tspan fill='{C['weak']}' font-weight='400'>&#183; {esc(u.get('crew',''))}</tspan></text>")
-    cw = 244; cx = W - 16 - cw
+    # identity chip — width scales with the name + crew text length
+    cw = min(600, max(150, round(54 + len(u['chip']) * 6.8))); cx = W - 16 - cw
     s.append(f"<rect x='{cx}' y='10' width='{cw}' height='32' rx='16' fill='{C['contrast']}'/>")
     s.append(f"<circle cx='{cx+20}' cy='26' r='12' fill='{C['brand']}'/>")
     s.append(f"<text x='{cx+20}' y='27' font-family='{FONT}' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>{esc(u['ini'])}</text>")
@@ -561,7 +562,8 @@ def crew_cards_inner(members, current):
         s.append(f"<g class='fu' style='animation-delay:{0.10+i*0.06:.2f}s'>")
         s.append(shadow(x, ry, cwid, ch, 13, op=0.06))
         s.append(f"<rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='{ch}' rx='13' fill='{fill}' stroke='{stroke}' stroke-width='{2 if me else 1}'/>")
-        s.append(f"<rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='4' rx='2' fill='{C['brand'] if me else C['contrast']}'/>")
+        s.append(f"<clipPath id='cc{i}'><rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='{ch}' rx='13'/></clipPath>")
+        s.append(f"<rect x='{x:.0f}' y='{ry}' width='{cwid:.0f}' height='4' rx='2' fill='{C['brand'] if me else C['contrast']}' clip-path='url(#cc{i})'/>")
         if me:
             s.append(f"<circle cx='{cx:.0f}' cy='{acy}' r='{ar+4}' fill='none' stroke='{C['brand']}' stroke-width='2' class='ring' opacity='0'/>")
         s.append(f"<circle cx='{cx:.0f}' cy='{acy}' r='{ar}' fill='{C['brand'] if me else C['contrast']}'/>")
@@ -596,7 +598,8 @@ def opp_row_inner(o, selected=False, idx=0):
     s = [DEFS, CSS]
     s.append(f"<g class='rw' style='animation-delay:{0.06+idx*0.05:.2f}s'>")
     s.append(f"<rect x='2' y='3' width='{W-4}' height='{H-8}' rx='11' fill='{C['greenTint'] if selected else C['card']}' stroke='{C['brand'] if selected else C['border']}' stroke-width='{2 if selected else 1}'/>")
-    s.append(f"<rect x='2' y='3' width='5' height='{H-8}' rx='2.5' fill='{fc}'/>")
+    s.append(f"<clipPath id='or'><rect x='2' y='3' width='{W-4}' height='{H-8}' rx='11'/></clipPath>")
+    s.append(f"<rect x='2' y='3' width='5' height='{H-8}' rx='2.5' fill='{fc}' clip-path='url(#or)'/>")
     s.append(f"<text x='18' y='25' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['strong']}'>{esc(trunc(o['name'], 34))}</text>")
     s.append(f"<text x='18' y='44' font-family='{FONT}' font-size='10.5' fill='{C['weak']}'>{esc(trunc(o['account'], 30))}</text>")
     ftc = FUNNELCOL.get(o['funnel'], C['weak'])
@@ -619,7 +622,8 @@ def opp_detail_inner(o):
     s = [DEFS, CSS, "<g class='fu'>"]
     s.append(shadow(0, 0, W, H, 16, op=0.07))
     s.append(f"<rect x='0' y='0' width='{W}' height='{H}' rx='16' fill='{C['card']}' stroke='{C['border']}'/>")
-    s.append(f"<rect x='0' y='0' width='{W}' height='6' rx='3' fill='{fc}'/>")
+    s.append(f"<clipPath id='od'><rect x='0' y='0' width='{W}' height='{H}' rx='16'/></clipPath>")
+    s.append(f"<rect x='0' y='0' width='{W}' height='6' rx='3' fill='{fc}' clip-path='url(#od)'/>")
     s.append(eyebrow(28, 38, "OPPORTUNITY DETAIL"))
     # title (wrap up to 2 lines)
     tl = wrap_text(o['name'], 46, 2)
@@ -650,7 +654,8 @@ def opp_detail_inner(o):
     uy = ty + 86
     s.append(f"<g class='fu' style='animation-delay:0.34s'>")
     s.append(f"<rect x='28' y='{uy}' width='{W-56}' height='{H-uy-24}' rx='12' fill='#fbfcfc' stroke='{C['border']}'/>")
-    s.append(f"<rect x='28' y='{uy}' width='5' height='{H-uy-24}' rx='2.5' fill='{C['brand']}'/>")
+    s.append(f"<clipPath id='odu'><rect x='28' y='{uy}' width='{W-56}' height='{H-uy-24}' rx='12'/></clipPath>")
+    s.append(f"<rect x='28' y='{uy}' width='5' height='{H-uy-24}' rx='2.5' fill='{C['brand']}' clip-path='url(#odu)'/>")
     s.append(f"<text x='46' y='{uy+24}' font-family='{FONT}' font-size='9.5' font-weight='700' letter-spacing='.6' fill='{C['weak']}'>LATEST UPDATE</text>")
     for i, ln in enumerate(wrap_text(o['update'], 64, 4)):
         s.append(f"<text x='46' y='{uy+46+i*18}' font-family='{FONT}' font-size='12' fill='{C['text']}'>{esc(ln)}</text>")
@@ -776,7 +781,7 @@ P_OPPS = [
          close="11 Nov 2026", value=58000, owner="Quinn White",
          update="Awaiting current contract end date to time the proposal."),
 ]
-P_RIB = dict(ini="AJ", chip="Alex Jackson · AE", crew="Green Machine")
+P_RIB = dict(ini="MG", chip="Matthew Goode · Mission: Momentum", crew="Mission: Momentum")
 
 # standalone portal component previews
 save("portal-button", wrap(*portal_button_inner()))

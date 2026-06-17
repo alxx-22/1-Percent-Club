@@ -27,7 +27,8 @@
                   rl:   Substitute(Substitute(Substitute( Left( Role, RoundDown( w/6.2, 0 ) ), "&","&amp;"),"<","&lt;"),">","&gt;") },
                 "<g class='fu' style='animation-delay:" & Text( 100 + Idx*60 ) & "ms'>" &
                 "<rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='124' rx='13' fill='" & If(me,"#d1ffee","#ffffff") & "' stroke='" & If(me,"#01a982","#d4d8db") & "' stroke-width='" & If(me,"2","1") & "'/>" &
-                "<rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='4' rx='2' fill='" & If(me,"#01a982","#f2f3f4") & "'/>" &
+                "<clipPath id='cc" & Text(Idx) & "'><rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='124' rx='13'/></clipPath>" &
+                "<rect x='" & Text(x) & "' y='24' width='" & Text(w) & "' height='4' rx='2' fill='" & If(me,"#01a982","#f2f3f4") & "' clip-path='url(#cc" & Text(Idx) & ")'/>" &
                 If( me, "<circle cx='" & Text(cx) & "' cy='" & Text(acy) & "' r='" & Text(ar+4) & "' fill='none' stroke='#01a982' stroke-width='2' class='ring' opacity='0'/>", "" ) &
                 "<circle cx='" & Text(cx) & "' cy='" & Text(acy) & "' r='" & Text(ar) & "' fill='" & If(me,"#01a982","#f2f3f4") & "'/>" &
                 "<text x='" & Text(cx) & "' y='" & Text(acy+1) & "' font-size='" & If(big,"14","12") & "' font-weight='700' fill='" & If(me,"#ffffff","#006750") & "' text-anchor='middle' dominant-baseline='central'>" & ini & "</text>" &

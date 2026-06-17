@@ -21,7 +21,8 @@
           own: Substitute(Substitute(Substitute( Left(varSelOpp.MemberName & "", 16), "&","&amp;"),"<","&lt;"),">","&gt;") },
         "<g class='fu'>" &
         "<rect x='0' y='0' width='668' height='394' rx='16' fill='#ffffff' stroke='#d4d8db'/>" &
-        "<rect x='0' y='0' width='668' height='6' rx='3' fill='" & fc & "'/>" &
+        "<clipPath id='od'><rect x='0' y='0' width='668' height='394' rx='16'/></clipPath>" &
+        "<rect x='0' y='0' width='668' height='6' rx='3' fill='" & fc & "' clip-path='url(#od)'/>" &
         "<text x='28' y='38' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>OPPORTUNITY DETAIL</text>" &
         "<text x='28' y='68' font-size='20' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
         "<text x='28' y='90' font-size='13' fill='#606a70'>" & ac & "</text>" &
@@ -52,7 +53,8 @@
         // latest-update panel (lines pre-wrapped in colSelLines)
         "<g class='fu' style='animation-delay:.34s'>" &
         "<rect x='28' y='224' width='612' height='146' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
-        "<rect x='28' y='224' width='5' height='146' rx='2.5' fill='#01a982'/>" &
+        "<clipPath id='odu'><rect x='28' y='224' width='612' height='146' rx='12'/></clipPath>" &
+        "<rect x='28' y='224' width='5' height='146' rx='2.5' fill='#01a982' clip-path='url(#odu)'/>" &
         "<text x='46' y='248' font-size='9.5' font-weight='700' letter-spacing='.6' fill='#606a70'>LATEST UPDATE</text>" &
         Concat(
             Sort( colSelLines, Line ),

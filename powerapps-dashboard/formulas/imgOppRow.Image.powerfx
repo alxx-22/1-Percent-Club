@@ -19,7 +19,8 @@
           fcat:Substitute(Substitute(Substitute( ThisItem.ForecastCategory, "&","&amp;"),"<","&lt;"),">","&gt;") },
         "<g class='rw' style='animation-delay:" & Text( 60 + ThisItem.Idx*50 ) & "ms'>" &
         "<rect x='2' y='2' width='416' height='60' rx='11' fill='" & If(sel,"#d1ffee","#ffffff") & "' stroke='" & If(sel,"#01a982","#d4d8db") & "' stroke-width='" & If(sel,"2","1") & "'/>" &
-        "<rect x='2' y='2' width='5' height='60' rx='2.5' fill='" & fc & "'/>" &
+        "<clipPath id='or'><rect x='2' y='2' width='416' height='60' rx='11'/></clipPath>" &
+        "<rect x='2' y='2' width='5' height='60' rx='2.5' fill='" & fc & "' clip-path='url(#or)'/>" &
         "<text x='16' y='24' font-size='13' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
         "<text x='16' y='43' font-size='10.5' fill='#606a70'>" & ac & "</text>" &
         With(

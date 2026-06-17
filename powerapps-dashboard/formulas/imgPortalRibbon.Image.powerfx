@@ -16,12 +16,18 @@
     "<text x='177' y='27' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1%</text>" &
     "<text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Crew Portal <tspan fill='#606a70' font-weight='400'>&#183; " &
         Substitute(Substitute(Substitute( Left(varMyCrew & "", 28), "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
-    // right identity chip
-    "<rect x='876' y='10' width='244' height='32' rx='16' fill='#f2f3f4'/>" &
-    "<circle cx='896' cy='26' r='12' fill='#01a982'/>" &
-    "<text x='896' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
-    "<text x='916' y='30' font-size='13' fill='#3e4550'>" &
-        Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+    // right identity chip — width scales with the name + crew text length
+    With(
+        { cw: Min( 600, Max( 150, Round( 54 + Len( varRibbonChip ) * 6.8, 0 ) ) ) },
+        With(
+            { cx: 1120 - cw },
+            "<rect x='" & Text(cx) & "' y='10' width='" & Text(cw) & "' height='32' rx='16' fill='#f2f3f4'/>" &
+            "<circle cx='" & Text(cx+20) & "' cy='26' r='12' fill='#01a982'/>" &
+            "<text x='" & Text(cx+20) & "' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+            "<text x='" & Text(cx+40) & "' y='30' font-size='13' fill='#3e4550'>" &
+                Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>"
+        )
+    ) &
     "</g>" &
     "</svg>"
 )
