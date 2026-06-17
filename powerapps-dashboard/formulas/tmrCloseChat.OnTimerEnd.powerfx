@@ -1,0 +1,14 @@
+// ============================================================================
+//  tmrCloseChat.OnTimerEnd  —  hides the chat after the exit animation.
+//
+//  PLACEMENT: a Timer "tmrCloseChat" inside (or alongside) conPercyChat:
+//    Duration = 360            (matches imgChatBg's 'cout' length, ms)
+//    Repeat   = false
+//    AutoStart= false
+//    Start    = varChatClosing     <-- starts when the close button is pressed
+//    Reset    = !varChatClosing
+//    Visible  = false
+//  OnTimerEnd (below) hides the container and clears the closing flag.
+// ============================================================================
+Set( varPercyOpen, false );
+Set( varChatClosing, false )

@@ -1,0 +1,38 @@
+// ============================================================================
+//  CHAT WINDOW BACKGROUND.  Control: Image "imgChatBg"
+//  Sits at the back of the chat container (conPercyChat), filling it.
+//        X=0  Y=0  Width=368  Height=520   ImagePosition=Fit
+//  Entrance/exit: the <desc> carries varChatKey + the closing flag, so the
+//  control RELOADS (and replays the CSS) whenever you open OR close:
+//    - open  (imgPercy.OnSelect): varChatClosing=false -> plays 'cin'  (scale up)
+//    - close (imgClose.OnSelect):  varChatClosing=true  -> plays 'cout' (scale down)
+//  tmrCloseChat then flips varPercyOpen=false once 'cout' has finished (~360ms).
+//  Header ("Percy / AI assistant · online") is baked in; the close button,
+//  message gallery, text input and send button are separate controls on top.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 368 520' font-family='Segoe UI, Arial, sans-serif'>" &
+    "<desc>" & Text(varChatKey) & If(varChatClosing,"-out","-in") & "</desc>" &
+    "<style>" &
+    ".cin{transform-box:fill-box;transform-origin:100% 0;animation:cin .42s cubic-bezier(.2,.8,.2,1) both}@keyframes cin{from{opacity:0;transform:scale(.6) translateY(-14px)}to{opacity:1;transform:none}}" &
+    ".cout{transform-box:fill-box;transform-origin:100% 0;animation:cout .34s ease-in both}@keyframes cout{from{opacity:1;transform:none}to{opacity:0;transform:scale(.6) translateY(-14px)}}" &
+    ".onl{animation:onl 2s ease-in-out infinite}@keyframes onl{0%,100%{opacity:.5}50%{opacity:1}}" &
+    "@media(prefers-reduced-motion:reduce){.cin,.cout{animation:none}}" &
+    "</style>" &
+    "<g class='" & If(varChatClosing,"cout","cin") & "'>" &
+    "<clipPath id='win'><rect x='0' y='0' width='368' height='520' rx='18'/></clipPath>" &
+    "<rect x='0' y='0' width='368' height='520' rx='18' fill='#f7f7f7' stroke='#d4d8db'/>" &
+    "<g clip-path='url(#win)'>" &
+    "<rect x='0' y='0' width='368' height='60' fill='#01a982'/>" &
+    "<circle cx='34' cy='30' r='17' fill='#ffffff'/>" &
+    "<rect x='24' y='23' width='20' height='15' rx='6' fill='#06372e'/>" &
+    "<circle cx='30' cy='30' r='2.3' fill='#7cf5cf'/><circle cx='38' cy='30' r='2.3' fill='#7cf5cf'/>" &
+    "<text x='60' y='27' font-size='15' font-weight='700' fill='#ffffff'>Percy</text>" &
+    "<circle cx='61' cy='39' r='3' fill='#bdf5e4' class='onl'/>" &
+    "<text x='70' y='42' font-size='10.5' fill='#d1ffee'>AI assistant &#183; online</text>" &
+    "<rect x='0' y='454' width='368' height='66' fill='#ffffff'/>" &
+    "<line x1='0' y1='454' x2='368' y2='454' stroke='#d4d8db'/>" &
+    "<rect x='16' y='470' width='292' height='36' rx='18' fill='#f2f3f4' stroke='#d4d8db'/>" &
+    "</g></g>" &
+    "</svg>"
+)

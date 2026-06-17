@@ -13,3 +13,13 @@ Set( varSelOpp, Blank() );
 Set( varLeafKey, 0 );
 Set( varLeafBusy, false );
 Set( varTestCrew, "" );         // diagnostic role-override: a crew NAME to impersonate ("" = the real signed-in user). Use "" (not Blank()) so the var has a Text type.
+
+// ---- Percy (AI assistant) ----
+Set( varPercyOpen, false );     // chat container visibility
+Set( varChatClosing, false );   // true while the close animation plays
+Set( varChatKey, 0 );           // bumped on open/close to replay imgChatBg's animation
+Set( varPercyThinking, false ); // true while awaiting the AI reply
+Set( varSessionId, GUID() );    // conversation id (pass to the flow / SharePoint)
+// seed the transcript with Percy's greeting (Seq orders the gallery)
+ClearCollect( colChat,
+    { Seq: 1, Role: "percy", Body: "Hi, I'm Percy " & Char(128075) & " Ask me anything about the 1% Club dashboard." } );

@@ -1,0 +1,14 @@
+// ============================================================================
+//  SEND BUTTON (SVG).  Control: Image "imgSend"
+//  Geometry (over the chat input band, right end):
+//        X=container.X+312  Y=container.Y+470  Width=40  Height=40
+//        ImagePosition=Fit   OnSelect = imgSend.OnSelect.powerfx
+//  A brand-green circle with a paper-plane glyph.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'>" &
+    "<circle cx='22' cy='22' r='21' fill='#01a982'/>" &
+    "<path d='M33,22 L12,13 L17,22 L12,31 Z' fill='#ffffff'/>" &
+    "<path d='M17,22 L33,22 L12,31 Z' fill='#d1ffee'/>" &
+    "</svg>"
+)

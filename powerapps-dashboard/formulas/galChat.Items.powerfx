@@ -1,0 +1,9 @@
+// ============================================================================
+//  galChat.Items  —  the conversation, oldest-first (newest at the bottom).
+//  Control: a blank VERTICAL gallery "galChat" inside conPercyChat:
+//        X=16  Y=72  Width=336  Height=380   TemplatePadding=2
+//        (set the gallery to flexible / auto height, and put one AutoHeight
+//         "HTML text" control htmlBubble inside — see htmlBubble.HtmlText.powerfx)
+//  Each row is { Seq, Role ("user"/"percy"), Body }.
+// ============================================================================
+Sort( colChat, Seq )

@@ -818,4 +818,162 @@ def page_portal(sel=None):
 
 save("full-portal", wrap(*page_portal(sel=0), bg=C['canvas']))
 save("full-portal-empty", wrap(*page_portal(sel=None), bg=C['canvas']))
+
+
+# ============================================================================
+#  PERCY  — the AI assistant who peers over the ribbon + the chat window.
+#    imgPercy    : Percy peering down, waving, with a cycling speech bubble
+#    imgChatBg   : the chat window background (entrance/exit animation)
+#    imgSend     : send button       imgClose : close button
+#  Chat messages are HTML (gallery item), built by a HtmlText formula.
+# ============================================================================
+EYE = "#7cf5cf"          # glowing AI eye colour
+PDARK = "#06372e"        # Percy face screen
+PHAND = "#018f6e"        # Percy hands (darker green)
+
+
+def percy_inner(bubble=0):
+    """Percy peering over the ribbon. bubble=1/2 forces a speech bubble (preview)."""
+    W, H = 210, 116
+    css = ("<style>"
+        ".pbob{transform-box:fill-box;transform-origin:center;animation:pbob 3s ease-in-out infinite}"
+        "@keyframes pbob{0%,100%{transform:translateY(0)}50%{transform:translateY(2.5px)}}"
+        ".pwave{transform-box:fill-box;transform-origin:50% 95%;animation:pwave 5s ease-in-out infinite}"
+        "@keyframes pwave{0%,64%,100%{transform:rotate(0)}70%{transform:rotate(24deg)}77%{transform:rotate(-14deg)}84%{transform:rotate(22deg)}91%{transform:rotate(-8deg)}}"
+        ".pblink{transform-box:fill-box;transform-origin:center;animation:pblink 4.5s infinite}"
+        "@keyframes pblink{0%,95%,100%{transform:scaleY(1)}97.5%{transform:scaleY(.12)}}"
+        ".pdot{animation:pdot 1.8s ease-in-out infinite}@keyframes pdot{0%,100%{opacity:.45}50%{opacity:1}}"
+        ".pb1{opacity:0;transform-box:fill-box;transform-origin:100% 60%;animation:pb1 13s ease-in-out infinite}"
+        "@keyframes pb1{0%,3%{opacity:0;transform:scale(.7)}7%,22%{opacity:1;transform:scale(1)}27%,100%{opacity:0;transform:scale(.9)}}"
+        ".pb2{opacity:0;transform-box:fill-box;transform-origin:100% 60%;animation:pb2 13s ease-in-out infinite}"
+        "@keyframes pb2{0%,52%{opacity:0;transform:scale(.7)}56%,72%{opacity:1;transform:scale(1)}77%,100%{opacity:0;transform:scale(.9)}}"
+        "@media(prefers-reduced-motion:reduce){.pbob,.pwave,.pblink,.pdot,.pb1,.pb2{animation:none}}"
+        "</style>")
+    s = [css]
+
+    def bub(cls, text, forced):
+        ca = "" if forced else f" class='{cls}'"
+        return (f"<g{ca}>"
+                f"<rect x='6' y='8' width='128' height='44' rx='14' fill='#ffffff' stroke='{C['border']}'/>"
+                f"<path d='M126,40 l16,7 l-15,4 z' fill='#ffffff'/>"
+                f"<text x='70' y='34' font-family='{FONT}' font-size='12.5' font-weight='600' fill='{C['strong']}' text-anchor='middle'>{esc(text)}</text>"
+                f"</g>")
+    s.append(bub("pb1", "Hey, I'm Percy", bubble == 1))
+    s.append(bub("pb2", "Ask me a question!", bubble == 2))
+
+    cx = 170
+    s.append("<g class='pbob'>")
+    s.append(f"<ellipse cx='{cx}' cy='86' rx='28' ry='4' fill='#000000' opacity='.08'/>")
+    s.append(f"<line x1='{cx}' y1='30' x2='{cx}' y2='18' stroke='{C['brand']}' stroke-width='3' stroke-linecap='round'/>")
+    s.append(f"<circle cx='{cx}' cy='14' r='4' fill='{C['brand']}' class='pdot'/>")
+    # left hand gripping the ledge + right hand waving
+    s.append(f"<rect x='{cx-36}' y='72' width='15' height='11' rx='5.5' fill='{PHAND}'/>")
+    s.append(f"<g class='pwave'><rect x='{cx+23}' y='50' width='13' height='18' rx='6.5' fill='{PHAND}'/></g>")
+    # head + face screen
+    s.append(f"<rect x='{cx-28}' y='28' width='56' height='54' rx='18' fill='{C['brand']}'/>")
+    s.append(f"<rect x='{cx-20}' y='40' width='40' height='32' rx='11' fill='{PDARK}'/>")
+    # eyes looking down + smile
+    s.append("<g class='pblink'>")
+    s.append(f"<circle cx='{cx-9}' cy='61' r='4.2' fill='{EYE}'/><circle cx='{cx+9}' cy='61' r='4.2' fill='{EYE}'/>")
+    s.append("</g>")
+    s.append(f"<path d='M{cx-7},68 q7,5 14,0' fill='none' stroke='{EYE}' stroke-width='1.6' stroke-linecap='round'/>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
+CHAT_W, CHAT_H = 368, 520
+
+
+def chat_bg_inner(mode="in"):
+    """The chat window background. mode 'in'/'out' -> entrance/exit class."""
+    W, H = CHAT_W, CHAT_H
+    cls = {"in": "cin", "out": "cout"}.get(mode, "")
+    css = ("<style>"
+        ".cin{transform-box:fill-box;transform-origin:100% 0;animation:cin .42s cubic-bezier(.2,.8,.2,1) both}"
+        "@keyframes cin{from{opacity:0;transform:scale(.6) translateY(-14px)}to{opacity:1;transform:none}}"
+        ".cout{transform-box:fill-box;transform-origin:100% 0;animation:cout .34s ease-in both}"
+        "@keyframes cout{from{opacity:1;transform:none}to{opacity:0;transform:scale(.6) translateY(-14px)}}"
+        ".onl{animation:onl 2s ease-in-out infinite}@keyframes onl{0%,100%{opacity:.5}50%{opacity:1}}"
+        "@media(prefers-reduced-motion:reduce){.cin,.cout{animation:none}}"
+        "</style>")
+    s = [DEFS, css, f"<g class='{cls}'>" if cls else "<g>"]
+    s.append(shadow(0, 0, W, H, 18, op=0.12))
+    s.append(f"<clipPath id='win'><rect x='0' y='0' width='{W}' height='{H}' rx='18'/></clipPath>")
+    s.append(f"<rect x='0' y='0' width='{W}' height='{H}' rx='18' fill='#f7f7f7' stroke='{C['border']}'/>")
+    s.append("<g clip-path='url(#win)'>")
+    # header
+    s.append(f"<rect x='0' y='0' width='{W}' height='60' fill='{C['brand']}'/>")
+    s.append(f"<circle cx='34' cy='30' r='17' fill='#ffffff'/>")
+    s.append(f"<rect x='24' y='23' width='20' height='15' rx='6' fill='{PDARK}'/>")
+    s.append(f"<circle cx='30' cy='30' r='2.3' fill='{EYE}'/><circle cx='38' cy='30' r='2.3' fill='{EYE}'/>")
+    s.append(f"<text x='60' y='27' font-family='{FONT}' font-size='15' font-weight='700' fill='#ffffff'>Percy</text>")
+    s.append(f"<circle cx='61' cy='39' r='3' fill='#bdf5e4' class='onl'/>")
+    s.append(f"<text x='70' y='42' font-family='{FONT}' font-size='10.5' fill='#d1ffee'>AI assistant &#183; online</text>")
+    # footer / input band
+    s.append(f"<rect x='0' y='{H-66}' width='{W}' height='66' fill='#ffffff'/>")
+    s.append(f"<line x1='0' y1='{H-66}' x2='{W}' y2='{H-66}' stroke='{C['border']}'/>")
+    s.append(f"<rect x='16' y='{H-50}' width='292' height='36' rx='18' fill='#f2f3f4' stroke='{C['border']}'/>")
+    s.append("</g></g>")
+    return W, H, "".join(s)
+
+
+def send_inner():
+    W = H = 44
+    s = ["<g>", f"<circle cx='22' cy='22' r='21' fill='{C['brand']}'/>",
+         "<path d='M33,22 L12,13 L17,22 L12,31 Z' fill='#ffffff'/>",
+         "<path d='M17,22 L33,22 L12,31 Z' fill='#d1ffee'/>", "</g>"]
+    return W, H, "".join(s)
+
+
+def close_inner():
+    W = H = 28
+    s = ["<g>", "<circle cx='14' cy='14' r='13' fill='#ffffff' opacity='.20'/>",
+         "<path d='M9,9 L19,19 M19,9 L9,19' stroke='#ffffff' stroke-width='2.2' stroke-linecap='round'/>", "</g>"]
+    return W, H, "".join(s)
+
+
+# mock HTML-style chat bubbles for the composite preview (real app uses HtmlText)
+def bubble_mock(text, role, y, W=336):
+    user = (role == "user")
+    bw = min(W - 40, 12 + len(text) * 7)
+    x = (W - bw) if user else 0
+    bg = C['brand'] if user else "#ffffff"
+    fg = "#ffffff" if user else C['strong']
+    st = "" if user else f" stroke='{C['border']}'"
+    return (f"<rect x='{x:.0f}' y='{y}' width='{bw:.0f}' height='34' rx='13' fill='{bg}'{st}/>"
+            f"<text x='{x + (bw-10 if user else 12):.0f}' y='{y+22}' font-family='{FONT}' font-size='12.5' "
+            f"fill='{fg}' text-anchor='{'end' if user else 'start'}'>{esc(text)}</text>")
+
+
+save("percy", wrap(*percy_inner(bubble=1), bg=C['card']))
+save("percy-bubble2", wrap(*percy_inner(bubble=2), bg=C['card']))
+save("chat-bg", wrap(*chat_bg_inner("in")))
+save("send-button", wrap(*send_inner()))
+save("close-button", wrap(*close_inner(), bg=C['brand']))
+
+
+def page_percy():
+    s = [DEFS, f"<rect x='0' y='0' width='{PAGE_W}' height='{PAGE_H}' fill='{C['canvas']}'/>"]
+    s.append(place(0, 0, PAGE_W, RIB_H, PAGE_W, RIB_H, ribbon_inner(RIB)[2]))
+    # dim behind the chat (optional modal scrim)
+    s.append(f"<rect x='0' y='0' width='{PAGE_W}' height='{PAGE_H}' fill='#000000' opacity='.04'/>")
+    # chat window
+    cxp, cyp = 752, 60
+    s.append(place(cxp, cyp, CHAT_W, CHAT_H, CHAT_W, CHAT_H, chat_bg_inner("in")[2]))
+    s.append(place(cxp + 324, cyp + 16, 28, 28, 28, 28, close_inner()[2]))
+    msgs = [("Hi Percy! How many points is a CAP win worth?", "user"),
+            ("A booked CAP order earns CAP Orders Booked points — want the breakdown?", "percy"),
+            ("Yes please", "user"),
+            ("Sure — each booked order adds its value to your crew total.", "percy")]
+    yy = cyp + 74
+    for t, r in msgs:
+        s.append(place(cxp + 16, yy, 336, 40, 336, 40, bubble_mock(t, r, 0)))
+        yy += 44
+    s.append(place(cxp + 312, cyp + CHAT_H - 50, 40, 40, 44, 44, send_inner()[2]))
+    # Percy peering over the ribbon, top-right
+    s.append(place(900, 26, 210, 116, 210, 116, percy_inner(bubble=2)[2]))
+    return PAGE_W, PAGE_H, "".join(s)
+
+
+save("full-percy", wrap(*page_percy(), bg=C['canvas']))
 print("done")

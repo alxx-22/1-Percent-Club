@@ -1,0 +1,26 @@
+// ============================================================================
+//  htmlBubble.HtmlText  —  one chat message bubble (HTML).
+//  Control: an "HTML text" control "htmlBubble" inside the gallery galChat:
+//        X=0  Y=0  Width=Parent.TemplateWidth  AutoHeight=true
+//  User messages align right (green); Percy's align left (white card). The text
+//  is HTML-escaped and newlines become <br>, so arbitrary AI text is safe.
+//  (HTML attributes use single quotes so no "" escaping is needed in Power Fx.)
+// ============================================================================
+With(
+    {
+        user: ThisItem.Role = "user",
+        body: Substitute(
+                Substitute(
+                  Substitute(
+                    Substitute( ThisItem.Body & "", "&", "&amp;" ),
+                  "<", "&lt;" ),
+                ">", "&gt;" ),
+              Char(10), "<br>" )
+    },
+    "<div style='text-align:" & If(user,"right","left") & ";margin:5px 6px;font-family:Segoe UI,Arial,sans-serif'>" &
+    "<span style='display:inline-block;max-width:80%;text-align:left;padding:7px 11px;border-radius:14px;font-size:13px;line-height:1.35;" &
+        If( user,
+            "background:#01a982;color:#ffffff",
+            "background:#ffffff;color:#292d3a;border:1px solid #d4d8db" ) &
+    "'>" & body & "</span></div>"
+)

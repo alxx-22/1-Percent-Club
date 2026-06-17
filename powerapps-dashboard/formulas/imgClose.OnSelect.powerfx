@@ -1,0 +1,8 @@
+// ============================================================================
+//  imgClose.OnSelect  —  close the Percy chat with an exit animation.
+//  Sets varChatClosing=true so imgChatBg replays its 'cout' (shrink) animation,
+//  and bumps varChatKey to force the reload. The container is STILL visible at
+//  this point — tmrCloseChat hides it once the animation has finished.
+// ============================================================================
+Set( varChatClosing, true );
+Set( varChatKey, varChatKey + 1 )    // reload imgChatBg -> plays the exit; tmrCloseChat (Start=varChatClosing) finishes the job

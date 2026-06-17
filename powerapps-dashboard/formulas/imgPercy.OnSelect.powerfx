@@ -1,0 +1,8 @@
+// ============================================================================
+//  imgPercy.OnSelect  —  open the Percy chat.
+//  Shows the chat container (conPercyChat.Visible = varPercyOpen) and bumps
+//  varChatKey so imgChatBg reloads and plays its 'cin' entrance animation.
+// ============================================================================
+Set( varChatClosing, false );
+Set( varChatKey, varChatKey + 1 );   // forces imgChatBg to reload -> replays the entrance
+Set( varPercyOpen, true )

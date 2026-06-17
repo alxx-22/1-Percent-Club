@@ -26,6 +26,11 @@ between the two pages.
 
 ![crew portal](previews/full-portal.png)
 
+…and **[Percy](PERCY.md)**, an AI assistant who peers over the ribbon, waves, and opens a chat
+window (SharePoint + Power Automate, wired up later). Build guide: **[PERCY.md](PERCY.md)**.
+
+![percy](previews/full-percy.png)
+
 ---
 
 ## 1. Controls & formulas
