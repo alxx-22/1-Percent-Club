@@ -594,22 +594,26 @@ def opp_header_inner(count):
 # ---------------------------------------------------------------- OPP ROW
 def opp_row_inner(o, selected=False, idx=0):
     W, H = P_LIST[2], OPPROW_H
+    ftc = FUNNELCOL.get(o['funnel'], C['weak'])   # colour coding = FUNNEL TYPE
     fc = FCCOL.get(o['forecast'], C['weak'])
     s = [DEFS, CSS]
     s.append(f"<g class='rw' style='animation-delay:{0.06+idx*0.05:.2f}s'>")
-    s.append(f"<rect x='2' y='3' width='{W-4}' height='{H-8}' rx='11' fill='{C['greenTint'] if selected else C['card']}' stroke='{C['brand'] if selected else C['border']}' stroke-width='{2 if selected else 1}'/>")
-    s.append(f"<clipPath id='or'><rect x='2' y='3' width='{W-4}' height='{H-8}' rx='11'/></clipPath>")
-    s.append(f"<rect x='2' y='3' width='5' height='{H-8}' rx='2.5' fill='{fc}' clip-path='url(#or)'/>")
-    s.append(f"<text x='18' y='25' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['strong']}'>{esc(trunc(o['name'], 34))}</text>")
-    s.append(f"<text x='18' y='44' font-family='{FONT}' font-size='10.5' fill='{C['weak']}'>{esc(trunc(o['account'], 30))}</text>")
-    ftc = FUNNELCOL.get(o['funnel'], C['weak'])
-    ch, cw = chip(18, 48, o['funnel'], "#eef2f5", fg=ftc)
-    # value, right aligned
-    s.append(f"<text x='{W-16}' y='27' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['greenDark']}' text-anchor='end'>{money(o['value'])}</text>")
-    fch, fcw = chip(W - 16 - (7 * len(o['forecast']) + 20), 44, o['forecast'], fc)
-    s.append(ch); s.append(fch)
-    if selected:
-        s.append(f"<path d='M{W-14},28 l6,5 l-6,5' fill='none' stroke='{C['brand']}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>")
+    s.append(f"<rect x='2' y='2' width='{W-4}' height='60' rx='11' fill='{C['greenTint'] if selected else C['card']}' stroke='{C['brand'] if selected else C['border']}' stroke-width='{2 if selected else 1}'/>")
+    s.append(f"<clipPath id='or'><rect x='2' y='2' width='{W-4}' height='60' rx='11'/></clipPath>")
+    s.append(f"<rect x='2' y='2' width='5' height='60' rx='2.5' fill='{ftc}' clip-path='url(#or)'/>")
+    # left: name + account
+    s.append(f"<text x='16' y='22' font-family='{FONT}' font-size='13' font-weight='700' fill='{C['strong']}'>{esc(trunc(o['name'], 30))}</text>")
+    s.append(f"<text x='16' y='39' font-family='{FONT}' font-size='10.5' fill='{C['weak']}'>{esc(trunc(o['account'], 28))}</text>")
+    # right: value (top) + close date (below) — stacked, no overlap
+    s.append(f"<text x='{W-16}' y='24' font-family='{FONT}' font-size='14' font-weight='700' fill='{C['greenDark']}' text-anchor='end'>{money(o['value'])}</text>")
+    s.append(f"<text x='{W-16}' y='44' font-family='{FONT}' font-size='10.5' fill='{C['weak']}' text-anchor='end'>{esc(o['close'])}</text>")
+    # bottom-left: funnel chip (filled funnel colour) + forecast pill (muted)
+    ft = trunc(o['funnel'], 16); fw = round(6.5 * len(ft) + 16)
+    s.append(f"<rect x='16' y='46' width='{fw}' height='15' rx='7.5' fill='{ftc}'/>")
+    s.append(f"<text x='{round(16+fw/2)}' y='54' font-family='{FONT}' font-size='9' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>{esc(ft)}</text>")
+    pw = round(6.5 * len(o['forecast']) + 16); px = 16 + fw + 6
+    s.append(f"<rect x='{px}' y='46' width='{pw}' height='15' rx='7.5' fill='{C['contrast']}'/>")
+    s.append(f"<text x='{round(px+pw/2)}' y='54' font-family='{FONT}' font-size='9' font-weight='700' fill='{fc}' text-anchor='middle' dominant-baseline='central'>{esc(o['forecast'])}</text>")
     s.append("</g>")
     return W, H, "".join(s)
 
