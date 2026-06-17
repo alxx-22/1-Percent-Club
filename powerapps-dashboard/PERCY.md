@@ -15,17 +15,17 @@ there are no image assets to manage.
 
 | Control | Type | Property | Formula |
 |---|---|---|---|
-| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — seeds `varPercyOpen / varChatClosing / varChatKey / varPercyThinking / varSessionId / colChat` |
-| `imgPercy` | Image | `Image` | [`imgPercy.Image.powerfx`](formulas/imgPercy.Image.powerfx) — peering Percy + bubbles |
-| `imgPercy` | Image | `OnSelect` | [`imgPercy.OnSelect.powerfx`](formulas/imgPercy.OnSelect.powerfx) — open chat |
+| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/dashboard/App_OnStart.powerfx) — seeds `varPercyOpen / varChatClosing / varChatKey / varPercyThinking / varSessionId / colChat` |
+| `imgPercy` | Image | `Image` | [`imgPercy.Image.powerfx`](formulas/percy/imgPercy.Image.powerfx) — peering Percy + bubbles |
+| `imgPercy` | Image | `OnSelect` | [`imgPercy.OnSelect.powerfx`](formulas/percy/imgPercy.OnSelect.powerfx) — open chat |
 | **conPercyChat** | Container | `Visible` | `varPercyOpen` |
-| `imgChatBg` | Image | `Image` | [`imgChatBg.Image.powerfx`](formulas/imgChatBg.Image.powerfx) — window + entrance/exit |
-| `imgClose` | Image | `Image` / `OnSelect` | [`imgClose.Image.powerfx`](formulas/imgClose.Image.powerfx) · [`imgClose.OnSelect.powerfx`](formulas/imgClose.OnSelect.powerfx) |
-| `tmrCloseChat` | Timer | `OnTimerEnd` | [`tmrCloseChat.OnTimerEnd.powerfx`](formulas/tmrCloseChat.OnTimerEnd.powerfx) |
-| `galChat` | Gallery (blank vertical) | `Items` | [`galChat.Items.powerfx`](formulas/galChat.Items.powerfx) — `Sort(colChat, Seq)` |
-| `htmlBubble` (in galChat) | HTML text | `HtmlText` | [`htmlBubble.HtmlText.powerfx`](formulas/htmlBubble.HtmlText.powerfx) |
+| `imgChatBg` | Image | `Image` | [`imgChatBg.Image.powerfx`](formulas/percy/imgChatBg.Image.powerfx) — window + entrance/exit |
+| `imgClose` | Image | `Image` / `OnSelect` | [`imgClose.Image.powerfx`](formulas/percy/imgClose.Image.powerfx) · [`imgClose.OnSelect.powerfx`](formulas/percy/imgClose.OnSelect.powerfx) |
+| `tmrCloseChat` | Timer | `OnTimerEnd` | [`tmrCloseChat.OnTimerEnd.powerfx`](formulas/percy/tmrCloseChat.OnTimerEnd.powerfx) |
+| `galChat` | Gallery (blank vertical) | `Items` | [`galChat.Items.powerfx`](formulas/percy/galChat.Items.powerfx) — `Sort(colChat, Seq)` |
+| `htmlBubble` (in galChat) | HTML text | `HtmlText` | [`htmlBubble.HtmlText.powerfx`](formulas/percy/htmlBubble.HtmlText.powerfx) |
 | `txtChat` | Text input | — | `HintText="Ask Percy a question…"`, `BorderColor=Transparent`, `Fill=Transparent` |
-| `imgSend` | Image | `Image` / `OnSelect` | [`imgSend.Image.powerfx`](formulas/imgSend.Image.powerfx) · [`imgSend.OnSelect.powerfx`](formulas/imgSend.OnSelect.powerfx) |
+| `imgSend` | Image | `Image` / `OnSelect` | [`imgSend.Image.powerfx`](formulas/percy/imgSend.Image.powerfx) · [`imgSend.OnSelect.powerfx`](formulas/percy/imgSend.OnSelect.powerfx) |
 
 Every Image: `ImagePosition = Fit`.
 
@@ -90,36 +90,18 @@ SharePoint can group it.
 
 ## 4. SharePoint + Power Automate (wire up later)
 
-### 4a. SharePoint lists
-1. **`PercyKnowledge`** (what Percy knows) — columns: `Title`, `Answer` (multi‑line),
-   `Keywords` (text), `Category` (choice). Fill it with FAQ‑style rows (scoring rules,
-   CAP definitions, deadlines, etc.).
-2. **`PercyChatLog`** (optional transcript) — columns: `SessionId` (text),
-   `Role` (choice user/percy), `Message` (multi‑line), `Seq` (number), `Asked By` (person).
+Percy's brain — the SharePoint list, the `PercyAsk` flow, the scoring prompt, and the
+updated `imgSend.OnSelect` that sends the conversation as **JSON** — has its own full guide:
+**[backend/README.md](formulas/percy/backend/README.md)**.
 
-### 4b. Flow `PercyAsk` (instant cloud flow, **PowerApps (V2)** trigger)
-Inputs: `question` (text), `sessionId` (text). Steps:
-1. *(optional)* **Get items** from `PercyKnowledge` (filter on keywords) to build context.
-2. **Generate the answer** — use **AI Builder → "Create text with GPT"** (or an HTTP
-   action to **Azure OpenAI**), prompt = your context + the `question`.
-3. *(optional)* **Create item** in `PercyChatLog` for the question and the answer.
-4. **Respond to a PowerApp or flow** → output `answer` = the generated text.
+- **Stage 1 (FAQ):** one AI prompt you write (how points are scored) answers questions; every
+  conversation is logged to a `PercyConversations` list as JSON.
+- **Stage 2 (later):** "why isn't my opp scoring?" reasoning over the user's own data — not
+  built yet, hooks noted in that doc.
 
-### 4c. Connect it in the app
-Add the flow to the app (**Power Automate** pane), then swap the stub in
-[`imgSend.OnSelect.powerfx`](formulas/imgSend.OnSelect.powerfx) for the real call:
-
-```powerfx
-Set( varPercyA, PercyAsk.Run( varPercyQ, varSessionId ).answer );
-Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyA } );
-```
-
-Until then the stub collects a placeholder reply so the whole UI is testable.
-
-> **Async alternative:** instead of `.Run` (synchronous), the flow can *write* the answer
-> to `PercyChatLog`; the app then reads new rows (e.g. a Timer doing
-> `ClearCollect(colChat, Filter(PercyChatLog, SessionId = varSessionId))`). Simpler to
-> start with `.Run`.
+Until you build it, the stub in
+[`imgSend.OnSelect.powerfx`](formulas/percy/imgSend.OnSelect.powerfx) collects a placeholder
+reply so the whole UI is testable now.
 
 ---
 

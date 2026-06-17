@@ -61,7 +61,7 @@ def check(path):
     if og != cg: problems.append(f"<g> {og}/{cg}")
     return problems
 
-for f in sorted(glob.glob(os.path.join(OUT, "formulas", "*.powerfx"))):
+for f in sorted(glob.glob(os.path.join(OUT, "formulas", "**", "*.powerfx"), recursive=True)):
     p = check(f)
     print(f"  {'ok ' if not p else 'FAIL'} {os.path.basename(f):30} {'' if not p else '<-- '+', '.join(p)}")
     if p: fail = True

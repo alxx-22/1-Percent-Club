@@ -1,8 +1,9 @@
 // ============================================================================
 //  imgSend.OnSelect  —  send the typed question to Percy.
 //  Appends the user's message to colChat, then asks the AI. The Power Automate
-//  call is stubbed (you'll wire it up later — see PERCY.md); a temporary canned
-//  reply is collected so the UI is fully testable now.
+//  call is stubbed; wire it up via backend/README.md (it sends the conversation
+//  as JSON and logs it to SharePoint). A temporary canned reply is collected so
+//  the UI is fully testable now.
 //  (txtChat = the chat TextInput;  galChat.Items = Sort(colChat, Seq).)
 // ============================================================================
 If(
@@ -15,16 +16,17 @@ If(
     Set( varPercyThinking, true );
 
     // 2) ask Percy --------------------------------------------------------
-    //    WIRE UP LATER (PowerApps V2 flow that calls your AI + SharePoint):
+    //    WIRE UP LATER (PowerApps V2 flow — full steps in backend/README.md):
     //
-    //    Set( varPercyA,
-    //         PercyAsk.Run( varPercyQ, varSessionId ).answer );
-    //    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyA } );
+    //    Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+    //    Set( varPercyResp,
+    //         PercyAsk.Run( varPercyQ, varSessionId, Lower( User().Email ), varChatJson ) );
+    //    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyResp.answer } );
     //
     //    --- TEMPORARY echo so you can test the UI before the flow exists: ---
     Collect( colChat,
         { Seq: CountRows(colChat) + 1, Role: "percy",
-          Body: "Got it — connect the PercyAsk flow (see PERCY.md) and I'll answer ""(" & varPercyQ & ")"" for real." } );
+          Body: "Got it — connect the PercyAsk flow (see backend/README.md) and I'll answer ""(" & varPercyQ & ")"" for real." } );
 
     Set( varPercyThinking, false )
 )

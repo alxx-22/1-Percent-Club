@@ -33,26 +33,43 @@ window (SharePoint + Power Automate, wired up later). Build guide: **[PERCY.md](
 
 ---
 
+### Repo layout
+Formulas are grouped by feature:
+
+```
+formulas/
+  dashboard/     scrLoading + scrDashboard (App.OnStart, role build, ribbon, podium,
+                 gallery row, My Points, crew grid, spectator, loading, debug, IP-in-GL DAX)
+  crew-portal/   scrPortal + its ribbon button & leaf transition (OnVisible, cards, opp list,
+                 opp detail, pipeline, back button, imgCrewPortalBtn, imgLeafWipe, tmrLeaf)
+  percy/         the AI assistant UI (imgPercy, chat bg, send/close, gallery item, html bubble)
+    backend/     SharePoint + Power Automate setup  ->  formulas/percy/backend/README.md
+```
+Shared assets stay at the root: `svg/`, `previews/`, `_generate_previews.py`,
+`_verify_powerfx_svg.py`, plus [`PERCY.md`](PERCY.md) and [`DEBUG.md`](DEBUG.md).
+
+---
+
 ## 1. Controls & formulas
 
 | Control | Type | Property | Formula |
 |---|---|---|---|
-| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/App_OnStart.powerfx) — `varReady` + portal/transition vars |
-| `imgLoading` (on **scrLoading**, the 1st screen) | Image | `Image` | [`imgLoading.Image.powerfx`](formulas/imgLoading.Image.powerfx) |
-| `tmrGo` (on scrLoading) | Timer | `OnTimerEnd` | [`tmrGo.OnTimerEnd.powerfx`](formulas/tmrGo.OnTimerEnd.powerfx) — auto‑enter when data ready |
-| `btnEnter` (on scrLoading) | Button | `OnSelect` | [`btnEnter.OnSelect.powerfx`](formulas/btnEnter.OnSelect.powerfx) — manual fallback |
-| **scrDashboard** | Screen | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx) — **builds all data** |
-| `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/imgRibbon.Image.powerfx) |
-| `imgMyPoints` | Image | `Image` | [`imgMyPoints.Image.powerfx`](formulas/imgMyPoints.Image.powerfx) |
-| `imgCrewGrid` | Image | `Image` | [`imgCrewGrid.Image.powerfx`](formulas/imgCrewGrid.Image.powerfx) |
-| `imgSpectator` | Image | `Image` | [`imgSpectator.Image.powerfx`](formulas/imgSpectator.Image.powerfx) |
-| `imgPodium` | Image | `Image` | [`imgPodium.Image.powerfx`](formulas/imgPodium.Image.powerfx) |
-| `imgRanksHeader` | Image | `Image` | [`imgRanksHeader.Image.powerfx`](formulas/imgRanksHeader.Image.powerfx) |
+| **App** | — | `OnStart` | [`App_OnStart.powerfx`](formulas/dashboard/App_OnStart.powerfx) — `varReady` + portal/transition vars |
+| `imgLoading` (on **scrLoading**, the 1st screen) | Image | `Image` | [`imgLoading.Image.powerfx`](formulas/dashboard/imgLoading.Image.powerfx) |
+| `tmrGo` (on scrLoading) | Timer | `OnTimerEnd` | [`tmrGo.OnTimerEnd.powerfx`](formulas/dashboard/tmrGo.OnTimerEnd.powerfx) — auto‑enter when data ready |
+| `btnEnter` (on scrLoading) | Button | `OnSelect` | [`btnEnter.OnSelect.powerfx`](formulas/dashboard/btnEnter.OnSelect.powerfx) — manual fallback |
+| **scrDashboard** | Screen | `OnVisible` | [`Screen_OnVisible.powerfx`](formulas/dashboard/Screen_OnVisible.powerfx) — **builds all data** |
+| `imgRibbon` | Image | `Image` | [`imgRibbon.Image.powerfx`](formulas/dashboard/imgRibbon.Image.powerfx) |
+| `imgMyPoints` | Image | `Image` | [`imgMyPoints.Image.powerfx`](formulas/dashboard/imgMyPoints.Image.powerfx) |
+| `imgCrewGrid` | Image | `Image` | [`imgCrewGrid.Image.powerfx`](formulas/dashboard/imgCrewGrid.Image.powerfx) |
+| `imgSpectator` | Image | `Image` | [`imgSpectator.Image.powerfx`](formulas/dashboard/imgSpectator.Image.powerfx) |
+| `imgPodium` | Image | `Image` | [`imgPodium.Image.powerfx`](formulas/dashboard/imgPodium.Image.powerfx) |
+| `imgRanksHeader` | Image | `Image` | [`imgRanksHeader.Image.powerfx`](formulas/dashboard/imgRanksHeader.Image.powerfx) |
 | `galLeaderboard` | Gallery (blank vertical) | `Items` | `colCrewRest` |
-| `imgRow` (in gallery) | Image | `Image` | [`imgRow.Image.powerfx`](formulas/imgRow.Image.powerfx) |
-| `imgCrewPortalBtn` (on ribbon) | Image | `Image` + `OnSelect` | [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx) (SVG) · OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — open the **Crew Portal** (§8) |
-| `imgLeafWipe` | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/imgLeafWipe.Image.powerfx) — page‑transition overlay (§8) |
-| `tmrLeaf` | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/tmrLeaf.OnTimerEnd.powerfx) — dismisses the overlay (§8) |
+| `imgRow` (in gallery) | Image | `Image` | [`imgRow.Image.powerfx`](formulas/dashboard/imgRow.Image.powerfx) |
+| `imgCrewPortalBtn` (on ribbon) | Image | `Image` + `OnSelect` | [`imgCrewPortalBtn.Image.powerfx`](formulas/crew-portal/imgCrewPortalBtn.Image.powerfx) (SVG) · OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/crew-portal/btnCrewPortal.OnSelect.powerfx) — open the **Crew Portal** (§8) |
+| `imgLeafWipe` | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/crew-portal/imgLeafWipe.Image.powerfx) — page‑transition overlay (§8) |
+| `tmrLeaf` | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/crew-portal/tmrLeaf.OnTimerEnd.powerfx) — dismisses the overlay (§8) |
 
 Every Image: **`ImagePosition = ImagePosition.Fit`**.
 
@@ -92,14 +109,14 @@ cold open can be blank. Fix it by **opening on a small landing screen** and ente
 dashboard once data is ready:
 
 1. **`scrLoading`** = the app's **first screen**. Put `imgLoading`
-   ([`imgLoading.Image.powerfx`](formulas/imgLoading.Image.powerfx)) full‑screen — a branded
+   ([`imgLoading.Image.powerfx`](formulas/dashboard/imgLoading.Image.powerfx)) full‑screen — a branded
    "Loading crew dashboard…" splash with a spinning ring (self‑contained, no data needed).
 2. **Auto‑advance:** Timer `tmrGo` on `scrLoading` (`AutoStart=true`, `Repeat=true`,
-   `Duration=500`), `OnTimerEnd` = [`tmrGo.OnTimerEnd.powerfx`](formulas/tmrGo.OnTimerEnd.powerfx)
+   `Duration=500`), `OnTimerEnd` = [`tmrGo.OnTimerEnd.powerfx`](formulas/dashboard/tmrGo.OnTimerEnd.powerfx)
    → `If(CountRows(PowerBIIntegration.Data)>0, Navigate(scrDashboard,…))`. The instant data
    arrives it enters the dashboard, whose `OnVisible` then builds with data present.
 3. **Guaranteed fallback:** a Button `btnEnter` ("View dashboard"),
-   `OnSelect` = [`btnEnter.OnSelect.powerfx`](formulas/btnEnter.OnSelect.powerfx). If timers don't
+   `OnSelect` = [`btnEnter.OnSelect.powerfx`](formulas/dashboard/btnEnter.OnSelect.powerfx). If timers don't
    fire in your visual, one tap still works — exactly the "navigate in" path that already works.
 
 ![loading splash](previews/loading.png)
@@ -111,8 +128,8 @@ dashboard once data is ready:
 > `Distinct`/`Filter`/`Sum`/`Sort(<expression>)`/`ForAll` instead.
 
 #### Still blank? Add the diagnostic labels
-Add Labels with `Text =` [`lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx) and
-[`lblDebugSchema.Text.powerfx`](formulas/lblDebugSchema.Text.powerfx) — see **[DEBUG.md](DEBUG.md)**:
+Add Labels with `Text =` [`lblDebug.Text.powerfx`](formulas/dashboard/lblDebug.Text.powerfx) and
+[`lblDebugSchema.Text.powerfx`](formulas/dashboard/lblDebugSchema.Text.powerfx) — see **[DEBUG.md](DEBUG.md)**:
 
 | Reading | Meaning → fix |
 |---|---|
@@ -145,14 +162,14 @@ varMyCrewTag  = "YOUR CREW" (member) | "YOU SPONSOR" (sponsor)
   outline + a `varMyCrewTag` chip. Spectators see no flag.
 
 > **Test a role** without changing accounts: drop a **diagnostic button** with `OnSelect` =
-> [`btnTestRole.OnSelect.powerfx`](formulas/btnTestRole.OnSelect.powerfx). Each tap cycles the
+> [`btnTestRole.OnSelect.powerfx`](formulas/dashboard/btnTestRole.OnSelect.powerfx). Each tap cycles the
 > viewer through *Guest → crew #1 → crew #2 → … → back to you*. It impersonates a crew **by name**
 > (`varTestCrew`) — not by email, so it works even when member `User Email` values are blank — and
 > **re-runs `OnVisible`** (via the loading screen), which features that crew's top member. It does
 > **not** recompute state itself, so it can't half-break the UI. Needs two one-time additions (both
 > production-safe — `varTestCrew` is `""` in production):
 > - `App.OnStart`: `Set( varTestCrew, "" )`  (use `""`, not `Blank()`, so the var has a Text type — otherwise *"No type found for variable"*)
-> - `scrDashboard.OnVisible` step 3: the `varTestActive` / `varTestMember` override block (see [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx))
+> - `scrDashboard.OnVisible` step 3: the `varTestActive` / `varTestMember` override block (see [`Screen_OnVisible.powerfx`](formulas/dashboard/Screen_OnVisible.powerfx))
 >
 > Remove the button before shipping. (`varUserEmail` follows the impersonated member, so the grid
 > **YOU** tile only pinpoints them when member emails are populated; the rest of the view is exact.)
@@ -267,19 +284,19 @@ the **full detail** of the opportunity you select.
 
 | Control | Screen | Type | Property | Formula |
 |---|---|---|---|---|
-| `imgCrewPortalBtn` | scrDashboard (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgCrewPortalBtn.Image.powerfx`](formulas/imgCrewPortalBtn.Image.powerfx); OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/btnCrewPortal.OnSelect.powerfx) — arm transition, `Navigate(scrPortal)` |
-| **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/Screen_Portal_OnVisible.powerfx) — **parses the pack into `colCrewOpps`** then builds `colOpps` / `colPipe` / `colCrewCards` |
-| `imgPortalRibbon` | scrPortal | Image | `Image` | [`imgPortalRibbon.Image.powerfx`](formulas/imgPortalRibbon.Image.powerfx) |
-| `imgBackBtn` | scrPortal (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgBackBtn.Image.powerfx`](formulas/imgBackBtn.Image.powerfx); OnSelect = [`btnBack.OnSelect.powerfx`](formulas/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
-| `imgCrewCards` | scrPortal | Image | `Image` | [`imgCrewCards.Image.powerfx`](formulas/imgCrewCards.Image.powerfx) — roster cards |
-| `imgOppHeader` | scrPortal | Image | `Image` | [`imgOppHeader.Image.powerfx`](formulas/imgOppHeader.Image.powerfx) |
+| `imgCrewPortalBtn` | scrDashboard (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgCrewPortalBtn.Image.powerfx`](formulas/crew-portal/imgCrewPortalBtn.Image.powerfx); OnSelect = [`btnCrewPortal.OnSelect.powerfx`](formulas/crew-portal/btnCrewPortal.OnSelect.powerfx) — arm transition, `Navigate(scrPortal)` |
+| **scrPortal** | — | Screen | `OnVisible` | [`Screen_Portal_OnVisible.powerfx`](formulas/crew-portal/Screen_Portal_OnVisible.powerfx) — **parses the pack into `colCrewOpps`** then builds `colOpps` / `colPipe` / `colCrewCards` |
+| `imgPortalRibbon` | scrPortal | Image | `Image` | [`imgPortalRibbon.Image.powerfx`](formulas/crew-portal/imgPortalRibbon.Image.powerfx) |
+| `imgBackBtn` | scrPortal (ribbon) | Image | `Image` + `OnSelect` | SVG button [`imgBackBtn.Image.powerfx`](formulas/crew-portal/imgBackBtn.Image.powerfx); OnSelect = [`btnBack.OnSelect.powerfx`](formulas/crew-portal/btnBack.OnSelect.powerfx) — `Navigate(scrDashboard)` |
+| `imgCrewCards` | scrPortal | Image | `Image` | [`imgCrewCards.Image.powerfx`](formulas/crew-portal/imgCrewCards.Image.powerfx) — roster cards |
+| `imgOppHeader` | scrPortal | Image | `Image` | [`imgOppHeader.Image.powerfx`](formulas/crew-portal/imgOppHeader.Image.powerfx) |
 | `galCrewOpps` | scrPortal | Gallery (blank vertical) | `Items` | `colOpps` |
-| `galCrewOpps` | scrPortal | Gallery | `OnSelect` | [`galCrewOpps.OnSelect.powerfx`](formulas/galCrewOpps.OnSelect.powerfx) — set `varSelOpp` + wrap update text |
-| `imgOppRow` (in gallery) | scrPortal | Image | `Image` | [`imgOppRow.Image.powerfx`](formulas/imgOppRow.Image.powerfx) |
-| `imgOppDetail` | scrPortal | Image | `Image` | [`imgOppDetail.Image.powerfx`](formulas/imgOppDetail.Image.powerfx) |
-| `imgPipeline` | scrPortal | Image | `Image` | [`imgPipeline.Image.powerfx`](formulas/imgPipeline.Image.powerfx) |
-| `imgLeafWipe` | both screens | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/imgLeafWipe.Image.powerfx) — transition overlay |
-| `tmrLeaf` | both screens | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/tmrLeaf.OnTimerEnd.powerfx) |
+| `galCrewOpps` | scrPortal | Gallery | `OnSelect` | [`galCrewOpps.OnSelect.powerfx`](formulas/crew-portal/galCrewOpps.OnSelect.powerfx) — set `varSelOpp` + wrap update text |
+| `imgOppRow` (in gallery) | scrPortal | Image | `Image` | [`imgOppRow.Image.powerfx`](formulas/crew-portal/imgOppRow.Image.powerfx) |
+| `imgOppDetail` | scrPortal | Image | `Image` | [`imgOppDetail.Image.powerfx`](formulas/crew-portal/imgOppDetail.Image.powerfx) |
+| `imgPipeline` | scrPortal | Image | `Image` | [`imgPipeline.Image.powerfx`](formulas/crew-portal/imgPipeline.Image.powerfx) |
+| `imgLeafWipe` | both screens | Image | `Image` | [`imgLeafWipe.Image.powerfx`](formulas/crew-portal/imgLeafWipe.Image.powerfx) — transition overlay |
+| `tmrLeaf` | both screens | Timer | `OnTimerEnd` | [`tmrLeaf.OnTimerEnd.powerfx`](formulas/crew-portal/tmrLeaf.OnTimerEnd.powerfx) |
 
 Every Image: `ImagePosition = Fit` (except `imgLeafWipe` = **`Fill`**).
 

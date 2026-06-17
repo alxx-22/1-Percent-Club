@@ -1,7 +1,7 @@
 # Debug: dashboard shows but is blank (0 people / 0 crews)
 
 > **CONFIRMED ROOT CAUSES & FIX** (both handled in the current
-> [`Screen_OnVisible.powerfx`](formulas/Screen_OnVisible.powerfx)):
+> [`Screen_OnVisible.powerfx`](formulas/dashboard/Screen_OnVisible.powerfx)):
 > 1. **Blank numeric cells throw on read.** A blank point cell arrives as `""`; just *reading*
 >    it errors ("expected 'number' but got 'string'"). The per‑column error counts prove it
 >    (blank‑heavy columns error on every row). Fix: read each point cell with
@@ -20,7 +20,7 @@ Add **two Labels** to the dashboard screen and read them in Power BI. They tell 
 exactly where the pipeline stalls. Both: `Wrap = true`, `AutoHeight = true`, on top.
 
 ### Label 1 — counts → `lblDebug`
-`Text` = contents of [`formulas/lblDebug.Text.powerfx`](formulas/lblDebug.Text.powerfx)
+`Text` = contents of [`formulas/dashboard/lblDebug.Text.powerfx`](formulas/dashboard/lblDebug.Text.powerfx)
 (`Color = Red`, `X=16 Y=70 Width=700`). Shows:
 
 ```
@@ -33,7 +33,7 @@ viewer User().Email = ?
 ```
 
 ### Label 2 — real columns → `lblDebugSchema`  ← the important one
-`Text` = contents of [`formulas/lblDebugSchema.Text.powerfx`](formulas/lblDebugSchema.Text.powerfx)
+`Text` = contents of [`formulas/dashboard/lblDebugSchema.Text.powerfx`](formulas/dashboard/lblDebugSchema.Text.powerfx)
 (`X=16 Y=180 Width=700`). It dumps the first data row as JSON, so you see the
 **exact column names Power BI is sending**.
 
