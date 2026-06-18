@@ -53,7 +53,12 @@ Set( varPollN, 0 );
 Set( varPercyThinking, true )
 ```
 `tmrPercyPoll` then re-reads `LookUp(PercyConversations, ID = varAskId)` every 2s until
-`Status="Answered"` & `AnswerText` is filled (or ~30s timeout), and shows the reply.
+`Status="Answered"` & `AnswerText` is filled, then shows the reply.
+
+> **Timeout** = `tmrPercyPoll.Duration` × `varPollMax` (set in `App.OnStart`; default
+> `2000ms × 60 = 120s`). The SharePoint *"created/modified" trigger can take 30–60s+ just to
+> fire*, so don't set this too low. Raise `varPollMax` (and/or `Duration`) if Percy times out
+> before the flow answers; lower them to give up sooner.
 
 > **Timers in a Power BI–embedded visual can be unreliable.** If polling doesn't tick, add a tiny
 > "check for reply" Image/button whose `OnSelect` runs the same body as `tmrPercyPoll.OnTimerEnd`.
@@ -76,8 +81,17 @@ You already have it. **Add the last two columns** (the others are yours, unchang
 | **`AnswerText`** ← add | Multiple lines, **plain text** | the flow writes the reply here |
 
 > Keep multi‑line columns **plain text** (turn off enhanced rich text) so JSON/answers aren't
-> mangled. (A `Status` **Choice** column also works — then compare `varPercyRow.Status.Value` in
-> `tmrPercyPoll`.)
+> mangled.
+>
+> **Make `Status` a *Single line of text* column**, not a Choice. A Choice column returns a
+> *record* (`{Value:…}`), which gives *"Incompatible types for comparison: Record, Text"* on
+> `Status = "Answered"`. If you must keep it a Choice: read `varPercyRow.Status.Value` in
+> `tmrPercyPoll`, and write `Status: { Value: "Pending" }` in the `imgSend` Patch (the choices
+> `Pending` / `Answered` must exist).
+>
+> **After adding/changing any column, refresh the data source** (Data pane → `PercyConversations`
+> → ⋯ → Refresh). Otherwise the app keeps the old schema and the new columns show as red
+> ("unexpected"/type errors) across the `Patch`.
 
 ---
 

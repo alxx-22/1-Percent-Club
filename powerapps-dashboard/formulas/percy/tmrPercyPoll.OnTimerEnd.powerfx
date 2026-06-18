@@ -9,10 +9,15 @@
 //    Reset    = !varPercyThinking
 //    Visible  = false
 //
-//  Each tick: refresh the list and re-read this session's row (by ID). The send
+//  ⏱ TIMEOUT lives HERE: total wait = tmrPercyPoll.Duration x varPollMax.
+//     varPollMax is set in App.OnStart (default 60 -> 60 x 2000ms = 120s).
+//     SharePoint's "created/modified" trigger can take 30-60s+ just to FIRE,
+//     so keep this generous. To wait longer: raise varPollMax (App.OnStart)
+//     and/or the timer's Duration. To wait shorter: lower them.
+//
+//  Each tick: refresh the list, re-read this session's row (by ID). The send
 //  button cleared AnswerText + set Status "Pending", so a reply is ready only
 //  when Status is "Answered" AND AnswerText is non-blank. Show it and stop.
-//  Gives up after ~30s (15 x 2s).
 // ============================================================================
 Set( varPollN, varPollN + 1 );
 Refresh( PercyConversations );
@@ -22,9 +27,9 @@ Set( varGotReply, varPercyRow.Status = "Answered" && !IsBlank( varPercyRow.Answe
 If( varGotReply,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyRow.AnswerText } ) );
 
-If( !varGotReply && varPollN >= 15,
+If( !varGotReply && varPollN >= varPollMax,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy",
         Body: "Sorry, I couldn't reach the assistant just now — please try again." } ) );
 
-If( varGotReply || varPollN >= 15,
+If( varGotReply || varPollN >= varPollMax,
     Set( varPercyThinking, false ) )
