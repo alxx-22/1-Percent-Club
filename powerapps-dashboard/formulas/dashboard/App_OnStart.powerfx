@@ -20,7 +20,7 @@ Set( varChatClosing, false );   // true while the close animation plays
 Set( varChatKey, 0 );           // bumped on open/close to replay imgChatBg's animation
 Set( varPercyThinking, false ); // true while awaiting the AI reply (drives tmrPercyPoll)
 Set( varSessionId, GUID() );    // conversation id (written to every SharePoint row)
-Set( varAskId, 0 );             // ID of the pending PercyMessages row being answered
+Set( varAskId, 0 );             // ID of the pending PercyConversations row being answered
 Set( varPollN, 0 );             // poll tick counter (timeout guard)
 // seed the transcript with Percy's greeting (Seq orders the gallery)
 // NOTE: no Char(>255)/emoji here — Char() only accepts 1-255 and errors otherwise.

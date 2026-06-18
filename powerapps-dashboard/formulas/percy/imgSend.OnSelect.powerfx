@@ -1,32 +1,38 @@
 // ============================================================================
 //  imgSend.OnSelect  —  send the question.  NO PREMIUM: SharePoint Patch + poll.
 //
-//  Flow:  add the user's message to colChat -> Patch a NEW row into the
-//  "PercyMessages" SharePoint list (Status "Pending") carrying the whole
-//  conversation as JSON -> flip varPercyThinking on.  A SharePoint‑triggered
-//  flow ("when an item is created or modified") fills AnswerText + sets Status
-//  "Answered"; tmrPercyPoll watches for that and shows Percy's reply.
+//  Upserts THIS session's row in the "PercyConversations" list (one row per
+//  conversation, keyed by SessionId): writes the whole conversation as JSON,
+//  clears the answer, and marks Status "Pending". A SharePoint-triggered flow
+//  ("when an item is created or modified") fills AnswerText + sets "Answered";
+//  tmrPercyPoll watches the row and shows the reply.
 //
-//  REQUIRES the "PercyMessages" list added as a data source (standard SharePoint
-//  connector — no premium). Columns in backend/README.md.
+//  LIST = PercyConversations (add it as a data source — standard SharePoint
+//  connector, no premium). Columns: Title, SessionId, ConversationJson,
+//  UserEmail, LastQuestion, MessageCount  PLUS two you add:  Status (text),
+//  AnswerText (multi-line).  See backend/README.md.
 //  (txtChat = chat TextInput;  galChat.Items = Sort(colChat, Seq).)
 // ============================================================================
 If(
-    !IsBlank( Trim( txtChat.Text ) ) && !varPercyThinking,    // ignore empty + while waiting
+    !IsBlank( Trim( txtChat.Text ) ) && !varPercyThinking,
 
     // 1) show the user's message immediately
     Set( varPercyQ, Trim( txtChat.Text ) );
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
     Reset( txtChat );
 
-    // 2) write it to SharePoint (the whole conversation as JSON for AI context)
+    // 2) upsert this session's row (whole conversation as JSON for AI context)
     Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+    Set( varConvRow, LookUp( PercyConversations, SessionId = varSessionId ) );
     Set( varAsk,
-        Patch( PercyMessages, Defaults( PercyMessages ),
+        Patch( PercyConversations,
+            If( IsBlank( varConvRow ), Defaults( PercyConversations ), varConvRow ),
             { Title:            varSessionId,
               SessionId:        varSessionId,
-              Question:         varPercyQ,
               ConversationJson: varChatJson,
+              UserEmail:        Lower( User().Email ),
+              LastQuestion:     varPercyQ,
+              MessageCount:     CountRows( colChat ),
               AnswerText:       "",
               Status:           "Pending" } ) );
     Set( varAskId, varAsk.ID );

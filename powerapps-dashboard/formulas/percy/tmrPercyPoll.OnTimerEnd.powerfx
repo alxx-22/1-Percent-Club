@@ -1,5 +1,5 @@
 // ============================================================================
-//  tmrPercyPoll.OnTimerEnd  —  watch SharePoint for the flow's answer.
+//  tmrPercyPoll.OnTimerEnd  —  watch PercyConversations for the flow's answer.
 //
 //  PLACEMENT: a Timer "tmrPercyPoll" inside conPercyChat:
 //    Duration = 2000           (poll every 2s)
@@ -9,16 +9,15 @@
 //    Reset    = !varPercyThinking
 //    Visible  = false
 //
-//  Each tick: refresh the list, re-read the row we created (by ID). When the
-//  flow has written AnswerText / set Status "Answered", show Percy's reply and
-//  stop. Gives up after ~30s (15 x 2s) so it never polls forever.
-//  (No ";" inside any If branch — each If runs a single function — to stay
-//   compatible with all Power Fx versions.)
+//  Each tick: refresh the list and re-read this session's row (by ID). The send
+//  button cleared AnswerText + set Status "Pending", so a reply is ready only
+//  when Status is "Answered" AND AnswerText is non-blank. Show it and stop.
+//  Gives up after ~30s (15 x 2s).
 // ============================================================================
 Set( varPollN, varPollN + 1 );
-Refresh( PercyMessages );
-Set( varPercyRow, LookUp( PercyMessages, ID = varAskId ) );
-Set( varGotReply, varPercyRow.Status = "Answered" || !IsBlank( varPercyRow.AnswerText ) );
+Refresh( PercyConversations );
+Set( varPercyRow, LookUp( PercyConversations, ID = varAskId ) );
+Set( varGotReply, varPercyRow.Status = "Answered" && !IsBlank( varPercyRow.AnswerText ) );
 
 If( varGotReply,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyRow.AnswerText } ) );

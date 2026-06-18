@@ -1,17 +1,17 @@
 # Percy backend — SharePoint trigger (NO premium) · Stage 1: FAQ
 
-No premium connectors. The app **writes the question to a SharePoint list**, a flow that
+No premium connectors. The app **upserts the conversation into a SharePoint list**, a flow that
 triggers **"when an item is created or modified"** generates the answer and **writes it back**,
-and the app **polls** the row for the reply. The whole conversation travels as **JSON**.
+and the app **polls** the row for the reply. The conversation travels as **JSON**.
 
 ```
 Percy chat (app)
-   │  Patch -> new row in  PercyMessages
-   │  { SessionId, Question, ConversationJson, AnswerText:"", Status:"Pending" }
+   │  Patch -> PercyConversations row for this SessionId (one row per conversation)
+   │  { …, ConversationJson, AnswerText:"", Status:"Pending" }
    ▼
 Power Automate  (SharePoint "When an item is created or modified")
    ├─ Condition: Status = "Pending"   ← stops the trigger looping on its own update
-   ├─ AI (system prompt = your scoring FAQ + ConversationJson + Question) -> answer
+   ├─ AI (system prompt = your scoring FAQ + ConversationJson) -> answer
    └─ Update item: AnswerText = answer, Status = "Answered"
    ▼
 tmrPercyPoll (app)  re-reads the row every 2s -> shows Percy's reply
@@ -23,80 +23,80 @@ Stage 2 ("why isn't my opp scoring?") is **not built yet** — hooks at the end.
 
 ## 1. App changes (formulas)
 
-Add the **`PercyMessages`** list as a data source first (**Data → Add data → SharePoint →** your
-site → `PercyMessages`). It's the **standard** SharePoint connector, so no premium.
+Add the **`PercyConversations`** list as a data source (**Data → Add data → SharePoint →** your
+site → `PercyConversations`). Standard connector — no premium.
 
 | Control | Property | File |
 |---|---|---|
-| **App** | `OnStart` | [`../../dashboard/App_OnStart.powerfx`](../../dashboard/App_OnStart.powerfx) — adds `varAskId`, `varPollN` (plus the existing `varSessionId`, `varPercyThinking`, `colChat`) |
-| `imgSend` | `OnSelect` | [`../imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx) — `Patch` the question + start polling |
+| **App** | `OnStart` | [`../../dashboard/App_OnStart.powerfx`](../../dashboard/App_OnStart.powerfx) — adds `varAskId`, `varPollN` (plus existing `varSessionId`, `varPercyThinking`, `colChat`) |
+| `imgSend` | `OnSelect` | [`../imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx) — upsert the row + start polling |
 | **`tmrPercyPoll`** (new Timer in `conPercyChat`) | `OnTimerEnd` | [`../tmrPercyPoll.OnTimerEnd.powerfx`](../tmrPercyPoll.OnTimerEnd.powerfx) — poll for the answer |
 
 **`tmrPercyPoll`** settings: `Duration=2000`, `Repeat=true`, `AutoStart=false`,
 `Start = varPercyThinking`, `Reset = !varPercyThinking`, `Visible=false`.
 
-What the send button does now (no `.Run`):
+Send button (upsert this session's row, clear the answer, mark Pending):
 ```powerfx
 Set( varPercyQ, Trim( txtChat.Text ) );
 Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
 Reset( txtChat );
 Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+Set( varConvRow, LookUp( PercyConversations, SessionId = varSessionId ) );
 Set( varAsk,
-    Patch( PercyMessages, Defaults( PercyMessages ),
-        { Title: varSessionId, SessionId: varSessionId, Question: varPercyQ,
-          ConversationJson: varChatJson, AnswerText: "", Status: "Pending" } ) );
+    Patch( PercyConversations,
+        If( IsBlank( varConvRow ), Defaults( PercyConversations ), varConvRow ),
+        { Title: varSessionId, SessionId: varSessionId, ConversationJson: varChatJson,
+          UserEmail: Lower(User().Email), LastQuestion: varPercyQ,
+          MessageCount: CountRows(colChat), AnswerText: "", Status: "Pending" } ) );
 Set( varAskId, varAsk.ID );
 Set( varPollN, 0 );
 Set( varPercyThinking, true )
 ```
-`tmrPercyPoll` then re-reads `LookUp(PercyMessages, ID = varAskId)` every 2s until `AnswerText`
-arrives (or ~30s timeout), and `Collect`s Percy's reply into `colChat`.
+`tmrPercyPoll` then re-reads `LookUp(PercyConversations, ID = varAskId)` every 2s until
+`Status="Answered"` & `AnswerText` is filled (or ~30s timeout), and shows the reply.
 
 > **Timers in a Power BI–embedded visual can be unreliable.** If polling doesn't tick, add a tiny
-> "check for reply" Image/button whose `OnSelect` runs the same body as `tmrPercyPoll.OnTimerEnd`
-> (a manual poll). In a standalone canvas app the timer is fine.
+> "check for reply" Image/button whose `OnSelect` runs the same body as `tmrPercyPoll.OnTimerEnd`.
 
 ---
 
-## 2. SharePoint list  `PercyMessages`
+## 2. SharePoint list  `PercyConversations`
 
-One **row per question** (SharePoint site → **+ New → List**, blank):
+You already have it. **Add the last two columns** (the others are yours, unchanged):
 
-| Column | Type | Settings |
+| Column | Type | Notes |
 |---|---|---|
-| `Title` | Single line | default (stores the session id too) |
+| `Title` | Single line | stores the session id |
 | `SessionId` | Single line of text | **index it** |
-| `Question` | Multiple lines of text | **Plain text** |
-| `ConversationJson` | Multiple lines of text | **Plain text**, unlimited length — the JSON transcript |
-| `AnswerText` | Multiple lines of text | **Plain text** — the flow writes the reply here |
-| `Status` | Single line of text | values `Pending` / `Answered` (a Choice works too — then compare `.Value` in the app) |
+| `ConversationJson` | Multiple lines, **plain text** | the JSON transcript (AI context) |
+| `UserEmail` | Single line of text | who asked (for Stage 2) |
+| `LastQuestion` | Single/Multiple lines | latest question |
+| `MessageCount` | Number | message count |
+| **`Status`** ← add | Single line of text | `Pending` / `Answered` |
+| **`AnswerText`** ← add | Multiple lines, **plain text** | the flow writes the reply here |
 
-> Keep the multi‑line columns **plain text** (turn off enhanced rich text) so JSON/answers aren't
-> mangled. `Created` / `Modified` / `Created By` are automatic, so you get who/when for free.
+> Keep multi‑line columns **plain text** (turn off enhanced rich text) so JSON/answers aren't
+> mangled. (A `Status` **Choice** column also works — then compare `varPercyRow.Status.Value` in
+> `tmrPercyPoll`.)
 
 ---
 
-## 3. Power Automate flow (you've made the trigger)
+## 3. Power Automate flow (your existing trigger)
 
-**Trigger:** SharePoint **"When an item is created or modified"** on `PercyMessages`.
+**Trigger:** SharePoint **"When an item is created or modified"** on `PercyConversations`.
 
 1. **Condition (critical — prevents an infinite loop):** `Status` **is equal to** `Pending`.
-   Put everything below in the **If yes** branch. (When the flow updates the item it becomes
-   `Answered`, which re‑fires the trigger but fails this condition, so it stops.)
+   Put steps 2–3 in the **If yes** branch. (When the flow updates the row it becomes `Answered`,
+   which re‑fires the trigger but fails this condition, so it stops.)
 2. **Generate the answer** — **AI Builder → "Create text with GPT"** (or HTTP → Azure OpenAI):
    - *Instructions / system* = your **scoring FAQ prompt** (section 4).
-   - *Prompt / input* =
-     ```
-     Conversation so far (JSON): @{triggerOutputs()?['body/ConversationJson']}
-     Latest user question: @{triggerOutputs()?['body/Question']}
-     ```
-   - Output used below as **`AiText`**.
-3. **Update item** — *Id* = `@{triggerOutputs()?['body/ID']}`,
-   `AnswerText` = `AiText`, `Status` = `Answered`. (Leave the other fields untouched.)
+   - *Prompt / input* = `Conversation (JSON): @{triggerOutputs()?['body/ConversationJson']}`
+   - Output used as **`AiText`**.
+3. **Update item** — *Id* = `@{triggerOutputs()?['body/ID']}`, `AnswerText` = `AiText`,
+   `Status` = `Answered`. *(Optional: also append the answer into `ConversationJson` and bump
+   `MessageCount` so the stored transcript stays complete.)*
 
-That's it — no "Respond to PowerApp" step (that's the premium path). The app sees the update by
-polling. Optionally also write the full transcript: set `ConversationJson` to the incoming JSON
-with the answer appended (Parse JSON → append → `string(...)`), exactly as before.
+No "Respond to PowerApp" step (that's the premium path) — the app sees the update by polling.
 
 ---
 
@@ -114,28 +114,28 @@ SCORING RULES
 =============
 << paste your "how points are scored" instructions here >>
 ```
-Mirror the dashboard's category names (New CC Logo / IB Upsell, CAP Engagement, CAP Orders Booked,
+Mirror the dashboard category names (New CC Logo / IB Upsell, CAP Engagement, CAP Orders Booked,
 Customer Centricity, Accreditation Race, IP Push) and state point values explicitly.
 
 ---
 
 ## 5. Test
 
-1. Build the list (§2) and the flow (§3); paste your prompt (§4).
-2. In the app: add `PercyMessages` as a data source, then apply the §1 formulas.
-3. Open Percy, ask "How are CAP orders scored?" → a `Pending` row appears, the flow flips it to
-   `Answered` with `AnswerText`, and within ~2s Percy's reply shows in the chat.
+1. Add the `Status` + `AnswerText` columns (§2); build the flow (§3) with the **Pending**
+   condition; paste your prompt (§4).
+2. In the app: add `PercyConversations` as a data source, then apply the §1 formulas.
+3. Open Percy, ask "How are CAP orders scored?" → the row's `Status` goes `Pending`, the flow
+   flips it to `Answered` with `AnswerText`, and within ~2s Percy's reply appears.
 
 Troubleshooting: flow not firing → check the trigger list + the `Pending` condition; reply never
-shows → confirm `Status` becomes `Answered` and the app has `PercyMessages` as a data source
-(and timers tick — see the §1 note).
+shows → confirm `Status` becomes `Answered`, `AnswerText` is non‑blank, and the app has
+`PercyConversations` as a data source (and timers tick — see the §1 note).
 
 ---
 
 ## 6. Stage 2 (later — not built yet)
 
 "Why isn't my opp scoring?" will add, in the flow: read the caller's opportunities (filtered by
-`Created By` / a `UserEmail` column), a second prompt that reasons over those rows against the
-scoring rules, and a branch that routes FAQ questions to §3 vs. data questions to the new prompt.
-The JSON transcript + author we already capture give it everything it needs — no app changes to
-start it.
+`UserEmail`), a second prompt that reasons over those rows against the scoring rules, and a branch
+routing FAQ questions to §3 vs. data questions to the new prompt. The JSON transcript + `UserEmail`
+we already capture give it everything it needs — no app changes to start it.

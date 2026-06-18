@@ -28,7 +28,7 @@ there are no image assets to manage.
 | `imgSend` | Image | `Image` / `OnSelect` | [`imgSend.Image.powerfx`](formulas/percy/imgSend.Image.powerfx) · [`imgSend.OnSelect.powerfx`](formulas/percy/imgSend.OnSelect.powerfx) — `Patch` to SharePoint |
 | `tmrPercyPoll` (in conPercyChat) | Timer | `OnTimerEnd` | [`tmrPercyPoll.OnTimerEnd.powerfx`](formulas/percy/tmrPercyPoll.OnTimerEnd.powerfx) — polls SharePoint for the reply |
 
-Every Image: `ImagePosition = Fit`. **Data source:** add the `PercyMessages` SharePoint list
+Every Image: `ImagePosition = Fit`. **Data source:** add the `PercyConversations` SharePoint list
 (standard connector — no premium). The send/poll round‑trip is in
 [backend/README.md](formulas/percy/backend/README.md).
 
