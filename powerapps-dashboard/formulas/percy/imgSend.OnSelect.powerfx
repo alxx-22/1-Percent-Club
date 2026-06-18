@@ -1,32 +1,37 @@
 // ============================================================================
-//  imgSend.OnSelect  —  send the typed question to Percy.
-//  Appends the user's message to colChat, then asks the AI. The Power Automate
-//  call is stubbed; wire it up via backend/README.md (it sends the conversation
-//  as JSON and logs it to SharePoint). A temporary canned reply is collected so
-//  the UI is fully testable now.
-//  (txtChat = the chat TextInput;  galChat.Items = Sort(colChat, Seq).)
+//  imgSend.OnSelect  —  send the question.  NO PREMIUM: SharePoint Patch + poll.
+//
+//  Flow:  add the user's message to colChat -> Patch a NEW row into the
+//  "PercyMessages" SharePoint list (Status "Pending") carrying the whole
+//  conversation as JSON -> flip varPercyThinking on.  A SharePoint‑triggered
+//  flow ("when an item is created or modified") fills AnswerText + sets Status
+//  "Answered"; tmrPercyPoll watches for that and shows Percy's reply.
+//
+//  REQUIRES the "PercyMessages" list added as a data source (standard SharePoint
+//  connector — no premium). Columns in backend/README.md.
+//  (txtChat = chat TextInput;  galChat.Items = Sort(colChat, Seq).)
 // ============================================================================
 If(
-    !IsBlank( Trim( txtChat.Text ) ),
+    !IsBlank( Trim( txtChat.Text ) ) && !varPercyThinking,    // ignore empty + while waiting
 
     // 1) show the user's message immediately
-    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: txtChat.Text } );
-    Set( varPercyQ, txtChat.Text );
+    Set( varPercyQ, Trim( txtChat.Text ) );
+    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
     Reset( txtChat );
-    Set( varPercyThinking, true );
 
-    // 2) ask Percy --------------------------------------------------------
-    //    WIRE UP LATER (PowerApps V2 flow — full steps in backend/README.md):
-    //
-    //    Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
-    //    Set( varPercyResp,
-    //         PercyAsk.Run( varPercyQ, varSessionId, Lower( User().Email ), varChatJson ) );
-    //    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyResp.answer } );
-    //
-    //    --- TEMPORARY echo so you can test the UI before the flow exists: ---
-    Collect( colChat,
-        { Seq: CountRows(colChat) + 1, Role: "percy",
-          Body: "Got it — connect the PercyAsk flow (see backend/README.md) and I'll answer ""(" & varPercyQ & ")"" for real." } );
+    // 2) write it to SharePoint (the whole conversation as JSON for AI context)
+    Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+    Set( varAsk,
+        Patch( PercyMessages, Defaults( PercyMessages ),
+            { Title:            varSessionId,
+              SessionId:        varSessionId,
+              Question:         varPercyQ,
+              ConversationJson: varChatJson,
+              AnswerText:       "",
+              Status:           "Pending" } ) );
+    Set( varAskId, varAsk.ID );
 
-    Set( varPercyThinking, false )
+    // 3) wait for the flow's reply (tmrPercyPoll polls while varPercyThinking)
+    Set( varPollN, 0 );
+    Set( varPercyThinking, true )
 )
