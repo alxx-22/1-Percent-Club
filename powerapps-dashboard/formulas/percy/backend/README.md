@@ -31,7 +31,7 @@ action changes — it sends the whole transcript as JSON and shows the flow's re
 Set( varSessionId, GUID() );    // one id per conversation
 ClearCollect( colChat,
     { Seq: 1, Role: "percy",
-      Body: "Hi, I'm Percy " & Char(128075) & " Ask me anything about the 1% Club dashboard." } );
+      Body: "Hi, I'm Percy 👋 Ask me anything about the 1% Club dashboard." } );  // literal emoji — Char() only takes 1-255
 ```
 
 ### `imgSend.OnSelect` (replace the stub once the flow exists)

@@ -21,5 +21,6 @@ Set( varChatKey, 0 );           // bumped on open/close to replay imgChatBg's an
 Set( varPercyThinking, false ); // true while awaiting the AI reply
 Set( varSessionId, GUID() );    // conversation id (pass to the flow / SharePoint)
 // seed the transcript with Percy's greeting (Seq orders the gallery)
+// (use the literal emoji — Char() only accepts 1-255, so Char(128075) errors)
 ClearCollect( colChat,
-    { Seq: 1, Role: "percy", Body: "Hi, I'm Percy " & Char(128075) & " Ask me anything about the 1% Club dashboard." } );
+    { Seq: 1, Role: "percy", Body: "Hi, I'm Percy 👋 Ask me anything about the 1% Club dashboard." } );
