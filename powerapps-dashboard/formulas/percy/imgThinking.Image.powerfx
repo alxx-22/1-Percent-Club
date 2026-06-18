@@ -1,0 +1,39 @@
+// ============================================================================
+//  PERCY THINKING/TYPING INDICATOR (SVG).  Control: Image "imgThinking"
+//  Geometry (inside conPercyChat, just above the input):
+//        X=16  Y=424  Width=200  Height=40   ImagePosition=Fit
+//        Visible = varPercyThinking || varThinkOut
+//
+//  - Animates IN when shown (varPercyThinking -> control renders -> 'tin').
+//  - Text: "Percy is thinking" for the first 5 polls, then "Percy is typing"
+//    (switches at varPollN >= 5).
+//  - Idle: three bouncing dots.
+//  - Animates OUT when the reply lands: tmrPercyPoll sets varThinkOut=true ->
+//    the <desc>/class change reloads this image and plays 'tout'; tmrThinkHide
+//    then flips varThinkOut=false (~300ms) so Visible goes false.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    With(
+        { ph: If( varPollN < 5, "Percy is thinking", "Percy is typing" ) },
+        With(
+            { tx: 36 + Len(ph)*6 + 6 },
+            "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' font-family='Segoe UI, Arial, sans-serif'>" &
+            "<desc>" & If(varThinkOut,"out","in") & "</desc>" &
+            "<style>" &
+            ".d{transform-box:fill-box;transform-origin:center;animation:db 1.2s ease-in-out infinite}@keyframes db{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-3px);opacity:1}}" &
+            ".tin{transform-box:fill-box;transform-origin:0% 100%;animation:tin .3s cubic-bezier(.2,.7,.2,1) both}@keyframes tin{from{opacity:0;transform:translateY(8px) scale(.92)}to{opacity:1;transform:none}}" &
+            ".tout{transform-box:fill-box;transform-origin:0% 100%;animation:tout .25s ease-in both}@keyframes tout{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px) scale(.94)}}" &
+            "@media(prefers-reduced-motion:reduce){.d,.tin,.tout{animation:none}}" &
+            "</style>" &
+            "<g class='" & If(varThinkOut,"tout","tin") & "'>" &
+            "<rect x='1' y='6' width='" & Text(tx + 26) & "' height='30' rx='15' fill='#ffffff' stroke='#d4d8db'/>" &
+            "<circle cx='19' cy='21' r='10' fill='#01a982'/>" &
+            "<circle cx='15.5' cy='21' r='1.7' fill='#7cf5cf'/><circle cx='22.5' cy='21' r='1.7' fill='#7cf5cf'/>" &
+            "<text x='36' y='25' font-size='12' font-weight='600' fill='#3e4550'>" & ph & "</text>" &
+            "<circle class='d' cx='" & Text(tx) & "' cy='21' r='2.6' fill='#606a70'/>" &
+            "<circle class='d' style='animation-delay:.15s' cx='" & Text(tx+9) & "' cy='21' r='2.6' fill='#606a70'/>" &
+            "<circle class='d' style='animation-delay:.30s' cx='" & Text(tx+18) & "' cy='21' r='2.6' fill='#606a70'/>" &
+            "</g></svg>"
+        )
+    )
+)

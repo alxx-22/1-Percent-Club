@@ -27,6 +27,8 @@ there are no image assets to manage.
 | `txtChat` | Text input | — | `HintText="Ask Percy a question…"`, `BorderColor=Transparent`, `Fill=Transparent` |
 | `imgSend` | Image | `Image` / `OnSelect` | [`imgSend.Image.powerfx`](formulas/percy/imgSend.Image.powerfx) · [`imgSend.OnSelect.powerfx`](formulas/percy/imgSend.OnSelect.powerfx) — `Patch` to SharePoint |
 | `tmrPercyPoll` (in conPercyChat) | Timer | `OnTimerEnd` | [`tmrPercyPoll.OnTimerEnd.powerfx`](formulas/percy/tmrPercyPoll.OnTimerEnd.powerfx) — polls SharePoint for the reply |
+| `imgThinking` (in conPercyChat) | Image | `Image` | [`imgThinking.Image.powerfx`](formulas/percy/imgThinking.Image.powerfx) — "Percy is thinking/typing…" · `Visible = varPercyThinking \|\| varThinkOut` |
+| `tmrThinkHide` (in conPercyChat) | Timer | `OnTimerEnd` | [`tmrThinkHide.OnTimerEnd.powerfx`](formulas/percy/tmrThinkHide.OnTimerEnd.powerfx) — hides the indicator after its exit anim |
 
 Every Image: `ImagePosition = Fit`. **Data source:** add the `PercyConversations` SharePoint list
 (standard connector — no premium). The send/poll round‑trip is in
@@ -55,6 +57,8 @@ Children use coordinates **relative to the container**:
 | `imgSend` | 312 | 470 | 40 | 40 | send — animates in/out with the bg (leave `Visible` default) |
 | `tmrCloseChat` | 0 | 0 | 0 | 0 | `Visible=false` |
 | `tmrPercyPoll` | 0 | 0 | 0 | 0 | `Visible=false` · `Start=varPercyThinking` `Repeat=true` `Duration=2000` |
+| `imgThinking` | 16 | 424 | 200 | 40 | `Visible = varPercyThinking \|\| varThinkOut` (just above the input) |
+| `tmrThinkHide` | 0 | 0 | 0 | 0 | `Visible=false` · `Start=varThinkOut` `Repeat=false` `Duration=300` |
 
 > **Smooth close:** the gallery + text input use `Visible = !varChatClosing`, so they vanish the
 > instant you press close; `imgChatBg`, `imgClose` and `imgSend` (all driven by the same

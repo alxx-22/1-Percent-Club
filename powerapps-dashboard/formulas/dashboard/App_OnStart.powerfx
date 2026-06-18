@@ -23,6 +23,7 @@ Set( varSessionId, GUID() );    // conversation id (written to every SharePoint 
 Set( varAskId, 0 );             // ID of the pending PercyConversations row being answered
 Set( varPollN, 0 );             // poll tick counter
 Set( varPollMax, 60 );          // give up after this many polls — TIMEOUT = tmrPercyPoll.Duration x varPollMax (60 x 2000ms = 120s). Raise if the flow/SharePoint trigger is slow.
+Set( varThinkOut, false );      // true while the "Percy is thinking/typing" indicator plays its exit animation
 // seed the transcript with Percy's greeting (Seq orders the gallery)
 // NOTE: no Char(>255)/emoji here — Char() only accepts 1-255 and errors otherwise.
 // Want a 👋 ? Type the emoji directly into the string in the Studio formula bar.

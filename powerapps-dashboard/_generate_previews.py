@@ -932,6 +932,31 @@ def close_inner():
     return W, H, "".join(s)
 
 
+def thinking_inner(text="Percy is thinking", out=False):
+    """Small 'Percy is thinking/typing…' indicator with bouncing dots + in/out anim."""
+    W, H = 200, 40
+    cls = "tout" if out else "tin"
+    css = ("<style>"
+        ".d{transform-box:fill-box;transform-origin:center;animation:db 1.2s ease-in-out infinite}"
+        "@keyframes db{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-3px);opacity:1}}"
+        ".tin{transform-box:fill-box;transform-origin:0% 100%;animation:tin .3s cubic-bezier(.2,.7,.2,1) both}"
+        "@keyframes tin{from{opacity:0;transform:translateY(8px) scale(.92)}to{opacity:1;transform:none}}"
+        ".tout{transform-box:fill-box;transform-origin:0% 100%;animation:tout .25s ease-in both}"
+        "@keyframes tout{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px) scale(.94)}}"
+        "@media(prefers-reduced-motion:reduce){.d,.tin,.tout{animation:none}}"
+        "</style>")
+    tx = 36 + round(len(text) * 6.0) + 6
+    s = [css, f"<g class='{cls}'>"]
+    s.append(f"<rect x='1' y='6' width='{tx+26}' height='30' rx='15' fill='#ffffff' stroke='{C['border']}'/>")
+    s.append(f"<circle cx='19' cy='21' r='10' fill='{C['brand']}'/>")
+    s.append(f"<circle cx='15.5' cy='21' r='1.7' fill='{EYE}'/><circle cx='22.5' cy='21' r='1.7' fill='{EYE}'/>")
+    s.append(f"<text x='36' y='25' font-family='{FONT}' font-size='12' font-weight='600' fill='{C['text']}'>{esc(text)}</text>")
+    for i in range(3):
+        s.append(f"<circle class='d' style='animation-delay:{i*0.15:.2f}s' cx='{tx+i*9}' cy='21' r='2.6' fill='{C['weak']}'/>")
+    s.append("</g>")
+    return W, H, "".join(s)
+
+
 # mock HTML-style chat bubbles for the composite preview (real app uses HtmlText)
 def bubble_mock(text, role, y, W=336):
     user = (role == "user")
@@ -950,6 +975,8 @@ save("percy-bubble2", wrap(*percy_inner(bubble=2), bg=C['card']))
 save("chat-bg", wrap(*chat_bg_inner("in")))
 save("send-button", wrap(*send_inner()))
 save("close-button", wrap(*close_inner(), bg=C['brand']))
+save("percy-thinking", wrap(*thinking_inner("Percy is thinking"), bg=C['canvas']))
+save("percy-typing", wrap(*thinking_inner("Percy is typing"), bg=C['canvas']))
 
 
 def page_percy():

@@ -23,13 +23,14 @@ Set( varPollN, varPollN + 1 );
 Refresh( PercyConversations );
 Set( varPercyRow, LookUp( PercyConversations, ID = varAskId ) );
 Set( varGotReply, varPercyRow.Status = "Answered" && !IsBlank( varPercyRow.AnswerText ) );
+Set( varDone, varGotReply || varPollN >= varPollMax );
 
 If( varGotReply,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyRow.AnswerText } ) );
 
-If( !varGotReply && varPollN >= varPollMax,
+If( varDone && !varGotReply,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy",
         Body: "Sorry, I couldn't reach the assistant just now — please try again." } ) );
 
-If( varGotReply || varPollN >= varPollMax,
-    Set( varPercyThinking, false ) )
+If( varDone, Set( varThinkOut, true ) );        // play the thinking indicator's exit animation
+If( varDone, Set( varPercyThinking, false ) )    // stop polling; tmrThinkHide hides the indicator after the exit

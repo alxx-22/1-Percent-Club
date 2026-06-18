@@ -37,7 +37,9 @@ If(
               Status:           "Pending" } ) );
     Set( varAskId, varAsk.ID );
 
-    // 3) wait for the flow's reply (tmrPercyPoll polls while varPercyThinking)
+    // 3) wait for the flow's reply (tmrPercyPoll polls while varPercyThinking;
+    //    imgThinking shows "Percy is thinking/typing…")
+    Set( varThinkOut, false );    // clean state so the indicator plays its entrance
     Set( varPollN, 0 );
     Set( varPercyThinking, true )
 )

@@ -1,0 +1,14 @@
+// ============================================================================
+//  tmrThinkHide.OnTimerEnd  —  hides the thinking indicator after its exit anim.
+//
+//  PLACEMENT: a Timer "tmrThinkHide" inside conPercyChat:
+//    Duration = 300            (slightly longer than imgThinking's 'tout' = 250ms)
+//    Repeat   = false
+//    AutoStart= false
+//    Start    = varThinkOut         <-- starts when the reply lands (tmrPercyPoll)
+//    Reset    = !varThinkOut
+//    Visible  = false
+//  imgThinking.Visible = varPercyThinking || varThinkOut, so once varThinkOut
+//  goes false (here) — and varPercyThinking is already false — it disappears.
+// ============================================================================
+Set( varThinkOut, false )
