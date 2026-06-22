@@ -22,8 +22,11 @@
 Set( varPollN, varPollN + 1 );
 Refresh( PercyConversations );
 Set( varPercyRow, LookUp( PercyConversations, ID = varAskId ) );
-Set( varGotReply, varPercyRow.Status = "Answered" && !IsBlank( varPercyRow.AnswerText ) );
-Set( varDone, varGotReply || varPollN >= varPollMax );
+// GUARD with varPercyThinking: once we collect the reply we set it false, so any
+// extra timer ticks evaluate varGotReply/varDone as false and do nothing — the
+// answer is added to colChat exactly once (no duplicate bubbles).
+Set( varGotReply, varPercyThinking && varPercyRow.Status = "Answered" && !IsBlank( varPercyRow.AnswerText ) );
+Set( varDone, varPercyThinking && ( varGotReply || varPollN >= varPollMax ) );
 
 If( varGotReply,
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "percy", Body: varPercyRow.AnswerText } ) );
