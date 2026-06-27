@@ -270,23 +270,50 @@ ROUTING — WHEN TO DO WHAT
 1. FAQ / "how does X score?" / rule questions  → answer DIRECTLY from the Programme Rules below.
    Do not call a tool. State exact point values from the rules.
 2. "Why can't I see points for OPE-…" / "check <metric> for OPE-…" / a specific opportunity
-   → this is a DIAGNOSTIC. Identify the metric (Complete Care, CAP, Customer Centricity, …),
-   confirm/extract the OPE, then call the matching approved tool. Explain the tool's evidence
-   in plain English.
+   → this is a DIAGNOSTIC. First IDENTIFY THE METRIC the user is asking about, then call the ONE
+   tool that checks it (the routing map below). Explain the tool's evidence in plain English.
 3. Metric unclear but OPE present → if context makes the metric obvious, proceed; otherwise ask
-   "Which points did you expect for this one — Complete Care, CAP, or Customer Centricity?"
+   which points they expected (Complete Care, CAP, Customer Centricity, IB/Expand, IP in GreenLake,
+   or Accreditation). If they just say "why no points for this opp?" with no metric, call
+   "Locate Opportunity" first to see which schemes it touches, then dig into the relevant one.
 4. Greeting / nonsense / mixed ("beep boop how do i get points") → be friendly, extract any real
    intent, and answer the real part (e.g. give the "how to earn points" overview).
 
+IDENTIFY THE METRIC (map the user's words to a scheme, then to a tool):
+- "complete care", "CC", "9X", "new logo", "uplift"                → Complete Care
+- "CAP request/engagement", "support request", "Gemma signed off"  → CAP (engagement)
+- "CAP order", "CAP-generated order", "campaign code"              → CAP (order)
+- "customer meeting", "channel meeting", "leadership intro",
+  "logged an event/activity", "CUSTOMER/CHANNEL/LEADERSHIP"        → Customer Centricity
+- "IB", "expand", "renewal + expand", "pen rate", "win-back"        → IB / Expand
+- "IP", "GreenLake", "IP in GL", "monthly %"                        → IP in GreenLake
+- "accreditation", "S-coded", "CSM", "the race", "completion"       → Accreditation
+- "how many do I have", "what's pending", "my total"               → Overall summary
+
 TOOLS — APPROVED DIAGNOSTICS ONLY
-You may ONLY obtain opportunity data by calling these approved actions. You must NEVER write or
-request DAX, and never query the model any other way:
-- "Check Complete Care Points Evidence"  (input: OPE)
-- "Check CAP Points Evidence"            (input: OPE)
-- "Check Customer Centricity Evidence"   (input: OPE)
-- "Get Overall Points Summary"           (input: user email)
-Call exactly one tool per diagnostic unless the user asks about several metrics. If a tool returns
-"not found" or an error, say so plainly and suggest next steps — do not guess numbers.
+You may ONLY obtain data by calling these approved actions. NEVER write or request DAX, and never
+query the model any other way. Each scheme has exactly one tool:
+- "Locate Opportunity"                    (input: OPE)         — does this opp exist, and in which schemes?
+- "Check Complete Care Points Evidence"   (input: OPE)         — New Logo (100) / Uplift (75)
+- "Check CAP Points Evidence"             (input: OPE [+email])— CAP request (20) AND CAP order (50)
+- "Check Customer Centricity Evidence"    (input: OPE [+email])— customer/channel/leadership meetings
+- "Check IB / Expand Points Evidence"     (input: OPE)         — renewal+expand (≤25)
+- "Check IP in GreenLake Evidence"        (input: user email)  — monthly IP % tier (10–75)
+- "Check Accreditation Evidence"          (input: user email)  — S-coded/CSM eligibility & status
+- "Get Overall Points Summary"            (input: user email)  — every category + pending
+Call exactly one tool per diagnostic unless the user asks about several metrics. Pass the user's
+email to the CAP and Customer Centricity tools when you have it, so the name-match check runs (those
+two schemes are credited by the logged-in person's NAME, and a name mismatch silently kills points).
+If a tool returns "not found" or an error, say so plainly and suggest next steps — never guess.
+
+COMMON "WHY ISN'T IT SHOWING" CAUSES (use the tool's flags to pick the real one, in plain English):
+- Pending approval (status blank) — VERY common; say "pending sign-off", not "ineligible".
+- Logged under a different/mistyped name than your dashboard name (CAP request, meetings).
+- Meeting subject doesn't START with CUSTOMER / CHANNEL / LEADERSHIP (typo or wrong prefix).
+- Close date before the 1 May 2026 cut-off.
+- Opportunity not won yet (Complete Care / IB points land on win).
+- Complete Care points already scored on the opp, which suppresses IB/Expand on the same opp.
+- Opp not found yet (typo, or new opp awaiting a data refresh).
 
 HARD RULES
 - NEVER invent programme rules, point values, dates, or eligibility criteria. If the rules below
@@ -319,7 +346,29 @@ behaviour is explicit and testable.
   GreenLake, accreditation).
 - **Output:** sets variables; routes to the matching topic below. No user-facing text.
 
-### 6.2 `General 1% Club FAQ`
+### 6.2 Query routing map (symptom → metric → tool → DAX)
+
+This is the heart of "Percy identifies which query is required." Every points-earning scheme has a
+diagnostic. Percy classifies the latest user message to a metric, then calls the one matching tool.
+
+| User says / symptom | Metric | Tool (§7) | DAX (§10) | Input |
+|---|---|---|---|---|
+| "does this opp exist", "no points at all", metric unclear | (probe) | Locate Opportunity | A | OPE |
+| "complete care", "CC", "new logo", "uplift", "9X" | Complete Care | Check Complete Care Points Evidence | B (+D) | OPE |
+| "CAP request not showing", "support request", "engagement", "Gemma" | CAP engagement (20) | Check CAP Points Evidence | E | OPE (+email) |
+| "CAP order", "CAP-generated order", "campaign code", "why no 50" | CAP order (50) | Check CAP Points Evidence | E | OPE (+email) |
+| "customer meeting", "channel meeting", "leadership intro", "logged event/activity" | Customer Centricity | Check Customer Centricity Evidence | F | OPE (+email) |
+| "IB", "expand", "renewal + expand", "pen rate", "win-back" | IB / Expand | Check IB / Expand Points Evidence | H | OPE |
+| "IP", "GreenLake", "IP in GL", "monthly %" | IP in GreenLake | Check IP in GreenLake Evidence | I | email |
+| "accreditation", "S-coded", "CSM", "the race", "completion" | Accreditation | Check Accreditation Evidence | J | email |
+| "how many points do I have", "what's pending", "my total" | all | Get Overall Points Summary | G | email |
+
+> **Pass the user's email** to the CAP and Customer Centricity tools whenever you have it (you
+> usually do — it's on the SharePoint row). Those two schemes credit by the logged person's **name**,
+> so the tool resolves the caller's dashboard name and flags a **name mismatch** — a frequent reason
+> points "don't flow."
+
+### 6.3 `General 1% Club FAQ`
 - **Purpose:** answer rule questions directly, no tool call.
 - **Trigger phrases:** "how do I get points", "how many points for…", "do I need a campaign code",
   "where do I log…", "what counts as…", "how is X scored", "rules for…".
@@ -328,7 +377,7 @@ behaviour is explicit and testable.
   several rules (e.g. "how do I get points?"), give the short menu of the nine ways.
 - **Output:** plain-text rule answer. Never calls a tool.
 
-### 6.3 `Complete Care Diagnostic`
+### 6.4 `Complete Care Diagnostic`
 - **Purpose:** explain why Complete Care points are/aren't showing for an OPE.
 - **Trigger phrases:** "complete care", "CC points", "complete care for OPE", "why no complete care".
 - **Inputs:** `var_OPE` (required), context.
@@ -337,29 +386,69 @@ behaviour is explicit and testable.
   awarded points, in-funnel) → plain-English explanation.
 - **Output:** plain text: what's confirmed, the points (if any), and the most likely reason if zero.
 
-### 6.4 `CAP Diagnostic`
-- **Purpose:** explain CAP engagement / CAP-order points for an OPE.
-- **Trigger phrases:** "CAP order", "CAP request", "CAP points", "cap engagement", "it's a CAP order why no points".
-- **Inputs:** `var_OPE` (required).
-- **Decision logic:** call **Check CAP Points Evidence** → distinguish CAP **request** (20, approved
-  by Gemma/BD) vs CAP-generated **order** (50, won, close after 1 May, approved). Surface approval
-  status (very often the answer is "pending sign-off", not "ineligible").
-- **Output:** plain text with the approval/eligibility reason.
+### 6.5 `CAP Diagnostic`
+- **Purpose:** explain CAP **engagement** (20) and CAP-generated **order** (50) points for an OPE.
+- **Trigger phrases:** "CAP order", "CAP request", "CAP points", "cap engagement", "it's a CAP order why no points", "my cap request isn't showing".
+- **Inputs:** `var_OPE` (required), `UserEmail` (optional but preferred).
+- **Decision logic:** call **Check CAP Points Evidence**. For an **engagement** question, check in
+  this order: exists in CAP requests? → created on/after 1 May? → logged-by name matches the caller's
+  dashboard name? → approval status (`Approve` vs blank = pending Gemma/BD sign-off). For an **order**
+  question: exists in CAP-won? → won? → close date after 1 May? → approval status. Surface the FIRST
+  failing gate; if all gates pass but approval is blank, say "pending sign-off" (not "ineligible").
+  State the campaign-code requirement (`UKIMEA CSLV CAP Adoption`) for orders but be clear you can't
+  verify the code from here.
+- **Output:** plain text naming the exact blocker (not found / wrong date / name mismatch / pending /
+  approved).
 
-### 6.5 `Customer Centricity Diagnostic`
-- **Purpose:** explain logged-meeting points for an OPE.
-- **Trigger phrases:** "customer meeting", "leadership meeting", "channel meeting", "customer centricity", "logged a meeting no points".
-- **Inputs:** `var_OPE` (required).
-- **Decision logic:** call **Check Customer Centricity Evidence** → check Subject prefix
-  (CUSTOMER/CHANNEL/LEADERSHIP) classified the meeting, and approval status (manager approves
-  weekly). Explain 10/10/20 values.
-- **Output:** plain text.
+### 6.6 `Customer Centricity Diagnostic`
+- **Purpose:** explain logged customer / channel / leadership meeting points for an OPE.
+- **Trigger phrases:** "customer meeting", "leadership meeting", "channel meeting", "customer centricity", "logged a meeting no points", "my event isn't flowing".
+- **Inputs:** `var_OPE` (required), `UserEmail` (optional but preferred).
+- **Decision logic:** call **Check Customer Centricity Evidence**. For each meeting on the opp check:
+  is it **classified** (`meetingType` non-blank)? If not, the **Subject didn't start with CUSTOMER /
+  CHANNEL / LEADERSHIP** — quote back the `subjectPrefix` and tell them to re-log with the keyword at
+  the very start (covers typos like "CUSTMER", wrong word, or a leading phrase before the keyword).
+  Then check the **logged-by name matches** the caller, and the **approval status** (manager approves
+  weekly). Explain 10 (customer/channel) / 20 (leadership) values.
+- **Output:** plain text naming the blocker (no meeting / unrecognised subject prefix / name mismatch
+  / pending approval / approved).
 
-### 6.6 `Fallback / Clarification`
+### 6.7 `IB / Expand Diagnostic`
+- **Purpose:** explain IB Upsell / Expand Pen Rate points (1 per 4% expand, ≤25) for an OPE.
+- **Trigger phrases:** "IB points", "expand", "renewal plus expand", "pen rate", "win-back", "naked box".
+- **Inputs:** `var_OPE` (required).
+- **Decision logic:** call **Check IB / Expand Points Evidence** → needs BOTH a renewal/IB motion AND
+  an expand/new motion, **Won**, close ≥ 1 May. **Key gotcha:** if the opp already scores Complete
+  Care points, IB/Expand is **suppressed on that opp by design** — say so. If not won, it shows in the
+  funnel only.
+- **Output:** plain text with the awarded value or the blocker (incl. the CC-suppression case).
+
+### 6.8 `IP in GreenLake Diagnostic`
+- **Purpose:** explain IP-in-GreenLake tier points (10–75) for the user.
+- **Trigger phrases:** "IP points", "GreenLake", "IP in GL", "my monthly %".
+- **Inputs:** `UserEmail` (required) — this scheme is per-user, not per-OPE.
+- **Decision logic:** call **Check IP in GreenLake Evidence** → is there an IP-GL row for the user?
+  what's the monthly %? which tier (0–10→10, 10–25→20, 25–40→30, 40–50→50, 50%+→75)? No row / 0% → 0.
+- **Output:** plain text with the % band and points (no OPE needed).
+
+### 6.9 `Accreditation Diagnostic`
+- **Purpose:** explain accreditation-race / CSM points eligibility for the user.
+- **Trigger phrases:** "accreditation", "S-coded", "CSM", "the race", "completion points".
+- **Inputs:** `UserEmail` (required) — person/team-level, not per-OPE.
+- **Decision logic:** call **Check Accreditation Evidence** → is the user **S-coded** ("S-Coded
+  (Phil)")? accreditation status **COMPLETE**? job family (Customer Success Architects are excluded
+  from the S-coded race unless Adrian/Garren)? excluded individual (Adrian/Garren)? CSM L2+ → 30.
+  Explain that the 100/50/20 is a **team race** decided by completion standings, so the tool shows
+  eligibility/status, and the awarded figure comes from the standings.
+- **Output:** plain text: eligibility, completion status, and what's blocking (not S-coded / not
+  complete / excluded), or the CSM 30.
+
+### 6.10 `Fallback / Clarification`
 - **Purpose:** handle greetings, nonsense, ambiguous/missing inputs.
 - **Trigger:** no other topic matched, or required input missing.
 - **Decision logic:** greeting/nonsense → friendly nudge + "how to earn points" menu. Diagnostic
-  intent but no OPE → ask for the OPE. OPE but ambiguous metric → ask which metric.
+  intent but no OPE (for an opp-level metric) → ask for the OPE. OPE but ambiguous metric → call
+  Locate Opportunity, or ask which metric.
 - **Output:** one short clarifying question OR the helpful overview. Never a tool call.
 
 ---
@@ -383,7 +472,28 @@ returns **compact JSON** (a tiny `Response`/`Compose`), which Percy reads and **
 
 ---
 
-### 7.1 `Check Complete Care Points Evidence`
+**Coverage:** there is one tool per points-earning scheme, so Percy can check *anything* that earns
+points. Map: Locate (any) · Complete Care (New Logo + Uplift) · CAP (engagement + order) · Customer
+Centricity · IB/Expand · IP in GreenLake · Accreditation (S-coded race + CSM) · Overall summary.
+
+---
+
+### 7.1 `Locate Opportunity`
+- **Purpose:** fast existence probe — does this OPE exist, and in which point schemes does it appear?
+  Percy's safe first move when the metric is unclear or the user says "no points at all".
+- **Inputs:** `OPE` (validated).
+- **DAX:** Template **A** (§10.1).
+- **Output schema:**
+  ```json
+  { "ope":"string","inOpportunities":0,"inCapWon":0,"inCapRequests":0,"inMeetings":0 }
+  ```
+- **Example payload:** `{ "ope":"OPE-123456789","inOpportunities":3,"inCapWon":0,"inCapRequests":1,"inMeetings":2 }`
+- **What Percy says:** "I found OPE-123456789 — it's in the opportunity data, has a CAP request and
+  two logged meetings, but no CAP order. Which of those did you want to dig into?" If all four are 0:
+  "I can't find that opportunity anywhere yet — double-check the number, or it may be awaiting a refresh."
+- **Failure / security:** `invalid_ope`; common controls.
+
+### 7.2 `Check Complete Care Points Evidence`
 - **Purpose:** return the evidence needed to explain Complete Care (New Logo 100 / Uplift 75) for one OPE.
 - **Inputs:** `OPE` (string, validated).
 - **DAX:** Template **B** (§10.2).
@@ -425,54 +535,120 @@ returns **compact JSON** (a tiny `Response`/`Compose`), which Percy reads and **
 - **Security:** as common controls. Note the activeCCContract flag mirrors the model's current
   entity-id match (see §11 caveat) — Percy speaks to it qualitatively, never quotes IDs.
 
-### 7.2 `Check CAP Points Evidence`
-- **Purpose:** explain CAP engagement (20) and CAP-generated order (50) points for an OPE.
-- **Inputs:** `OPE` (validated).
+### 7.3 `Check CAP Points Evidence`
+- **Purpose:** explain CAP **engagement** (20) and CAP-generated **order** (50) points for an OPE,
+  including the common "my CAP request isn't showing" case — existence, date, name match, approval.
+- **Inputs:** `OPE` (validated), `UserEmail` (optional — enables the name-match check).
 - **DAX:** Template **E** (§10.5).
 - **Output schema:**
   ```json
-  { "ope":"string","inCapWon":"Yes|No","capWonForecast":"string","capWonCloseDate":"date",
-    "capWonCloseQualifies":"Yes|No","capWonApprovalStatus":"string","capWonPoints":0,
-    "inCapRequests":"Yes|No","capRequestApproval":"string","capRequestPoints":0 }
+  { "ope":"string","callerName":"string",
+    "inCapWon":"Yes|No","capWonForecast":"string","capWonCloseDate":"date",
+    "capWonCloseQualifies":"Yes|No","capWonApprovalStatus":"string","capWonApproved":"Yes|No","capWonPoints":0,
+    "inCapRequests":"Yes|No","capRequestStatus":"string","capRequestCreatedQualifies":"Yes|No",
+    "capRequestApprovalStatus":"string","capRequestLoggedBy":"string",
+    "capRequestLoggedByMatchesCaller":"Yes|No","capRequestPoints":0 }
   ```
-- **Example payload:**
+- **Example payload (request exists, awaiting Gemma):**
   ```json
-  { "ope":"OPE-123456789","inCapWon":"Yes","capWonForecast":"Won","capWonCloseDate":"2026-05-20",
-    "capWonCloseQualifies":"Yes","capWonApprovalStatus":"","capWonPoints":0,
-    "inCapRequests":"No","capRequestApproval":"","capRequestPoints":0 }
+  { "ope":"OPE-123456789","callerName":"Jane Rep","inCapWon":"No","capWonForecast":"","capWonCloseDate":"",
+    "capWonCloseQualifies":"No","capWonApprovalStatus":"","capWonApproved":"No","capWonPoints":0,
+    "inCapRequests":"Yes","capRequestStatus":"Complete","capRequestCreatedQualifies":"Yes",
+    "capRequestApprovalStatus":"","capRequestLoggedBy":"Jane Rep",
+    "capRequestLoggedByMatchesCaller":"Yes","capRequestPoints":0 }
   ```
-- **What Percy says:**
-  - Won + qualifies + approval blank → "This CAP order is **won and eligible**, but it's still **pending sign-off** (Gemma validates CAP orders). The 50 points appear once it's approved."
-  - approval `Approve`, points 50 → "Yep — 50 points for this CAP-generated order are confirmed."
-  - `capWonCloseQualifies=No` → "Its close date is before 1 May 2026, which is the cut-off for CAP order points, so it won't score."
-  - request approved → "This is logged as a CAP engagement and approved — 20 points."
-- **Failure cases / security:** as common controls. (Campaign-code validation isn't in the model —
-  see §11; Percy states the campaign-code requirement from the rules but doesn't claim to have
-  checked it.)
+- **What Percy says (work the gates in order):**
+  - `inCapRequests=No` (engagement Q) → "I can't see a CAP request logged against this opportunity. CAP engagements need a Support Request logged in SFDC (Support Requests → CAP Team Engagement/Support)."
+  - request exists, `capRequestCreatedQualifies=No` → "Your CAP request is logged, but it was created before the 1 May 2026 cut-off, so it doesn't score."
+  - request exists, `capRequestLoggedByMatchesCaller=No` → "This CAP request is logged under **<capRequestLoggedBy>**, which doesn't match your dashboard name — that's why it isn't crediting to you. Ask for the requestor name to be corrected."
+  - request exists, approval blank → "Your CAP request is logged and eligible — it's **pending sign-off** by Gemma/BD. The 20 points appear once approved."
+  - approval `Approve` → "Confirmed — 20 points for this approved CAP engagement."
+  - order: `inCapWon=Yes`, won, qualifies, approval blank → "This CAP order is **won and eligible** but **pending Gemma's validation** — the 50 points come through on approval. Also make sure it used the campaign code **UKIMEA CSLV CAP Adoption**, which CAP orders require."
+  - order `capWonCloseQualifies=No` → "Its close date is before 1 May 2026, the CAP-order cut-off, so it won't score."
+- **Failure / security:** common controls. (Campaign-code validation isn't in the model — see §11;
+  Percy states the requirement but never claims to have checked it. The name-match flag is only
+  meaningful when `UserEmail` is supplied.)
 
-### 7.3 `Check Customer Centricity Evidence`
-- **Purpose:** explain logged-meeting points (Customer 10 / Channel 10 / Leadership 20) for an OPE.
-- **Inputs:** `OPE` (validated).
+### 7.4 `Check Customer Centricity Evidence`
+- **Purpose:** explain logged-meeting points (Customer 10 / Channel 10 / Leadership 20) for an OPE,
+  including the **mistyped-subject** case (subject must start with CUSTOMER / CHANNEL / LEADERSHIP)
+  and the **name-match** case.
+- **Inputs:** `OPE` (validated), `UserEmail` (optional — enables the name-match check).
 - **DAX:** Template **F** (§10.6) — narrow (one row per logged meeting on the opp).
 - **Output schema:**
   ```json
-  { "ope":"string","meetings":[
-      {"meetingType":"string","subject":"string","loggedBy":"string","approvalStatus":"string","points":0}
-  ], "meetingCount":0 }
+  { "ope":"string","callerName":"string","meetingCount":0,
+    "meetings":[ { "meetingType":"string","meetingClassified":"Yes|No","subjectPrefix":"string",
+      "startsCustomer":"Yes|No","startsChannel":"Yes|No","startsLeadership":"Yes|No",
+      "loggedBy":"string","loggedByMatchesCaller":"Yes|No","approvalStatus":"string","points":0 } ] }
   ```
-- **Example payload:**
+- **Example payload (subject mistyped → unclassified):**
   ```json
-  { "ope":"OPE-123456789","meetingCount":1,
-    "meetings":[{"meetingType":"Leadership Meeting","subject":"LEADERSHIP intro to CIO",
-      "loggedBy":"Jane Rep","approvalStatus":"","points":0}] }
+  { "ope":"OPE-123456789","callerName":"Jane Rep","meetingCount":1,
+    "meetings":[ { "meetingType":"","meetingClassified":"No","subjectPrefix":"Custmer review w",
+      "startsCustomer":"No","startsChannel":"No","startsLeadership":"No",
+      "loggedBy":"Jane Rep","loggedByMatchesCaller":"Yes","approvalStatus":"","points":0 } ] }
   ```
 - **What Percy says:**
-  - meeting present, approval blank → "I can see a Leadership meeting logged on this opp — that's worth 20 points once your manager approves it (they sign these off weekly)."
-  - `meetingType` blank / subject prefix wrong → "The meeting's subject doesn't start with CUSTOMER, CHANNEL or LEADERSHIP, so it isn't being classified for points. Re-log it with the right prefix and it'll count."
   - `meetingCount=0` → "I can't see any logged events on this opportunity. Customer Centricity points come from events logged under Opportunity → Activities → New Event."
-- **Failure / security:** as common controls; cap the array length (e.g. top 10) to stay compact.
+  - `meetingClassified=No` → "Your meeting is logged, but its subject (\"<subjectPrefix>…\") doesn't **start** with CUSTOMER, CHANNEL or LEADERSHIP, so it isn't being classified for points. Re-log it with the keyword at the very start (e.g. \"CUSTOMER – review with…\") and it'll count."
+  - `loggedByMatchesCaller=No` → "This meeting is logged under **<loggedBy>**, not your dashboard name, so it's crediting to them, not you."
+  - classified, approval blank → "I can see a <meetingType> here — that's <points> points once your manager approves it (they sign these off weekly)."
+  - classified, `Approve` → "Confirmed — <points> points for this <meetingType>."
+- **Failure / security:** common controls; cap the array (e.g. top 10) to stay compact;
+  `subjectPrefix` is the user's own text (low-risk) — return only the first ~14 chars.
 
-### 7.4 `Get Overall Points Summary`
+### 7.5 `Check IB / Expand Points Evidence`
+- **Purpose:** explain IB Upsell / Expand Pen Rate points (1 per 4% expand, **≤25**) for an OPE,
+  including the **Complete-Care-suppression** gotcha.
+- **Inputs:** `OPE` (validated).
+- **DAX:** Template **H** (§10.5a).
+- **Output schema:**
+  ```json
+  { "ope":"string","found":"Yes|No","forecastCategory":"string","closeDate":"date",
+    "closedOnOrAfter1May2026":"Yes|No","hasRenewalIBMotion":"Yes|No","hasExpandNewMotion":"Yes|No",
+    "completeCarePointsPresent":"Yes|No","expandPointsAwarded":0,"inFunnelNotYetWon":"Yes|No" }
+  ```
+- **Example payload:** `{ "ope":"OPE-123456789","found":"Yes","forecastCategory":"Won","closeDate":"2026-05-30","closedOnOrAfter1May2026":"Yes","hasRenewalIBMotion":"Yes","hasExpandNewMotion":"Yes","completeCarePointsPresent":"Yes","expandPointsAwarded":0,"inFunnelNotYetWon":"No" }`
+- **What Percy says:**
+  - `expandPointsAwarded>0` → "This opp is scoring <n> IB/Expand points (renewal + expand, capped at 25)."
+  - `completeCarePointsPresent=Yes`, award 0 → "This opportunity already scores Complete Care points, and IB/Expand isn't awarded on the same opp — so the points are coming through under Complete Care instead."
+  - missing a motion → "IB/Expand needs **both** a renewal/IB motion **and** an expand motion on the opp; I can only see one of the two here."
+  - `inFunnelNotYetWon=Yes` → "It qualifies but hasn't been **won** yet — IB/Expand points land on win."
+- **Failure / security:** common controls.
+
+### 7.6 `Check IP in GreenLake Evidence`
+- **Purpose:** explain IP-in-GreenLake tier points (10–75) for the user (per-user, not per-OPE).
+- **Inputs:** `UserEmail` (validated = caller or admin).
+- **DAX:** Template **I** (§10.6a).
+- **Output schema:** `{ "user":"string","hasIPGLRow":"Yes|No","mayPercent":0.0,"tier":"string","pointsAwarded":0 }`
+- **Example payload:** `{ "user":"jane.rep@hpe.com","hasIPGLRow":"Yes","mayPercent":0.32,"tier":"25-40%","pointsAwarded":30 }`
+- **What Percy says:**
+  - row present → "Your IP-in-GreenLake for May is about 32%, which is the 25–40% band — worth **30 points**."
+  - `hasIPGLRow=No` / 0% → "I can't see an IP-in-GreenLake figure for you this month, so there are no points from that scheme yet. It's recognised monthly from SFDC."
+- **Failure / security:** reject cross-user lookups for non-admins.
+
+### 7.7 `Check Accreditation Evidence`
+- **Purpose:** explain accreditation-race / CSM eligibility & status for the user (person-level).
+- **Inputs:** `UserEmail` (validated = caller or admin).
+- **DAX:** Template **J** (§10.7a).
+- **Output schema:**
+  ```json
+  { "user":"string","name":"string","sCoded":"string","accreditationStatus":"string",
+    "jobFamily":"string","excludedIndividual":"Yes|No","isCSM_L2plus":"Yes|No","accreditationPointsAwarded":0 }
+  ```
+- **Example payload:** `{ "user":"jane.rep@hpe.com","name":"Jane Rep","sCoded":"S-Coded (Phil)","accreditationStatus":"COMPLETE","jobFamily":"Account Manager","excludedIndividual":"No","isCSM_L2plus":"No","accreditationPointsAwarded":50 }`
+- **What Percy says:**
+  - `sCoded≠"S-Coded (Phil)"` → "The accreditation race is for S-coded individuals, and your record isn't flagged as S-coded — so it doesn't apply to you."
+  - `accreditationStatus≠"COMPLETE"` → "Your accreditation isn't marked COMPLETE yet. The team race only credits once everyone in the sponsor group is complete."
+  - `excludedIndividual=Yes` → "This scheme excludes Adrian and Garren, so it doesn't apply here."
+  - `isCSM_L2plus=Yes` → "As a CSM (L2+) you're eligible for 30 points on completion."
+  - eligible & points>0 → "You've got <n> accreditation points — the 100/50/20 is a team race decided by completion standings."
+- **Failure / security:** the 100/50/20 standings are a team race; the tool returns the user's
+  **stored** awarded value + the eligibility inputs (it does not recompute the cross-crew ranking).
+  Reject cross-user lookups for non-admins.
+
+### 7.8 `Get Overall Points Summary`
 - **Purpose:** a per-user snapshot across all categories (and pending) for "how am I doing / what's pending".
 - **Inputs:** `UserEmail` (validated = caller or admin).
 - **DAX:** Template **G** (§10.7) — one row from `Teams`.
@@ -597,8 +773,12 @@ be CUSTOMER / CHANNEL / LEADERSHIP; manager approves weekly.
 Read against the live TMDL. Rules followed: **no invented tables/columns**; narrow queries (one
 row per OPE, or a tiny array); comments explain each query; assumptions are stated. Each template
 is an **`executeQueries`** body for the Power BI connector. The flow substitutes the **validated**
-parameter into `VAR Ope` / `VAR Who` — **string-injection-safe** because the parameter is
-regex-validated upstream (§7).
+parameter(s) into `VAR Ope` / `VAR Who` — **string-injection-safe** because each parameter is
+regex-validated upstream (§7). When a tool takes both (CAP, Customer Centricity), the flow injects
+`Ope` and `Who`; if no email is supplied, inject `Who = ""` and the name-match flag returns `"No"`.
+
+**Template index:** A Locate · B Complete Care · C current points · D expected CC · E CAP ·
+H IB/Expand · F Customer Centricity · I IP-in-GreenLake · G overall summary · J Accreditation.
 
 **Cross-cutting assumptions**
 - **OPE identity:** the OPE maps to **`Final[HPE Opportunity Id]`** (and `Cap Won[HPE Opportunity
@@ -722,52 +902,126 @@ ROW ( "OPE", Ope, "ExpectedCCPoints", Expected,
 
 ### 10.5 Template E — CAP diagnosis by OPE
 ```dax
-// CAP engagement (20, by requestor) + CAP-generated order (50, won/approved) for one OPE.
+// CAP engagement (20, credited by REQUESTOR NAME) + CAP-generated order (50, won/approved, by email).
+// Surfaces existence, date window, approval, and the name-match that often silently kills credit.
+// UserEmail is optional: it resolves the caller's dashboard name so we can flag a name mismatch.
 DEFINE
-    VAR Ope = "OPE-123456789"   // injected
-    VAR Won = FILTER ( 'Cap Won',      'Cap Won'[HPE Opportunity Id] = Ope )
-    VAR Req = FILTER ( 'Cap Requests', 'Cap Requests'[Opportunity ID] = Ope )
+    VAR Ope        = "OPE-123456789"      // injected
+    VAR Who        = "jane.rep@hpe.com"   // injected (optional; "" if not supplied)
+    VAR CallerName = MAXX ( FILTER ( 'Teams', LOWER ( 'Teams'[User Email] ) = LOWER ( Who ) ), 'Teams'[Name] )
+    VAR Won        = FILTER ( 'Cap Won',      'Cap Won'[HPE Opportunity Id] = Ope )
+    VAR Req        = FILTER ( 'Cap Requests', 'Cap Requests'[Opportunity ID]  = Ope )
 EVALUATE
 ROW (
     "OPE",                  Ope,
+    "CallerName",           CallerName,
+    // --- CAP-generated ORDER (50) ---
     "InCapWon",             IF ( COUNTROWS ( Won ) > 0, "Yes", "No" ),
     "CapWonForecast",       MAXX ( Won, 'Cap Won'[Forecast Category] ),
     "CapWonCloseDate",      MAXX ( Won, 'Cap Won'[Close Date] ),
     "CapWonCloseQualifies", IF ( MAXX ( Won, 'Cap Won'[Close Date] ) >= DATE ( 2026, 5, 1 ), "Yes", "No" ),
     "CapWonApprovalStatus", MAXX ( Won, 'Cap Won'[Approval Status] ),
+    "CapWonApproved",       IF ( MAXX ( Won, 'Cap Won'[Approval Status] ) = "Approve", "Yes", "No" ),
     "CapWonPoints",         IF ( COUNTROWS ( FILTER ( Won,
                                 'Cap Won'[Forecast Category] = "Won"
                                 && 'Cap Won'[Close Date] >= DATE ( 2026, 5, 1 )
                                 && 'Cap Won'[Approval Status] = "Approve" ) ) > 0, 50, 0 ),
-    "InCapRequests",        IF ( COUNTROWS ( Req ) > 0, "Yes", "No" ),
-    "CapRequestApproval",   MAXX ( Req, 'Cap Requests'[Approval Status] ),
-    // Informational: in the model CAP-request points are credited per REQUESTOR (by name), not per OPE.
-    "CapRequestPoints",     IF ( COUNTROWS ( FILTER ( Req,
-                                'Cap Requests'[Created Date Time] >= DATE ( 2026, 5, 1 )
-                                && 'Cap Requests'[Approval Status] = "Approve" ) ) > 0, 20, 0 )
+    // --- CAP ENGAGEMENT (20) — credited by Support Request: Created By = Teams[Name] ---
+    "InCapRequests",                  IF ( COUNTROWS ( Req ) > 0, "Yes", "No" ),
+    "CapRequestStatus",               MAXX ( Req, 'Cap Requests'[Request Status] ),
+    "CapRequestCreatedQualifies",     IF ( MAXX ( Req, 'Cap Requests'[Created Date Time] ) >= DATE ( 2026, 5, 1 ), "Yes", "No" ),
+    "CapRequestApprovalStatus",       MAXX ( Req, 'Cap Requests'[Approval Status] ),
+    "CapRequestLoggedBy",             MAXX ( Req, 'Cap Requests'[Support Request: Created By] ),
+    "CapRequestLoggedByMatchesCaller",IF ( Who <> "" && MAXX ( Req, 'Cap Requests'[Support Request: Created By] ) = CallerName, "Yes", "No" ),
+    "CapRequestPoints",               IF ( COUNTROWS ( FILTER ( Req,
+                                          'Cap Requests'[Created Date Time] >= DATE ( 2026, 5, 1 )
+                                          && 'Cap Requests'[Approval Status] = "Approve" ) ) > 0, 20, 0 )
+)
+```
+
+### 10.5a Template H — IB / Expand diagnosis by OPE
+```dax
+// IB Upsell / Expand Pen Rate (1 pt per 4% expand, capped 25). Mirrors Final[IB & NS Points NEW]:
+// needs BOTH an IB/renewal motion AND an expand/new motion, Won, Close >= 1 May, AND no CC points
+// on the opp (Complete Care SUPPRESSES IB/Expand on the same opportunity — the key gotcha).
+DEFINE
+    VAR Ope      = "OPE-123456789"   // injected
+    VAR OppRows  = FILTER ( 'Final', 'Final'[HPE Opportunity Id] = Ope )
+    VAR HasIB    = COUNTROWS ( FILTER ( OppRows, 'Final'[Sales Motion] IN { "Renewal", "Conversion", "PWCP Bus Type 'W'" } ) )
+    VAR HasExpand= COUNTROWS ( FILTER ( OppRows, 'Final'[Sales Motion] IN { "New Solution S", "Per Event P" } ) )
+    VAR CCpts    = MAXX ( OppRows, 'Final'[CC Points Final] ) + 0
+EVALUATE
+ROW (
+    "OPE",                       Ope,
+    "Found",                     IF ( COUNTROWS ( OppRows ) > 0, "Yes", "No" ),
+    "ForecastCategory",          MAXX ( OppRows, 'Final'[Forecast Category] ),
+    "CloseDate",                 MAXX ( OppRows, 'Final'[Close Date] ),
+    "ClosedOnOrAfter1May2026",   IF ( MAXX ( OppRows, 'Final'[Close Date] ) >= DATE ( 2026, 5, 1 ), "Yes", "No" ),
+    "HasRenewalIBMotion",        IF ( HasIB > 0, "Yes", "No" ),
+    "HasExpandNewMotion",        IF ( HasExpand > 0, "Yes", "No" ),
+    "CompleteCarePointsPresent", IF ( CCpts > 0, "Yes", "No" ),   // if Yes → IB/Expand suppressed by design
+    "ExpandPointsAwarded",       MAXX ( OppRows, 'Final'[IB & NS Points NEW] ) + 0,
+    "InFunnelNotYetWon",         IF ( MAXX ( OppRows, 'Final'[IB & NS Points Funnel] ) = "Y", "Yes", "No" )
 )
 ```
 
 ### 10.6 Template F — Customer Centricity by OPE
 ```dax
-// One row per logged meeting on the opp (narrow). Points mirror the model: Leadership 20,
-// Customer/Channel 10, and only when Approval Status = "Approve".
+// One row per logged meeting on the opp (narrow). Mirrors the model: Leadership 20, Customer/Channel
+// 10, only when Approval Status = "Approve". Adds CLASSIFICATION flags (the model classifies by the
+// Subject's leading word — "CUSTOMER"/"CHANNEL"/"LEADERSHIP"; if none matches, Meeting Type is blank
+// and no points are earned) and a NAME-MATCH flag (credit is by Last Modified By: Full Name).
 DEFINE
-    VAR Ope = "OPE-123456789"   // injected
+    VAR Ope        = "OPE-123456789"      // injected
+    VAR Who        = "jane.rep@hpe.com"   // injected (optional; "" if not supplied)
+    VAR CallerName = MAXX ( FILTER ( 'Teams', LOWER ( 'Teams'[User Email] ) = LOWER ( Who ) ), 'Teams'[Name] )
 EVALUATE
 SELECTCOLUMNS (
     FILTER ( 'Customer Meetings', 'Customer Meetings'[HPE Opportunity Id] = Ope ),
-    "OPE",            'Customer Meetings'[HPE Opportunity Id],
-    "MeetingType",    'Customer Meetings'[Meeting Type],
-    "Subject",        'Customer Meetings'[Subject],
-    "LoggedBy",       'Customer Meetings'[Last Modified By: Full Name],
-    "ApprovalStatus", 'Customer Meetings'[Approval Status],
-    "Points",         SWITCH ( TRUE (),
-                        'Customer Meetings'[Approval Status] <> "Approve", 0,
-                        'Customer Meetings'[Meeting Type] = "Leadership Meeting", 20,
-                        'Customer Meetings'[Meeting Type] = "Customer Meeting", 10,
-                        'Customer Meetings'[Meeting Type] = "Channel Partner Meeting", 10,
-                        0 )
+    "OPE",               'Customer Meetings'[HPE Opportunity Id],
+    "MeetingType",       'Customer Meetings'[Meeting Type],
+    "MeetingClassified", IF ( NOT ISBLANK ( 'Customer Meetings'[Meeting Type] ), "Yes", "No" ),
+    "SubjectPrefix",     LEFT ( 'Customer Meetings'[Subject], 14 ),    // user's own text; first 14 chars only
+    "StartsCustomer",    IF ( LEFT ( 'Customer Meetings'[Subject], 8 )  = "CUSTOMER",   "Yes", "No" ),
+    "StartsChannel",     IF ( LEFT ( 'Customer Meetings'[Subject], 7 )  = "CHANNEL",    "Yes", "No" ),
+    "StartsLeadership",  IF ( LEFT ( 'Customer Meetings'[Subject], 10 ) = "LEADERSHIP", "Yes", "No" ),
+    "LoggedBy",          'Customer Meetings'[Last Modified By: Full Name],
+    "LoggedByMatchesCaller", IF ( CallerName <> "" && 'Customer Meetings'[Last Modified By: Full Name] = CallerName, "Yes", "No" ),
+    "ApprovalStatus",    'Customer Meetings'[Approval Status],
+    "Points",            SWITCH ( TRUE (),
+                            'Customer Meetings'[Approval Status] <> "Approve", 0,
+                            'Customer Meetings'[Meeting Type] = "Leadership Meeting", 20,
+                            'Customer Meetings'[Meeting Type] = "Customer Meeting", 10,
+                            'Customer Meetings'[Meeting Type] = "Channel Partner Meeting", 10,
+                            0 )
+)
+```
+
+> **Subject classification — what actually breaks it:** DAX text comparison is **case-insensitive**,
+> so `"customer review"` still classifies (case isn't the problem). It fails when the keyword isn't at
+> the **very start** (e.g. "Met with CUSTOMER…"), is **misspelled** ("CUSTMER…"), or the wrong word.
+> The `meetingClassified=No` flag + the three `Starts*` flags + the `subjectPrefix` echo let Percy
+> diagnose and quote it back.
+
+### 10.6a Template I — IP in GreenLake by user
+```dax
+// IP-in-GreenLake tier points for one user. Mirrors Teams[IP in GL points] / IP_in_GL_points.dax:
+// tiers on SUM('IP GL'[May]) for the user's email. Per-user (no OPE).
+DEFINE
+    VAR Who = "jane.rep@hpe.com"   // injected (validated = caller or admin)
+    VAR v   = CALCULATE ( SUM ( 'IP GL'[May] ), 'IP GL'[Email] = Who )
+EVALUATE
+ROW (
+    "User",          Who,
+    "HasIPGLRow",    IF ( NOT ISBLANK ( v ), "Yes", "No" ),
+    "MayPercent",    v + 0,
+    "Tier",          SWITCH ( TRUE (),
+                        ISBLANK ( v ) || v <= 0, "0% / none",
+                        v < 0.1,  "0-10%", v < 0.25, "10-25%",
+                        v < 0.4,  "25-40%", v < 0.5, "40-50%", "50%+" ),
+    "PointsAwarded", SWITCH ( TRUE (),
+                        ISBLANK ( v ) || v <= 0, 0,
+                        v < 0.1, 10, v < 0.25, 20, v < 0.4, 30, v < 0.5, 50, 75 )
 )
 ```
 
@@ -795,6 +1049,29 @@ SELECTCOLUMNS (
 )
 ```
 
+### 10.7a Template J — Accreditation eligibility & status by user
+```dax
+// Person-level accreditation evidence. Returns the eligibility INPUTS the model uses (S-coded flag,
+// completion status, job family, individual exclusion, CSM L2+) plus the user's STORED awarded value.
+// It does NOT recompute the 100/50/20 team race (that needs cross-crew completion standings) — it
+// explains WHY a user is in/out, and reports Teams[Manager Sponsor Points] (race + CSM 30 + bonus).
+DEFINE
+    VAR Who = "jane.rep@hpe.com"   // injected (validated = caller or admin)
+    VAR T   = FILTER ( 'Teams', LOWER ( 'Teams'[User Email] ) = LOWER ( Who ) )
+    VAR Nm  = MAXX ( T, 'Teams'[Name] )
+EVALUATE
+ROW (
+    "User",                       Who,
+    "Name",                       Nm,
+    "SCoded",                     MAXX ( T, 'Teams'[S Coded?] ),               // eligible when "S-Coded (Phil)"
+    "AccreditationStatus",        MAXX ( T, 'Teams'[Completed?] ),             // race credits when "COMPLETE"
+    "JobFamily",                  MAXX ( T, 'Teams'[Job Family] ),             // CSAs excluded from S-coded race (unless Adrian/Garren)
+    "ExcludedIndividual",         IF ( Nm IN { "Adrian Goggin", "Garren Meakin" }, "Yes", "No" ),
+    "IsCSM_L2plus",               IF ( CALCULATE ( MAX ( 'CCSM Accred'[CCSM L2 or above] ), 'CCSM Accred'[Student Name] = Nm ) = "Yes", "Yes", "No" ),
+    "AccreditationPointsAwarded", MAXX ( T, 'Teams'[Manager Sponsor Points] ) + 0
+)
+```
+
 ### 10.8 What could NOT be written from the schema (TODO, not guessed)
 - **Created-date window:** rules 1 & 6 say *"created from 1 May"*, but `Final[Created Date]` is an
   **untyped string** and the model gates on **`Close Date`**. A clean "created-date" diagnosis needs
@@ -805,10 +1082,15 @@ SELECTCOLUMNS (
 - **UKIMEA scoping (rule 1):** there's no explicit region/UKIMEA column on `CC Contracts`; the
   active-contract test uses entity-id matching only. → *TODO: add a region column to scope "in UKIMEA".*
 - **IB expand %:** `IB & NS Points NEW` returns the **awarded** value (≤25) but not the underlying
-  expand %, so Percy can't show "you're at 12% → 3 points" granularity. → *TODO: expose an `Expand %`
-  measure if that detail is wanted.*
-- **Accreditation per-OPE:** accreditation/CSM/bonus points are person/team-level (Teams), not
-  opp-level — no per-OPE diagnostic is possible or meaningful.
+  expand %, so Percy can't show "you're at 12% → 3 points" granularity (Template H returns the
+  awarded value + the motion/CC-suppression flags). → *TODO: expose an `Expand %` measure if wanted.*
+- **Accreditation is person-level, not per-OPE:** accreditation/CSM/bonus points are person/team
+  (Teams), so the diagnostic is by **user email** (Template J) — it returns eligibility + status +
+  the stored awarded value, but does **not** recompute the 100/50/20 cross-crew **race standings**
+  (that needs every crew's completion dates). → *TODO: expose a `Accreditation Race Rank` /
+  `Accreditation Points` measure keyed by user so the awarded figure is explainable end-to-end.*
+- **IP-in-GreenLake month:** Template I reads `'IP GL'[May]`; the source currently has a single
+  month column. → *TODO: when more months land, parameterise the month (or point at a dated column).*
 
 ---
 
@@ -824,7 +1106,9 @@ SELECTCOLUMNS (
 | **`Customer Meetings`** | logged event | Customer Centricity (10/10/20). Key `HPE Opportunity Id`; `Meeting Type` derived from `Subject` prefix. |
 | **`Teams`** | one row per participant | Per-user aggregates surfaced to the app (every `*Points` column). Source for the summary tool. Key `User Email` / `Name`. |
 | **`1 Percent Approvals`** | approval record | Drives the `Approval Status` calc columns (`"Approve"` vs blank). |
-| `Audience Data`, `Accreditation Summary`, `Completions - Internal`, `CCSM Accred`, `Bonus Points*`, `IP GL` | various | Feed accreditation / IP / bonus (person-level). Not used for OPE diagnostics. |
+| `IP GL` | one row per user / month | IP-in-GreenLake tier (10–75). Source for the IP tool (by email). |
+| `CCSM Accred`, `Audience Data` (via `Teams[S Coded?]`/`[Completed?]`/`[Job Family]`) | person | CSM (30) + S-coded race eligibility. Source for the Accreditation tool (by email). |
+| `Accreditation Summary`, `Completions - Internal`, `Bonus Points*` | person | Feed the accreditation race / bonus inside `Teams[Manager Sponsor Points]`. Person-level, not per-OPE. |
 
 ### 11.2 Relevant columns (diagnostic-critical)
 - `Final[HPE Opportunity Id]`, `[Opportunity Name]`, `[Account Name]`, `[Sales Motion]`,
@@ -964,6 +1248,25 @@ blank)*
 > Centricity meetings. Tell me which you're chasing (or drop me an OPE number) and I'll get
 > specific.
 
+**"My CAP request for OPE-123456789 isn't showing"** *(tool: Check CAP Points Evidence + email;
+example = request exists, name mismatch)*
+> Your CAP request is logged against OPE-123456789, but it's recorded under **Jon Smith**, not your
+> dashboard name — that's why the 20 points aren't crediting to you. If that should be your request,
+> ask for the requestor to be corrected in SFDC and it'll flow to you (once Gemma/BD sign it off).
+
+**"Logged a customer meeting on OPE-123456789 but no points"** *(tool: Check Customer Centricity
+Evidence + email; example = subject mistyped → unclassified)*
+> I can see your meeting on OPE-123456789, but its subject starts with "Custmer review…", which
+> isn't recognised — the subject has to **start** with CUSTOMER, CHANNEL or LEADERSHIP (exact word,
+> at the very start) for it to score. Re-log it as e.g. "CUSTOMER – review with…" and it'll pick up
+> the 10 points once your manager approves it.
+
+**"Why no IB points on OPE-123456789?"** *(tool: Check IB / Expand Points Evidence; example = CC
+suppression)*
+> That opportunity is actually scoring **Complete Care** points, and IB/Expand isn't awarded on the
+> same opp — so the points are coming through under Complete Care instead, not as IB/Expand. Nothing's
+> missing; it's just counted in the other category.
+
 ---
 
 ## 13. Testing plan
@@ -988,6 +1291,20 @@ blank)*
 | 16 | Invalid OPE format | "check complete care for OPE-12" | `[…]` | CC diagnostic | reject | none/validation | "doesn't look like a full OPE" | Regex rejects; no DAX run |
 | 17 | Duplicate submit | rapid double send | n/a (Power Apps) | — | — | — | one user bubble, one reply | `!varPercyThinking` guard blocks 2nd; one reply collected |
 | 18 | Orchestrator guard | Percy-role row created | `Role:"percy"` row | — | — | — | flow terminates | Guard skips non-user rows |
+| 19 | Locate / metric unclear | "why no points for OPE-123456789?" (no metric, no context) | `[…]` | Probe→clarify | `OPE-123456789` | Locate Opportunity | "found in X/Y; which one?" | Calls Locate; lists schemes present; asks which |
+| 20 | CAP request not showing | "my CAP request for OPE-123456789 isn't showing" | `[…]` | CAP (engagement) | `OPE-123456789` | Check CAP (+email) | exists? date? **name match**? approval? | Routes to CAP; passes email; surfaces the first failing gate |
+| 21 | CAP request name mismatch | as 20, evidence `loggedByMatchesCaller:No` | `[…]` | CAP (engagement) | `OPE-123456789` | Check CAP (+email) | "logged under <name>, not you" | Names the mismatch as the cause; no invented data |
+| 22 | CAP request pending | as 20, exists+date ok+approval blank | `[…]` | CAP (engagement) | `OPE-123456789` | Check CAP | "pending Gemma/BD sign-off" | Says pending, not ineligible; states 20 on approval |
+| 23 | Meeting subject mistyped | "logged a customer meeting on OPE-… no points", evidence `meetingClassified:No` | `[…]` | Cust. Centricity | `OPE-…` | Check Cust. Centricity (+email) | "subject must START with CUSTOMER/CHANNEL/LEADERSHIP" + quotes prefix | Detects unclassified subject; quotes `subjectPrefix`; gives fix |
+| 24 | Meeting name mismatch | as 23, `loggedByMatchesCaller:No` | `[…]` | Cust. Centricity | `OPE-…` | Check Cust. Centricity (+email) | "logged under <name>" | Names the credit-key mismatch |
+| 25 | IB suppressed by CC | "why no IB points on OPE-…", evidence `completeCarePointsPresent:Yes` | `[…]` | IB / Expand | `OPE-…` | Check IB / Expand | "scoring under Complete Care instead" | Explains CC suppression, not "missing" |
+| 26 | IB missing a motion | as 25, only one of IB/Expand motions present | `[…]` | IB / Expand | `OPE-…` | Check IB / Expand | "needs both renewal+expand" | Names the missing half |
+| 27 | IP tier | "how many IP in GreenLake points do I have?" | `[…]` | IP in GreenLake | — | Check IP in GreenLake (email) | "~32% → 25–40% band → 30" | Per-user (no OPE); correct band/points |
+| 28 | IP no row | as 27, `hasIPGLRow:No` | `[…]` | IP in GreenLake | — | Check IP in GreenLake | "no IP figure this month → 0" | Graceful zero; no invented % |
+| 29 | Accreditation not S-coded | "why no accreditation points?", `sCoded≠S-Coded (Phil)` | `[…]` | Accreditation | — | Check Accreditation (email) | "race is for S-coded; you're not flagged" | Explains eligibility gate; person-level |
+| 30 | Accreditation CSM | "do I get points for my CSM cert?", `isCSM_L2plus:Yes` | `[…]` | Accreditation | — | Check Accreditation | "30 on completion (CSM)" | Correct CSM value; excludes Adrian/Garren |
+| 31 | Overall summary | "how many points do I have / what's pending?" | `[…]` | Overall | — | Get Overall Summary (email) | per-category + pending total | Uses dashboard category names; reports pending |
+| 32 | Wrong-tool guard | "complete care for OPE-…" must NOT call CAP | `[…]` | CC diagnostic | `OPE-…` | Check Complete Care only | CC answer | Exactly one tool, the correct one |
 
 **Pass/fail criteria (global):** correct latest-message selection (max `Seq`, `Role="user"`);
 correct intent + OPE extraction; correct tool (or none); **plain-text** reply with **no** JSON/DAX/
@@ -1023,26 +1340,29 @@ not-found/error handling; no invented rules or numbers.
 - [ ] Scope + run-after error branch → `Status=Error`, friendly `Reply`, technical `ErrorMessage`.
 - [ ] Set trigger concurrency cap.
 
-**Power Automate — tool flows (one each)**
-- [ ] `Percy-Tool-CompleteCare` (Template B), `Percy-Tool-CAP` (E), `Percy-Tool-CustomerCentricity`
-      (F), `Percy-Tool-Summary` (G).
-- [ ] Each: validate input (OPE regex / email); inject into fixed DAX; **Power BI → Run a query
-      against a dataset** (signed-in shared connection); return compact JSON (Response/Compose).
+**Power Automate — tool flows (one per scheme)**
+- [ ] `Percy-Tool-Locate` (A), `Percy-Tool-CompleteCare` (B), `Percy-Tool-CAP` (E),
+      `Percy-Tool-IBExpand` (H), `Percy-Tool-CustomerCentricity` (F), `Percy-Tool-IPGreenLake` (I),
+      `Percy-Tool-Accreditation` (J), `Percy-Tool-Summary` (G).
+- [ ] Each: validate input (OPE regex `^OPE-?\d{6,12}$` / email); inject into fixed DAX (CAP &
+      Customer Centricity also take the caller email → name-match); **Power BI → Run a query against
+      a dataset** (signed-in shared connection); return compact JSON (Response/Compose).
 - [ ] Confirm the connection account has workspace read + dataset Build.
 
 **Copilot Studio (Percy)**
-- [ ] Create agent; paste **Overview → Instructions** (§5 / §15) incl. the §9 rules.
-- [ ] Add the four tool flows as **actions**; write clear tool descriptions (§15) so orchestration
-      picks the right one.
-- [ ] Build topics (§6): Process JSON, General FAQ, CC/CAP/CustCent diagnostics, Fallback/Clarify.
+- [ ] Create agent; paste **Overview → Instructions** (§5 / §15) incl. the routing map + §9 rules.
+- [ ] Add **all eight** tool flows as **actions**; write clear tool descriptions (§15.2) so
+      orchestration picks the right one per scheme.
+- [ ] Build topics (§6): Process JSON, Query routing map, General FAQ, CC/CAP/Customer Centricity/
+      IB-Expand/IP-GreenLake/Accreditation diagnostics, Fallback/Clarify.
 - [ ] Enable generative orchestration; turn off web/general knowledge so Percy stays on-rules.
 - [ ] Publish; connect the agent action in `Percy-Orchestrator`.
 
 **Power BI semantic model**
 - [ ] Confirm the OPE ↔ `HPE Opportunity Id` format (prefix or not); set flow normalisation.
 - [ ] Apply §10.8 / §11.8 changes as scope allows (typed Created Date, Is-CC-Line flag, entity-id
-      fix, campaign-code flag, per-OPE summary, Last Refreshed).
-- [ ] Verify the four templates run via the connector under the shared account.
+      fix, campaign-code flag, per-OPE summary, accreditation-rank measure, Last Refreshed).
+- [ ] Verify all ten templates (A–J) run via the connector under the shared account.
 
 **Testing & monitoring**
 - [ ] Run the §13 matrix end-to-end (Power Apps → reply).
@@ -1058,16 +1378,29 @@ not-found/error handling; no invented rules or numbers.
 *(Paste into Copilot Studio → Overview → Instructions — full text in [§5](#5-percy-copilot-studio-overview-instructions); append the [§9](#9-programme-rules-canonical) rules verbatim.)*
 
 ### 15.2 Tool descriptions (for Copilot Studio orchestration)
+One tool per points-earning scheme, so Percy can check anything that scores:
+- **Locate Opportunity** — *"Use when the metric is unclear or the user says they see no points at
+  all for an opportunity. Input: OPE. Returns whether the opp exists and in which schemes
+  (opportunities, CAP orders, CAP requests, meetings)."*
 - **Check Complete Care Points Evidence** — *"Use when the user asks why Complete Care (CC) points
-  are or aren't showing for a specific opportunity. Input: the OPE number. Returns whether the opp
-  is found, has Complete Care product lines, a qualifying motion/close date, an active CC contract,
-  and the awarded New Logo (100) / Uplift (75) points."*
-- **Check CAP Points Evidence** — *"Use for questions about CAP engagement (20) or CAP-generated
-  order (50) points on a specific opportunity. Input: OPE. Returns won/close/approval status and the
-  points."*
+  are or aren't showing for a specific opportunity. Input: OPE. Returns found, Complete Care product
+  line, qualifying motion/close date, active CC contract, and awarded New Logo (100) / Uplift (75)."*
+- **Check CAP Points Evidence** — *"Use for CAP engagement (20) or CAP-generated order (50) on an
+  opportunity, including 'my CAP request isn't showing'. Inputs: OPE, and the user's email (for the
+  name-match check). Returns existence, date window, approval status, and whether it's logged under
+  the user's name."*
 - **Check Customer Centricity Evidence** — *"Use for logged customer/channel/leadership meeting
-  points on an opportunity. Input: OPE. Returns each logged meeting's type, approval status and
-  points (10/10/20)."*
+  points, including 'my meeting isn't flowing' / a mistyped subject. Inputs: OPE, and the user's
+  email. Returns each meeting's classification (and whether the subject starts with
+  CUSTOMER/CHANNEL/LEADERSHIP), the logged-by name match, approval status and points (10/10/20)."*
+- **Check IB / Expand Points Evidence** — *"Use for IB Upsell / Expand Pen Rate points (≤25) on an
+  opportunity. Input: OPE. Returns the renewal+expand motions, win/close, the awarded value, and
+  whether Complete Care points are suppressing IB on the same opp."*
+- **Check IP in GreenLake Evidence** — *"Use for IP-in-GreenLake monthly tier points (10–75). Input:
+  the user's email. Returns the monthly %, the tier, and the points."*
+- **Check Accreditation Evidence** — *"Use for accreditation-race / CSM points. Input: the user's
+  email. Returns S-coded flag, completion status, job family, exclusions, CSM L2+ and the awarded
+  value."*
 - **Get Overall Points Summary** — *"Use when a user asks how many points they have or what's
   pending across all categories. Input: the user's email. Returns each category total plus pending."*
 
@@ -1079,14 +1412,17 @@ items by `ConversationId`, order `Seq`) → **Run Percy agent** → sanitise →
 a dataset* → compact JSON.
 
 ### 15.4 DAX templates
-A lookup-by-OPE · **B Complete Care diagnosis** · C current points by OPE · D expected CC points ·
-E CAP diagnosis · F Customer Centricity · G overall summary — all in
-[§10](#10-dax-templates); open items in [§10.8](#108-what-could-not-be-written-from-the-schema-todo-not-guessed).
+A Locate · **B Complete Care diagnosis** · C current points by OPE · D expected CC points ·
+E CAP diagnosis · **H IB/Expand** · F Customer Centricity · **I IP-in-GreenLake** · G overall
+summary · **J Accreditation** — all in [§10](#10-dax-templates); open items in
+[§10.8](#108-what-could-not-be-written-from-the-schema-todo-not-guessed).
 
 ### 15.5 Test matrix
-18 cases in [§13](#13-testing-plan), covering latest-message selection, intent/OPE extraction,
-tool routing, plain-text/no-leak guards, pending-vs-ineligible, not-found/error handling, and the
-Power Apps duplicate-submit guard.
+32 cases in [§13](#13-testing-plan), covering latest-message selection, intent/OPE extraction,
+per-scheme tool routing (Complete Care, CAP request/order, Customer Centricity, IB/Expand, IP,
+Accreditation, Locate, Summary), the granular failure modes (name mismatch, mistyped meeting
+subject, CC-suppresses-IB, pending-vs-ineligible, IP tiers, accreditation eligibility), plain-text/
+no-leak guards, not-found/error handling, and the Power Apps duplicate-submit guard.
 
 ### 15.6 Build checklist
 Step-by-step across SharePoint, Power Apps, Power Automate, Copilot Studio, Power BI, and
