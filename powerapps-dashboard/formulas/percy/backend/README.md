@@ -147,9 +147,15 @@ shows → confirm `Status` becomes `Answered`, `AnswerText` is non‑blank, and 
 
 ---
 
-## 6. Stage 2 (later — not built yet)
+## 6. Stage 2 (Copilot Studio + Power BI diagnostics)
 
-"Why isn't my opp scoring?" will add, in the flow: read the caller's opportunities (filtered by
-`UserEmail`), a second prompt that reasons over those rows against the scoring rules, and a branch
-routing FAQ questions to §3 vs. data questions to the new prompt. The JSON transcript + `UserEmail`
-we already capture give it everything it needs — no app changes to start it.
+"Why isn't my opp scoring?" — the full production design for routing FAQ vs. per-OPE diagnostics
+(Copilot Studio agent, approved Power BI query tools, controlled DAX templates, SharePoint columns,
+the orchestrator flow, test matrix and build checklist) is its own build pack:
+**[PERCY_BUILD_PACK.md](PERCY_BUILD_PACK.md)**.
+
+In short: the flow hands the conversation JSON to a **Copilot Studio agent (Percy)** that finds the
+latest user message, routes between the scoring FAQ and **approved diagnostic tools** (Power
+Automate flows that run **fixed DAX templates** against the semantic model via the standard Power BI
+connector — no service principal), and returns **plain English** for the `Reply`. The JSON transcript
++ `UserEmail` we already capture give it everything it needs.
