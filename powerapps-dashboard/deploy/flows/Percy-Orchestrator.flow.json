@@ -1,0 +1,101 @@
+{
+  "_comment": "REFERENCE workflow definition for the Percy-Orchestrator flow (Logic Apps / Power Automate WDL, the 'properties.definition' you see under Peek code). This is a SCAFFOLD: paste action-by-action into a new flow, OR drop into a legacy import package's definition.json. VERIFY connector operationIds + connection references on import (see README.md). Connections: shared_sharepointonline (SharePoint), plus the Copilot Studio agent action (wire by hand).",
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "$siteAddress": { "type": "string", "metadata": { "description": "SharePoint site URL holding PercyConversations" } },
+      "$listId":      { "type": "string", "metadata": { "description": "PercyConversations list GUID" } }
+    },
+    "triggers": {
+      "When_an_item_is_created": {
+        "type": "OpenApiConnection",
+        "recurrence": { "frequency": "Minute", "interval": 1 },
+        "inputs": {
+          "host": { "connectionName": "shared_sharepointonline", "operationId": "GetOnNewItems", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+          "parameters": { "dataset": "@parameters('$siteAddress')", "table": "@parameters('$listId')" }
+        }
+      }
+    },
+    "actions": {
+      "Only_user_turns": {
+        "type": "If",
+        "expression": { "equals": [ "@toLower(triggerBody()?['Role'])", "user" ] },
+        "actions": {
+          "Set_Status_Processing": {
+            "type": "OpenApiConnection",
+            "inputs": {
+              "host": { "connectionName": "shared_sharepointonline", "operationId": "PatchItem", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+              "parameters": { "dataset": "@parameters('$siteAddress')", "table": "@parameters('$listId')", "id": "@triggerBody()?['ID']", "item/Status": "Processing" }
+            }
+          },
+          "Get_conversation_turns": {
+            "type": "OpenApiConnection",
+            "runAfter": { "Set_Status_Processing": [ "Succeeded" ] },
+            "inputs": {
+              "host": { "connectionName": "shared_sharepointonline", "operationId": "GetItems", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+              "parameters": {
+                "dataset": "@parameters('$siteAddress')",
+                "table": "@parameters('$listId')",
+                "$filter": "ConversationId eq '@{triggerBody()?['ConversationId']}'",
+                "$orderby": "Seq asc",
+                "$top": 100
+              }
+            }
+          },
+          "Select_turns": {
+            "type": "Select",
+            "runAfter": { "Get_conversation_turns": [ "Succeeded" ] },
+            "inputs": {
+              "from": "@outputs('Get_conversation_turns')?['body/value']",
+              "select": { "Seq": "@item()?['Seq']", "Role": "@item()?['Role']", "Body": "@item()?['Body']" }
+            }
+          },
+          "Compose_ConversationJson": {
+            "type": "Compose",
+            "runAfter": { "Select_turns": [ "Succeeded" ] },
+            "inputs": "@string(body('Select_turns'))"
+          },
+          "Run_Percy_agent": {
+            "type": "Http",
+            "runAfter": { "Compose_ConversationJson": [ "Succeeded" ] },
+            "_comment": "REPLACE with the Copilot Studio agent action ('Run a prompt' / agent connector). Inputs: ConversationJson + UserEmail. Output expected at body/text as PLAIN TEXT.",
+            "inputs": {
+              "method": "POST",
+              "uri": "https://REPLACE-with-copilot-studio-agent-endpoint",
+              "body": { "ConversationJson": "@outputs('Compose_ConversationJson')", "UserEmail": "@triggerBody()?['UserEmail']" }
+            }
+          },
+          "Compose_Reply": {
+            "type": "Compose",
+            "runAfter": { "Run_Percy_agent": [ "Succeeded" ] },
+            "_comment": "Sanitise: fall back if empty. Adjust the path to wherever the agent action returns its text.",
+            "inputs": "@if(empty(trim(coalesce(body('Run_Percy_agent')?['text'], ''))), 'Sorry, I couldn''t answer that one — please try again.', body('Run_Percy_agent')?['text'])"
+          },
+          "Write_Reply_Complete": {
+            "type": "OpenApiConnection",
+            "runAfter": { "Compose_Reply": [ "Succeeded" ] },
+            "inputs": {
+              "host": { "connectionName": "shared_sharepointonline", "operationId": "PatchItem", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+              "parameters": { "dataset": "@parameters('$siteAddress')", "table": "@parameters('$listId')", "id": "@triggerBody()?['ID']", "item/Reply": "@outputs('Compose_Reply')", "item/Status": "Complete" }
+            }
+          },
+          "On_error_set_Error": {
+            "type": "OpenApiConnection",
+            "runAfter": { "Run_Percy_agent": [ "Failed", "TimedOut" ], "Write_Reply_Complete": [ "Failed", "TimedOut" ] },
+            "inputs": {
+              "host": { "connectionName": "shared_sharepointonline", "operationId": "PatchItem", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+              "parameters": {
+                "dataset": "@parameters('$siteAddress')", "table": "@parameters('$listId')", "id": "@triggerBody()?['ID']",
+                "item/Status": "Error",
+                "item/Reply": "Sorry, I couldn't reach the assistant just now — please try again.",
+                "item/ErrorMessage": "@string(coalesce(body('Run_Percy_agent'), 'agent/update failed'))"
+              }
+            }
+          }
+        },
+        "else": { "actions": {} }
+      }
+    }
+  }
+}

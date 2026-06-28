@@ -11,6 +11,11 @@ Complete Care logic were read from the live TMDL and the dashboard build
 ([`Screen_OnVisible.powerfx`](../../dashboard/Screen_OnVisible.powerfx),
 [`IP_in_GL_points.dax`](../../dashboard/IP_in_GL_points.dax)) — not invented.
 
+> **Deployment kit:** runnable/importable artifacts for this pack (SharePoint provisioning script,
+> flow scaffolds, paste-in Copilot Studio instructions, ordered deploy guide) live in
+> [`../../../deploy/`](../../../deploy/DEPLOY.md) — with honest reliability tiers (what truly imports
+> vs. what's configured by hand).
+
 > **Non-negotiables (carried through every section):**
 > - The user-facing **`Reply`** column is **plain English text only**. Never JSON, never DAX,
 >   never raw table/column names.

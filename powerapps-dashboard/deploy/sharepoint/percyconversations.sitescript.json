@@ -1,0 +1,25 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/sp/site-design-script-actions.schema.json",
+  "_comment": "Alternative to the PnP script: a SharePoint SITE SCRIPT that provisions the PercyConversations list. Upload with: Add-SPOSiteScript -Title 'Percy Conversations' -Content (Get-Content ./percyconversations.sitescript.json -Raw); then attach to a site design or apply via Invoke-SPOSiteDesign. Multi-line columns are plain text (RichText FALSE) via addSPFieldXml.",
+  "actions": [
+    {
+      "verb": "createSPList",
+      "listName": "PercyConversations",
+      "templateType": 100,
+      "subactions": [
+        { "verb": "setDescription", "description": "Percy assistant conversation turns (one row per message)." },
+        { "verb": "addSPFieldXml", "schemaXml": "<Field Type='Text' DisplayName='ConversationId' Name='ConversationId' StaticName='ConversationId' Indexed='TRUE' MaxLength='255' />", "addToDefaultView": true },
+        { "verb": "addSPField", "fieldType": "Number", "displayName": "Seq", "internalName": "Seq", "addToDefaultView": true, "isRequired": false },
+        { "verb": "addSPField", "fieldType": "Text", "displayName": "Role", "internalName": "Role", "addToDefaultView": true, "isRequired": false },
+        { "verb": "addSPFieldXml", "schemaXml": "<Field Type='Note' DisplayName='Body' Name='Body' StaticName='Body' RichText='FALSE' RichTextMode='Compatible' NumLines='6' />", "addToDefaultView": true },
+        { "verb": "addSPFieldXml", "schemaXml": "<Field Type='Note' DisplayName='Reply' Name='Reply' StaticName='Reply' RichText='FALSE' RichTextMode='Compatible' NumLines='6' />", "addToDefaultView": true },
+        { "verb": "addSPFieldXml", "schemaXml": "<Field Type='Text' DisplayName='Status' Name='Status' StaticName='Status' Indexed='TRUE' MaxLength='32' />", "addToDefaultView": true },
+        { "verb": "addSPFieldXml", "schemaXml": "<Field Type='Note' DisplayName='ErrorMessage' Name='ErrorMessage' StaticName='ErrorMessage' RichText='FALSE' RichTextMode='Compatible' NumLines='6' />", "addToDefaultView": false },
+        { "verb": "addSPField", "fieldType": "Text", "displayName": "UserEmail", "internalName": "UserEmail", "addToDefaultView": true, "isRequired": false },
+        { "verb": "addSPField", "fieldType": "Text", "displayName": "MetricType", "internalName": "MetricType", "addToDefaultView": false, "isRequired": false },
+        { "verb": "addSPField", "fieldType": "Text", "displayName": "OPE", "internalName": "OPE", "addToDefaultView": false, "isRequired": false }
+      ]
+    }
+  ],
+  "version": 1
+}
