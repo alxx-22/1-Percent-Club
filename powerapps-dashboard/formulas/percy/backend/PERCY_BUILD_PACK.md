@@ -121,16 +121,49 @@ has read access to the workspace and semantic model. (Confirm the connection use
 
 ## 2. SharePoint list design
 
-List: **`PercyConversations`**. There are two valid shapes — pick **B** for the new build, but
-the orchestrator supports both.
+List: **`PercyConversations`** — **already created**. There are two possible shapes; **your live
+build uses Shape A, and that is the path the flow targets. Do not change the Power Apps formula.**
 
-- **Shape A (Stage-1, one row per *conversation*)** — what the existing app Patches today: keyed
-  by `SessionId`, `ConversationJson` holds the whole transcript, the flow writes `AnswerText`.
-- **Shape B (one row per *message*, recommended for this spec)** — matches your requested columns
-  exactly (`Seq`, `Role`, `Body`, `Reply`, …). Percy answers the row where `Role="user"` and `Seq`
-  is highest; earlier rows are context.
+- **Shape A (IN USE — one row per *send*)** — the app creates a **new item on every send**, and
+  that item holds the **whole conversation so far** in **`ConversationJson`**; the flow reads it and
+  writes the answer to **`AnswerText`**, flipping **`Status`** `Pending → Answered`. Percy finds the
+  latest user message *inside the JSON* (`Role="user"`, highest `Seq`); earlier entries are context.
+- **Shape B (alternative, greenfield only)** — one row per message with discrete `Seq`/`Role`/
+  `Body`/`Reply` columns. **Not your build** — documented in §2.2 for reference; ignore it unless you
+  ever restructure the app.
 
-### 2.1 Columns (Shape B)
+### 2.1 Columns (Shape A — your live schema)
+
+These are the columns the existing app + flow use. You already have these; nothing to rename.
+
+| Column | Type | Written by | Notes |
+|---|---|---|---|
+| `Title` | Single line | **Power Apps** | Stores the `SessionId` (readable list view). |
+| `SessionId` | Single line of text | **Power Apps** | Conversation/session id (a `GUID()`). **Index it.** |
+| `ConversationJson` | Multiple lines, **plain text** | **Power Apps** | The **whole transcript so far** as JSON (the agent's input). Rich text **off**. |
+| `AnswerText` | Multiple lines, **plain text** | **Power Automate** | Percy's final **plain-English** answer (the app polls this). Rich text **off**. **Plain text only.** |
+| `Status` | Single line of text | **Power Apps** seeds `Pending`; **Power Automate** sets `Answered` | The app polls for `Status = "Answered"`. **Text, not Choice.** Keep these exact values. |
+| `UserEmail` | Single line of text | **Power Apps** | `Lower(User().Email)` — drives per-user diagnostics (IP / Accreditation / Summary) and audit. |
+| `LastQuestion` | Single/Multiple lines | **Power Apps** | The latest user message (convenience; the agent can also read it from the JSON). |
+| `MessageCount` | Number | **Power Apps** | Turn count (convenience). |
+| `Created` / `Modified` | Date/time | SharePoint (auto) | System fields. |
+| `MetricType` *(optional, add if wanted)* | Single line of text | **Power Automate** | Detected category for analytics (`CompleteCare`/`CAP`/…). |
+| `OPE` *(optional, add if wanted)* | Single line of text | **Power Automate** | Extracted OPE for analytics/repro. |
+| `ErrorMessage` *(optional, add if wanted)* | Multiple lines, plain text | **Power Automate** | Technical detail for admins. **Never shown to the user.** If you don't add it, log errors to flow run history instead. |
+
+**Who writes what:**
+- **Power Apps writes:** `Title`, `SessionId`, `ConversationJson`, `UserEmail`, `LastQuestion`,
+  `MessageCount`, and seeds `Status = "Pending"`. (`AnswerText` stays empty.) — **unchanged; no edits.**
+- **Power Automate writes:** `AnswerText`, `Status = "Answered"`, and optionally `MetricType` / `OPE`
+  / `ErrorMessage`.
+
+> Keep `ConversationJson` and `AnswerText` as **plain-text** multi-line columns (enhanced rich text
+> **off**) so the JSON in / answer out is never HTML-mangled.
+>
+> **Only thing to confirm you have:** a **`Status`** *Single line of text* column (the no-premium
+> loop guard). If it's missing, add it — that's a column add, **not** a Power Apps formula change.
+
+### 2.2 Columns (Shape B — alternative, not your build)
 
 | Column | Type | Written by | Notes |
 |---|---|---|---|
@@ -168,47 +201,44 @@ The chat UI already exists ([`PERCY.md`](../../../PERCY.md)): `galChat` bound to
 `Sort(colChat, Seq)`, `imgSend.OnSelect` Patches the row, `tmrPercyPoll` polls for the reply,
 `imgThinking` shows the typing state. Behaviour to lock in:
 
-1. **Submit** — `imgSend.OnSelect` (guarded `!IsBlank(Trim(txtChat.Text)) && !varPercyThinking`,
-   see [`imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx)):
-   - Append `{ Seq, Role:"user", Body }` to `colChat`, `Reset(txtChat)`.
-2. **Create SharePoint item** — `Patch` a **new row per user message** (Shape B):
+> **This is the existing app — no formula changes needed.** Steps below describe what
+> [`imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx) and
+> [`tmrPercyPoll.OnTimerEnd.powerfx`](../tmrPercyPoll.OnTimerEnd.powerfx) already do; they're here so
+> the flow contract is unambiguous.
+
+1. **Submit** — `imgSend.OnSelect` (guarded `!IsBlank(Trim(txtChat.Text)) && !varPercyThinking`):
+   append `{ Seq, Role:"user", Body }` to `colChat`, `Reset(txtChat)`.
+2. **Upsert the SharePoint item (Shape A)** — Patch this session's row with the **whole conversation
+   so far** as JSON, clear the answer, mark `Pending`:
    ```powerfx
-   Set( varSeq, CountRows(colChat) );           // Seq of this user turn
+   Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+   Set( varConvRow, LookUp( PercyConversations, SessionId = varSessionId ) );
    Set( varAsk,
-       Patch( PercyConversations, Defaults(PercyConversations),
-           { Title:          varSessionId,
-             ConversationId: varSessionId,
-             Seq:            varSeq,
-             Role:           "user",
-             Body:           varPercyQ,
-             UserEmail:      Lower(User().Email),
-             Status:         "New" } ) );
-   Set( varAskId, varAsk.ID );
-   Set( varPollN, 0 ); Set( varThinkOut, false ); Set( varPercyThinking, true );
+       Patch( PercyConversations,
+           If( IsBlank(varConvRow), Defaults(PercyConversations), varConvRow ),
+           { Title: varSessionId, SessionId: varSessionId, ConversationJson: varChatJson,
+             UserEmail: Lower(User().Email), LastQuestion: varPercyQ,
+             MessageCount: CountRows(colChat), AnswerText: "", Status: "Pending" } ) );
+   Set( varAskId, varAsk.ID ); Set( varPollN, 0 ); Set( varPercyThinking, true );
    ```
-   *(Stage-1 Shape A instead upserts one row by `SessionId` with `ConversationJson` — keep
-   whichever your flow consumes; §4 reads both.)*
-3. **Pending / processing state** — `Set(varPercyThinking, true)` shows `imgThinking`
-   ("Percy is thinking/typing…") and **starts** `tmrPercyPoll` (`Start = varPercyThinking`). The
-   send button is disabled while thinking (the `&& !varPercyThinking` guard).
-4. **Polling refresh** — `tmrPercyPoll.OnTimerEnd` (every 2s, see
-   [`tmrPercyPoll.OnTimerEnd.powerfx`](../tmrPercyPoll.OnTimerEnd.powerfx)):
-   `Refresh(PercyConversations)`, re-`LookUp` the row by `ID = varAskId`, and when
-   `Status="Complete"` **and** `Reply` is non-blank, append `{ Role:"percy", Body: Reply }` to
-   `colChat` **once** (guarded by `varPercyThinking` so extra ticks can't double-post).
-5. **Display Reply** — the new `colChat` row renders through `htmlBubble` (left/white card for
-   Percy). `galChat` shows it because `Items = Sort(colChat, Seq)`.
-6. **Avoid duplicate submissions** — the `!varPercyThinking` guard blocks a second send while one
-   is in flight; the `varGotReply = varPercyThinking && …` guard in the poll guarantees the reply
-   is collected exactly once.
+   *(Each send re-Patches with the cumulative transcript — so the triggering item always carries the
+   full conversation. The flow never has to rebuild it.)*
+3. **Pending / typing state** — `Set(varPercyThinking, true)` shows `imgThinking` and **starts**
+   `tmrPercyPoll` (`Start = varPercyThinking`). The send button is disabled while thinking.
+4. **Polling refresh** — `tmrPercyPoll.OnTimerEnd` (every 2s): `Refresh(PercyConversations)`,
+   re-`LookUp` the row by `ID = varAskId`, and when **`Status="Answered"`** **and** `AnswerText` is
+   non-blank, append `{ Role:"percy", Body: AnswerText }` to `colChat` **once** (guarded by
+   `varPercyThinking` so extra ticks can't double-post).
+5. **Display the answer** — the new `colChat` row renders through `htmlBubble` (left/white card).
+   `galChat` shows it because `Items = Sort(colChat, Seq)`.
+6. **Avoid duplicate submissions** — the `!varPercyThinking` guard blocks a second send while one is
+   in flight; the `varGotReply = varPercyThinking && …` guard collects the answer exactly once.
 7. **Sort by Seq** — `galChat.Items = Sort(colChat, Seq)` (oldest→newest, newest at bottom).
-8. **Group / filter by ConversationId** — `varSessionId = GUID()` (set in
-   [`App_OnStart`](../../dashboard/App_OnStart.powerfx)) tags every row written this session; the
-   poll filters by `ID`, and any history reload filters `Filter(PercyConversations,
-   ConversationId = varSessionId)` then `Sort(... , Seq)`.
+8. **Group / filter by session** — `varSessionId = GUID()` (set in
+   [`App_OnStart`](../../dashboard/App_OnStart.powerfx)) tags the row; the poll filters by `ID`.
 9. **Timeout** — total wait = `tmrPercyPoll.Duration (2000ms) × varPollMax (60) = 120s`. The
-   SharePoint *item-created* trigger alone can take 30–60s to fire, so keep this generous; on
-   timeout Percy posts a friendly "couldn't reach the assistant" bubble and stops polling.
+   SharePoint trigger alone can take 30–60s to fire, so keep this generous; on timeout Percy posts a
+   friendly "couldn't reach the assistant" bubble and stops polling.
 
 > **Timers in a Power BI-embedded visual can be unreliable.** Provide a tiny "check for reply"
 > image/button whose `OnSelect` runs the same body as `tmrPercyPoll.OnTimerEnd` as a manual fallback.
@@ -217,23 +247,31 @@ The chat UI already exists ([`PERCY.md`](../../../PERCY.md)): `galChat` bound to
 
 ## 4. Main Power Automate flow (`Percy-Orchestrator`)
 
-**Trigger:** SharePoint **"When an item is created"** on `PercyConversations`.
-*(If you keep the Stage-1 upsert pattern, use "created **or modified**" and guard on
-`Status = "Pending"` to avoid the self-update loop — see [`README.md`](README.md) §3.)*
+**Trigger:** SharePoint **"When an item is created or modified"** on `PercyConversations`.
+*(Each send lands a row with `ConversationJson` filled, `AnswerText` empty, `Status = "Pending"`.
+"Created or modified" covers both a new-item-per-send and an upsert-per-session app, and the
+`Status = "Pending"` guard stops the self-update loop when the flow writes `Answered` — see
+[`README.md`](README.md) §3.)*
 
 | # | Action | Detail |
 |---|---|---|
-| 1 | **Guard: only run for user turns** | `Condition`: `Role` **is equal to** `user`. (Also short-circuit if `Status` is already `Processing/Complete`.) If no → **Terminate (Succeeded)**. |
-| 2 | **Set Status = Processing** | `Update item` → `Status: Processing`. Stamps "in flight" so reruns/polls don't double-fire. |
-| 3 | **Build / retrieve conversation JSON** | `Get items` on `PercyConversations` with `Filter Query: ConversationId eq '<triggerBody ConversationId>'`, `Order By: Seq asc`. `Select` → array of `{ "Seq": Seq, "Role": Role, "Body": Body }`. `Compose` → `ConversationJson`. *(Shape A: read `ConversationJson` straight off the trigger item.)* |
-| 4 | **Run Percy agent** | Copilot Studio agent action (`Percy`). **Input** = `ConversationJson` (string) + `UserEmail`. The agent finds the latest user message, routes, optionally calls a tool, returns **plain text**. |
-| 5 | **Sanitise the agent output** | `Compose`: `if(empty(trim(<agent text>)), 'Sorry, I couldn''t answer that one — please try again.', <agent text>)`. Strip any stray code fences (defence-in-depth: replace ```` ``` ```` and leading `{`/`[` blocks). The agent should already return prose. |
-| 6 | **Update item — write the Reply** | `Update item` → `Reply: <sanitised text>`, `Status: Complete`, optional `MetricType`/`OPE` from the agent's structured side-channel. |
-| — | **Error handling (parallel / Scope + "has failed")** | Wrap 3–6 in a **Scope**. On failure, run a second Scope (`Configure run after: has failed, timed out`): `Update item` → `Status: Error`, `Reply: "Sorry, I couldn't reach the assistant just now — please try again."`, `ErrorMessage: <technical detail>` (admin-only; never shown to the user). |
+| 1 | **Guard: only act on fresh asks** | `Condition`: `Status` **is equal to** `Pending` **and** `AnswerText` is empty. If no → **Terminate (Succeeded)**. (This is the loop guard; the agent itself finds the latest user turn inside the JSON, so no `Role` column is needed.) |
+| 2 | **Read the conversation** | Take **`ConversationJson`** straight off the trigger item — it already holds the whole transcript. **No Get items / rebuild.** Capture `triggerBody()?['ID']` and `UserEmail`. |
+| 3 | **Run Percy agent** | Copilot Studio agent action (`Percy`). **Input** = `ConversationJson` (string) + `UserEmail`. The agent finds the latest user message (`Role="user"`, highest `Seq`) inside the JSON, routes, optionally calls a tool, returns **plain text**. |
+| 4 | **Sanitise the agent output** | `Compose`: `if(empty(trim(<agent text>)), 'Sorry, I couldn''t answer that one — please try again.', <agent text>)`. Defence-in-depth: strip stray code fences / leading `{`/`[`. The agent should already return prose. |
+| 5 | **Update item — write `AnswerText`** | `Update item` (by `ID`) → **`AnswerText`: `<sanitised text>`**, **`Status`: `Answered`**, optional `MetricType`/`OPE`. The app's poll is watching exactly this. |
+| — | **Error handling (Scope + "has failed")** | Wrap 2–5 in a **Scope**. On failure (`Configure run after: has failed, timed out`): `Update item` → **`AnswerText`: "Sorry, I couldn't reach the assistant just now — please try again."**, **`Status`: `Answered`** (so the user actually sees the message — the app only displays when `Status="Answered"`), and `ErrorMessage: <technical detail>` **if that column exists** (else rely on flow run history). |
 
-**Concurrency:** set the trigger's concurrency to a sane cap (e.g. 10) so a burst of chats doesn't
-exhaust the Copilot Studio / Power BI connection. **Telemetry:** the `ErrorMessage` column + flow
-run history are your audit trail; `MetricType`/`OPE` give you per-category usage analytics.
+**Why `Status="Answered"` even on error:** your app's poll
+([`tmrPercyPoll.OnTimerEnd.powerfx`](../tmrPercyPoll.OnTimerEnd.powerfx)) shows the bubble only when
+`Status = "Answered"` and `AnswerText` is non-blank. Writing a friendly failure into `AnswerText`
+with `Status = "Answered"` surfaces it immediately rather than making the user wait out the poll
+timeout. (Use a distinct `Status` like `Error` only if you also teach the app to read it — which
+you don't want to, so don't.)
+
+**Concurrency:** cap the trigger's concurrency (e.g. 10) so a burst of chats doesn't exhaust the
+Copilot Studio / Power BI connection. **Telemetry:** flow run history (plus an optional
+`ErrorMessage` column) is your audit trail; `MetricType`/`OPE` give per-category usage analytics.
 
 ---
 

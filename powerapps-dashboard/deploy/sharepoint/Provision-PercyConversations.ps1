@@ -3,6 +3,13 @@
     Provisions the PercyConversations SharePoint list (columns + types + indexing)
     used by the Percy assistant. Idempotent — safe to re-run.
 
+.NOTE
+    GREENFIELD ONLY. The live build already has PercyConversations with the Shape-A
+    columns (ConversationJson in, AnswerText out, Status Pending/Answered) — if that's
+    you, SKIP this script; at most confirm a single-line-text 'Status' column exists.
+    This script builds the alternative Shape-B layout (Seq/Role/Body/Reply/Status/...)
+    for a fresh, message-per-row app. See PERCY_BUILD_PACK.md §2.
+
 .DESCRIPTION
     Creates the list if it doesn't exist, then adds every column from the build pack
     (PERCY_BUILD_PACK.md §2, "one row per message" shape). Multi-line columns are

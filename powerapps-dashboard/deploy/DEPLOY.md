@@ -6,9 +6,14 @@ Honest reliability tiers up front, then the order of operations.
 
 ## What actually imports (reliability tiers)
 
+> **Your live schema (Shape A):** `PercyConversations` already exists. The app writes the whole
+> transcript to **`ConversationJson`** + `Status="Pending"`; the flow writes **`AnswerText`** +
+> `Status="Answered"`. **No Power Apps changes.** The provisioning script below is **greenfield-only
+> (Shape B)** — you can skip it; at most confirm a single-line-text **`Status`** column exists.
+
 | Tier | Piece | Artifact | Notes |
 |---|---|---|---|
-| ✅ **Run-and-done** | SharePoint `PercyConversations` list | [`sharepoint/Provision-PercyConversations.ps1`](sharepoint/Provision-PercyConversations.ps1) (PnP) or [`sharepoint/percyconversations.sitescript.json`](sharepoint/percyconversations.sitescript.json) | Creates every column/type/index. Idempotent. |
+| ✅ **Already done / run-and-done** | SharePoint `PercyConversations` list | (you have it) — [`sharepoint/Provision-PercyConversations.ps1`](sharepoint/Provision-PercyConversations.ps1) is greenfield-only | Idempotent if you ever rebuild. For your build: just confirm `Status` exists. |
 | ✅ **Paste-and-use** | Percy instructions + DAX | [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md), [`flows/dax-templates.md`](flows/dax-templates.md) → build pack §10 | Correct, ready to paste. |
 | ⚠️ **Scaffold, verify on import** | Power Automate flows | [`flows/Percy-Orchestrator.flow.json`](flows/Percy-Orchestrator.flow.json), [`flows/Percy-Tool-template.flow.json`](flows/Percy-Tool-template.flow.json) | Logic correct; connector ids/connections need verifying. Build-from-designer recommended — see [`flows/README.md`](flows/README.md). |
 | ❌ **Configure by hand** | Copilot Studio agent · Power Apps canvas app | [`copilot-studio/`](copilot-studio/) (paste-in) | No reliable hand-import. The app stays the copy-paste `.powerfx` in [`../formulas/percy/`](../formulas/percy/). |
@@ -19,16 +24,9 @@ the rest paste-ready.
 
 ## Order of operations
 
-1. **SharePoint** — run the PnP script (or apply the site script):
-   ```powershell
-   Install-Module PnP.PowerShell -Scope CurrentUser
-   # one-time app reg if you don't have a ClientId:
-   #   Register-PnPEntraIDApp -ApplicationName "PnP-Percy" -Tenant <tenant>.onmicrosoft.com -Interactive
-   ./sharepoint/Provision-PercyConversations.ps1 `
-       -SiteUrl "https://hpe-my.sharepoint.com/personal/alex_cohen_hpe_com" `
-       -ClientId "<your-app-client-id>"
-   ```
-   Then add `PercyConversations` as a data source in Power Apps and **Refresh**.
+1. **SharePoint** — you already have `PercyConversations` with `ConversationJson` + `AnswerText`.
+   **Just confirm a single-line-text `Status` column exists** (values `Pending` / `Answered`).
+   *(Skip the provisioning script — it builds the alternative Shape-B layout for a greenfield app.)*
 
 2. **Power BI** — confirm the signed-in/shared account that the flows will use has **workspace read
    + dataset Build**. Note the **workspace id** and **dataset id**. Confirm whether the model stores
@@ -44,20 +42,22 @@ the rest paste-ready.
    knowledge off. Publish.
 
 5. **Orchestrator flow** — build `Percy-Orchestrator` from [`flows/Percy-Orchestrator.flow.json`](flows/Percy-Orchestrator.flow.json):
-   SharePoint *item created* → guard `Role=user` → `Status=Processing` → get/compose conversation
-   JSON → **run the published Percy agent** (replace the placeholder action) → write plain-text
-   `Reply` + `Status=Complete` → error branch.
+   SharePoint *item created or modified* → guard `Status=Pending` & `AnswerText` empty → read
+   **`ConversationJson`** off the trigger → **run the published Percy agent** (replace the placeholder
+   action) → write plain-text **`AnswerText`** + **`Status=Answered`** → error branch (friendly
+   `AnswerText` + `Status=Answered`). **No conversation rebuild — the transcript is already on the item.**
 
-6. **Power Apps** — the chat UI already exists ([`../PERCY.md`](../PERCY.md)). Confirm `imgSend.OnSelect`
-   writes a row per user turn and `tmrPercyPoll` reads `Reply`/`Status` (build pack §3).
+6. **Power Apps** — unchanged. The chat UI already exists ([`../PERCY.md`](../PERCY.md)):
+   `imgSend.OnSelect` upserts the row with `ConversationJson`+`Status="Pending"`; `tmrPercyPoll` reads
+   `AnswerText` when `Status="Answered"` (build pack §3). **Do not edit these formulas.**
 
 ## Smoke test
 
 1. In the app, ask **"How do I get points?"** → plain-text list of the nine ways (no tool call).
-2. Ask **"Check Complete Care for OPE-…"** with a real OPE → row goes `Processing` → flow runs the
-   Complete Care tool → `Reply` populates, `Status=Complete`, bubble appears within a poll cycle.
+2. Ask **"Check Complete Care for OPE-…"** with a real OPE → row is `Pending` → flow runs the Complete
+   Care tool → `AnswerText` populates, `Status=Answered`, bubble appears within a poll cycle.
 3. Ask **"my CAP request for OPE-… isn't showing"** → CAP tool returns existence/approval/name-match;
    Percy explains the real blocker in plain English.
-4. Confirm **no** JSON/DAX/IDs ever appear in `Reply`.
+4. Confirm **no** JSON/DAX/IDs ever appear in `AnswerText`.
 
 Full test matrix: build pack §13. Build checklist: build pack §14.

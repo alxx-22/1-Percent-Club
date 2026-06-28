@@ -5,7 +5,7 @@ these are scaffolds to speed up a hand-build, not guaranteed one-click imports.
 
 | File | What it is |
 |---|---|
-| `Percy-Orchestrator.flow.json` | The SharePoint-triggered flow that runs Percy and writes `Reply`. |
+| `Percy-Orchestrator.flow.json` | The SharePoint-triggered flow that reads `ConversationJson` off the item, runs Percy, and writes `AnswerText` + `Status="Answered"` (matches the live Shape-A app). |
 | `Percy-Tool-template.flow.json` | The shape **all 8 tool flows** share (Copilot calls it → Power BI query → return JSON). Example wired for Complete Care. |
 | `dax-templates.md` | Which tool uses which DAX template + the injection + Power BI payload. |
 
@@ -25,8 +25,10 @@ these are scaffolds to speed up a hand-build, not guaranteed one-click imports.
 ## Recommended path: build from the designer (most reliable)
 
 1. Create **`Percy-Orchestrator`** in Power Automate from scratch, following build pack §4, using
-   `Percy-Orchestrator.flow.json` as the step-by-step blueprint (trigger → guard → status →
-   get items → select → compose → run agent → write reply → error branch).
+   `Percy-Orchestrator.flow.json` as the step-by-step blueprint (trigger *created or modified* →
+   guard `Status=Pending` & `AnswerText` empty → read `ConversationJson` off the item → run agent →
+   write `AnswerText` + `Status="Answered"` → error branch). No get-items/rebuild — the transcript is
+   already on the triggering item.
 2. Create **one tool flow per scheme** (`Percy-Tool-Locate`, `-CompleteCare`, `-CAP`, `-IBExpand`,
    `-CustomerCentricity`, `-IPGreenLake`, `-Accreditation`, `-Summary`) from
    `Percy-Tool-template.flow.json`: Copilot trigger (inputs `ope` [+ `who`]) → validate → Compose
