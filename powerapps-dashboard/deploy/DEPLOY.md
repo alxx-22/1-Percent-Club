@@ -15,12 +15,12 @@ Honest reliability tiers up front, then the order of operations.
 |---|---|---|---|
 | ✅ **Already done / run-and-done** | SharePoint `PercyConversations` list | (you have it) — [`sharepoint/Provision-PercyConversations.ps1`](sharepoint/Provision-PercyConversations.ps1) is greenfield-only | Idempotent if you ever rebuild. For your build: just confirm `Status` exists. |
 | ✅ **Paste-and-use** | Percy instructions + DAX | [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md), [`flows/dax-templates.md`](flows/dax-templates.md) → build pack §10 | Correct, ready to paste. |
-| ⚠️ **Scaffold, verify on import** | Power Automate flows | [`flows/Percy-Orchestrator.flow.json`](flows/Percy-Orchestrator.flow.json), [`flows/Percy-Tool-template.flow.json`](flows/Percy-Tool-template.flow.json) | Logic correct; connector ids/connections need verifying. Build-from-designer recommended — see [`flows/README.md`](flows/README.md). |
+| 🛠️ **Build by hand (no import)** | Power Automate flows | [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md), [`flows/Percy-Tools.build.md`](flows/Percy-Tools.build.md) | Click-by-click designer steps (every action/field/expression). This environment can't import flows. |
 | ❌ **Configure by hand** | Copilot Studio agent · Power Apps canvas app | [`copilot-studio/`](copilot-studio/) (paste-in) | No reliable hand-import. The app stays the copy-paste `.powerfx` in [`../formulas/percy/`](../formulas/percy/). |
 
 There is **no single "import everything" button** without a Dataverse managed-solution (the
-premium/service-principal path you've ruled out). This kit automates the parts that can be, and makes
-the rest paste-ready.
+premium/service-principal path you've ruled out), and this environment can't import flows — so the
+flows are **built by hand from the instructions**, and the rest is paste-ready.
 
 ## Order of operations
 
@@ -32,16 +32,17 @@ the rest paste-ready.
    + dataset Build**. Note the **workspace id** and **dataset id**. Confirm whether the model stores
    the OPE with or without the `OPE-` prefix (sets the normalisation in the tool flows).
 
-3. **Tool flows** (×8) — build each from [`flows/Percy-Tool-template.flow.json`](flows/Percy-Tool-template.flow.json),
-   pasting the matching DAX from [`flows/dax-templates.md`](flows/dax-templates.md). Validate input →
-   Power BI "Run a query against a dataset" → return JSON.
+3. **Tool flows** (×8) — build by hand following [`flows/Percy-Tools.build.md`](flows/Percy-Tools.build.md)
+   (build one, clone for the rest), pasting the matching DAX from
+   [`flows/dax-templates.md`](flows/dax-templates.md). Copilot trigger → validate → Power BI "Run a
+   query against a dataset" → return JSON.
 
 4. **Copilot Studio agent (Percy)** — paste [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md)
    (append the §9 rules), add the 8 tool flows as actions, add topics from
    [`copilot-studio/topics.md`](copilot-studio/topics.md), generative orchestration on, web/general
    knowledge off. Publish.
 
-5. **Orchestrator flow** — build `Percy-Orchestrator` from [`flows/Percy-Orchestrator.flow.json`](flows/Percy-Orchestrator.flow.json):
+5. **Orchestrator flow** — build `Percy-Orchestrator` by hand following [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md):
    SharePoint *item created or modified* → guard `Status=Pending` & `AnswerText` empty → read
    **`ConversationJson`** off the trigger → **run the published Percy agent** (replace the placeholder
    action) → write plain-text **`AnswerText`** + **`Status=Answered`** → error branch (friendly
