@@ -1247,6 +1247,11 @@ not-found/error handling; no invented rules or numbers.
 
 ## 14. Implementation checklist
 
+> **Build sequence** (the checklist is grouped by area, but build in this dependency order):
+> SharePoint list → Power BI prereqs → **`Percy-Query`** (so it exists to attach) → **Percy agent**
+> (instructions → action → topics → publish) → **`Percy-Orchestrator`** (calls the published agent) →
+> test. Full runbook + doc map: [`../../../deploy/README.md`](../../../deploy/README.md).
+
 **SharePoint**
 - [ ] Create/confirm `PercyConversations`; add columns from §2 (`ConversationId`, `Seq`, `Role`,
       `Body`, `Reply`, `Status`, `ErrorMessage`, `UserEmail`, optional `MetricType`, `OPE`).

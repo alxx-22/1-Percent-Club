@@ -1,6 +1,10 @@
 # Percy — deployment kit
 
-Importable / runnable artifacts for the Percy build pack
+> **New here? Start with [`README.md`](README.md)** — the build runbook: the exact creation **order**
+> (build `Percy-Query` → create the agent → build `Percy-Orchestrator`) and a map of every doc and
+> what it does. This page is the detailed order-of-operations behind that runbook.
+
+Runnable artifacts for the Percy build pack
 ([`../formulas/percy/backend/PERCY_BUILD_PACK.md`](../formulas/percy/backend/PERCY_BUILD_PACK.md)).
 Honest reliability tiers up front, then the order of operations.
 
