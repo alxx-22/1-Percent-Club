@@ -20,28 +20,27 @@ there into the matching flow.
 | `Percy-Tool-Summary`           | G | `Who` | all categories + pending |
 | *(reference only)*             | C, D | `Ope` | current / expected CC points |
 
-## Parameter injection (injection-safe)
+## Dropping the OPE / email into the DAX (the simple way)
 
-The flow validates the input **before** building the query, then string-replaces the `VAR` line.
-Validate first so a caller can't inject DAX:
+> ⚠️ **Don't build the DAX inside an `fx replace('…@@OPE@@…')` expression.** That forces you to double
+> every single quote (`''Final''`) and hand-type the input reference — it throws **"invalid
+> parameters"**. Paste the DAX as **plain text** and insert the value as **dynamic content** instead.
 
-- **OPE:** must match `^OPE-?\d{6,12}$` (case-insensitive). Reject otherwise → `{ "error": "invalid_ope" }`.
-- **Email (`Who`):** must match the signed-in caller (or an allowed admin). If absent, inject `Who = ""`
-  (the name-match flags then return `"No"`, by design).
+Each template has a **`VAR Ope = "…"`** line (and `VAR Who = "…"` for the two-input tools). In the
+Power BI **Run a query against a dataset** action:
 
-In the flow, hold the template as a string with a placeholder and `replace()` it, e.g. for Template B:
+1. Paste the template into **Query text** as plain text.
+2. On the `VAR Ope = "…"` line, **clear what's between the quotes** and insert the **`ope`** input
+   from **Dynamic content**. (Two-input tools: do the same on `VAR Who = "…"` with **`who`**.)
 
-```
-Compose "DaxQuery" =
-replace(
-  'DEFINE VAR Ope = "@@OPE@@"  ... (paste Template B from §10.2) ...',
-  '@@OPE@@',
-  toUpper(trim(triggerBody()?['ope']))
-)
-```
+No `replace`, no escaping, no concatenation. Injection-safety comes from the **input validation**,
+which runs **before** the action is called:
 
-Use a literal placeholder token (`@@OPE@@` / `@@WHO@@`) rather than concatenating, so the validated
-value lands in exactly one spot.
+- **OPE:** validate `^OPE-?\d{6,12}$` in **Copilot Studio** (Power Fx `IsMatch`) before calling the
+  tool; the flow keeps a non-empty backstop. (DAX `=` on text is case-insensitive, so no upper-casing
+  is needed for matching.)
+- **Email (`Who`):** must be the signed-in caller (or an allowed admin); if absent, leave `VAR Who = ""`
+  and the name-match flags return `"No"` by design.
 
 ## Power BI action — "Run a query against a dataset"
 

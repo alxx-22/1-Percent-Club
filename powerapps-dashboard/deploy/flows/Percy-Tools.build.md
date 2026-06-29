@@ -28,33 +28,34 @@ JSON the agent explains in plain English.
 > Logic-Apps expressions have no regex, so the flow just does a non-empty guard.
 
 Add **Control → Condition**:
-- Left (expression): `empty(triggerBody()?['text'])` → operator **is equal to** → right `false`.
-  *(`triggerBody()?['text']` is the `ope` input; if your trigger names it differently, use the
-  dynamic content for `ope`.)*
+- Left: from **Dynamic content**, pick the **`ope`** input (don't hand-type `triggerBody()`); operator
+  **is not equal to**; right value: leave **blank**.
 
 Everything below goes in **If yes**. In **If no**, add the response from step 7 returning
 `{"error":"invalid_ope"}`.
 
-### 4. Compose the DAX  *(If yes)*
-Add **Data Operation → Compose**, name it `DaxQuery`. Paste the matching template from
-[`dax-templates.md`](dax-templates.md) (here: **Template B**, build pack §10.2) as a single-line
-string, with the literal token **`@@OPE@@`** on the `VAR Ope` line, wrapped in `replace(...)`:
+### 4. (skip a Compose — build the DAX in the Power BI action itself)
 
-```
-replace('DEFINE VAR Ope = "@@OPE@@" VAR OppRows = FILTER ( ''Final'', ''Final''[HPE Opportunity Id] = Ope ) ...paste the rest of Template B... ', '@@OPE@@', toUpper(trim(triggerBody()?['text'])))
-```
+> ⚠️ **Do NOT use an `fx replace('…@@OPE@@…')` expression.** Building DAX inside an expression string
+> means doubling every single quote (`''Final''`) and hand-typing the input reference — that's what
+> throws **"invalid parameters"**. Paste the DAX as **plain text** instead and drop the OPE in as
+> **dynamic content**. No expression, no escaping.
 
-Notes:
-- Inside a Compose **string**, escape each single quote in the DAX by **doubling it** (`'Final'` →
-  `''Final''`). Double quotes inside the DAX are fine.
-- Tools that also take `who`: add a second `replace(... , '@@WHO@@', toLower(trim(triggerBody()?['who'])))`
-  wrapped around the first, and keep the `@@WHO@@` token on the `VAR Who` line.
-
-### 5. Run the query (Power BI)
+### 5. Run the query (Power BI) — paste the DAX as plain text
 Add **Power BI → Run a query against a dataset**.
-- **Workspace:** the workspace holding the 1% Club semantic model.
+- **Workspace:** 🔎 the workspace holding the 1% Club semantic model.
 - **Dataset:** the semantic model.
-- **Query text:** the **Outputs** of `DaxQuery`.
+- **Query text:** click the field and **paste the matching DAX template** from
+  [`dax-templates.md`](dax-templates.md) (here **Template B**, build pack §10.2) **as plain text**.
+  On the **`VAR Ope = "…"`** line, **clear whatever is between the quotes** and, with the cursor
+  there, insert the **`ope`** input from **Dynamic content**. Done — no `replace`, no quote-doubling.
+  - *(DAX `=` on text is case-insensitive, so you don't need to upper-case the OPE.)*
+  - **Two-input tools** (CAP, Customer Centricity): do the same on the **`VAR Who = "…"`** line with
+    the **`who`** input.
+
+> Prefer a separate Compose? You still can — add **Compose `DaxQuery`**, but **type the DAX as plain
+> text** in its input and insert the `ope` dynamic content between the `VAR Ope = ""` quotes (don't
+> open the `fx` editor). Then set **Query text** = `Outputs` of `DaxQuery`. Same result, no escaping.
 
 This action returns **`firstTableRows`** — an array of row objects with keys like `[OPE]`, `[Found]`,
 `[CCPointsTotal]`, … (the column names from the DAX, in square brackets).
@@ -91,8 +92,10 @@ Save. (You'll wire this flow into the Percy agent as an **action** in Copilot St
 | `Percy-Tool-Accreditation`      | `who`        | J | single row |
 | `Percy-Tool-Summary`            | `who`        | G | single row |
 
-For the `who`-only tools (IP, Accreditation, Summary): the input is `who`, the validation is
-non-empty, and the `replace` swaps `@@WHO@@` with `toLower(trim(triggerBody()?['who']))` (no `@@OPE@@`).
+For each clone: paste that tool's DAX as plain text into the Power BI **Query** field, then insert
+the **`ope`** and/or **`who`** dynamic content between the empty `VAR Ope = ""` / `VAR Who = ""`
+quotes (same plain-text method as Part A — no `replace`, no escaping). The `who`-only tools (IP,
+Accreditation, Summary) have just a `VAR Who = ""` and a non-empty guard on `who`.
 
 ---
 
