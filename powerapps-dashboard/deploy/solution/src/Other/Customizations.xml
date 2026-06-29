@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SCAFFOLD — customizations for the Percy solution: cloud flows, connection references, and
+  environment variable definitions. Placeholder GUIDs. Pack with `pac solution pack` and validate
+  by test-importing in a Dataverse env. Attributes here (Category/Type/Scope/StateCode...) are
+  version-sensitive — diff against a real exported flow if import complains.
+-->
+<ImportExportXml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Entities />
+  <Roles />
+
+  <Workflows>
+    <Workflow WorkflowId="{11111111-1111-1111-1111-111111111101}" Name="Percy-Orchestrator">
+      <JsonFileName>/Workflows/Percy-Orchestrator-11111111111111111111111111111101.json</JsonFileName>
+      <Type>1</Type>
+      <Subprocess>0</Subprocess>
+      <Category>5</Category>            <!-- 5 = modern cloud flow -->
+      <Mode>0</Mode>
+      <Scope>4</Scope>
+      <OnDemand>0</OnDemand>
+      <TriggerOnCreate>0</TriggerOnCreate>
+      <TriggerOnDelete>0</TriggerOnDelete>
+      <AsyncAutoDelete>0</AsyncAutoDelete>
+      <SyncWorkflowLogOnFailure>0</SyncWorkflowLogOnFailure>
+      <StateCode>1</StateCode>          <!-- 1 = Activated -->
+      <StatusCode>2</StatusCode>
+      <RunAs>1</RunAs>
+      <IsTransacted>1</IsTransacted>
+      <IntroducedVersion>1.0.0.0</IntroducedVersion>
+      <IsCustomizable>1</IsCustomizable>
+      <PrimaryEntity>none</PrimaryEntity>
+      <LocalizedNames>
+        <LocalizedName languagecode="1033" description="Percy-Orchestrator" />
+      </LocalizedNames>
+    </Workflow>
+
+    <Workflow WorkflowId="{11111111-1111-1111-1111-111111111102}" Name="Percy-Tool-CompleteCare">
+      <JsonFileName>/Workflows/Percy-Tool-CompleteCare-11111111111111111111111111111102.json</JsonFileName>
+      <Type>1</Type>
+      <Subprocess>0</Subprocess>
+      <Category>5</Category>
+      <Mode>0</Mode>
+      <Scope>4</Scope>
+      <OnDemand>0</OnDemand>
+      <TriggerOnCreate>0</TriggerOnCreate>
+      <TriggerOnDelete>0</TriggerOnDelete>
+      <AsyncAutoDelete>0</AsyncAutoDelete>
+      <SyncWorkflowLogOnFailure>0</SyncWorkflowLogOnFailure>
+      <StateCode>1</StateCode>
+      <StatusCode>2</StatusCode>
+      <RunAs>1</RunAs>
+      <IsTransacted>1</IsTransacted>
+      <IntroducedVersion>1.0.0.0</IntroducedVersion>
+      <IsCustomizable>1</IsCustomizable>
+      <PrimaryEntity>none</PrimaryEntity>
+      <LocalizedNames>
+        <LocalizedName languagecode="1033" description="Percy-Tool-CompleteCare" />
+      </LocalizedNames>
+    </Workflow>
+    <!-- TODO: replicate a <Workflow> block + /Workflows json for the other 7 tools (Locate, CAP,
+         IBExpand, CustomerCentricity, IPGreenLake, Accreditation, Summary) — see flows-manifest.md. -->
+  </Workflows>
+
+  <connectionreferences>
+    <connectionreference connectionreferencelogicalname="percy_sp">
+      <connectionreferencedisplayname>Percy SharePoint</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_sharepointonline</connectorid>
+      <iscustomizable>1</iscustomizable>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
+    <connectionreference connectionreferencelogicalname="percy_pbi">
+      <connectionreferencedisplayname>Percy Power BI</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_powerbi</connectorid>
+      <iscustomizable>1</iscustomizable>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
+    <connectionreference connectionreferencelogicalname="percy_copilot">
+      <connectionreferencedisplayname>Percy Copilot Studio</connectionreferencedisplayname>
+      <connectorid>/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio</connectorid>
+      <iscustomizable>1</iscustomizable>
+      <statecode>0</statecode>
+      <statuscode>1</statuscode>
+    </connectionreference>
+  </connectionreferences>
+
+  <environmentvariabledefinitions>
+    <environmentvariabledefinition schemaname="percy_WorkspaceId">
+      <displayname default="Percy Power BI Workspace Id" />
+      <type>100000000</type>            <!-- 100000000 = String/Text -->
+      <introducedversion>1.0.0.0</introducedversion>
+      <iscustomizable>1</iscustomizable>
+      <!-- No default value: set the Current Value per environment on import. -->
+    </environmentvariabledefinition>
+    <environmentvariabledefinition schemaname="percy_DatasetId">
+      <displayname default="Percy Semantic Model (Dataset) Id" />
+      <type>100000000</type>
+      <introducedversion>1.0.0.0</introducedversion>
+      <iscustomizable>1</iscustomizable>
+    </environmentvariabledefinition>
+    <environmentvariabledefinition schemaname="percy_SiteUrl">
+      <displayname default="Percy SharePoint Site URL" />
+      <type>100000000</type>
+      <introducedversion>1.0.0.0</introducedversion>
+      <iscustomizable>1</iscustomizable>
+    </environmentvariabledefinition>
+    <environmentvariabledefinition schemaname="percy_ListName">
+      <displayname default="Percy SharePoint List Name" />
+      <type>100000000</type>
+      <introducedversion>1.0.0.0</introducedversion>
+      <iscustomizable>1</iscustomizable>
+      <environmentvariabledefaultvalue>PercyConversations</environmentvariabledefaultvalue>
+    </environmentvariabledefinition>
+  </environmentvariabledefinitions>
+
+  <EntityMaps />
+  <EntityRelationships />
+  <OrganizationSettings />
+  <optionsets />
+  <CustomControls />
+  <Languages>
+    <Language>1033</Language>
+  </Languages>
+</ImportExportXml>

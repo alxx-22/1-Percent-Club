@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Package content types for the unpacked Percy solution. Required at the root of the pack folder. -->
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="xml" ContentType="application/octet-stream" />
+  <Default Extension="json" ContentType="application/octet-stream" />
+</Types>

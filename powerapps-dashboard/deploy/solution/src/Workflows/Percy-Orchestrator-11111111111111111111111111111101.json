@@ -1,0 +1,71 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": { "connectionReferenceLogicalName": "percy_sp" },
+        "api": { "name": "shared_sharepointonline" }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "comment": "SCAFFOLD. Site/list come from environment variables percy_SiteUrl / percy_ListName — bind them in the portal (env-var references are not cleanly hand-authorable; the ##...## tokens are placeholders). The 'Run Percy agent' step is a placeholder HTTP action — replace with the Copilot Studio agent action bound to connection reference percy_copilot.",
+      "parameters": {},
+      "triggers": {
+        "When_an_item_is_created_or_modified": {
+          "type": "OpenApiConnection",
+          "recurrence": { "frequency": "Minute", "interval": 1 },
+          "inputs": {
+            "host": { "connectionName": "shared_sharepointonline", "operationId": "GetOnUpdatedItems", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+            "parameters": { "dataset": "##percy_SiteUrl##", "table": "##percy_ListName##" }
+          }
+        }
+      },
+      "actions": {
+        "Only_fresh_asks": {
+          "type": "If",
+          "expression": {
+            "and": [
+              { "equals": [ "@triggerBody()?['Status']", "Pending" ] },
+              { "equals": [ "@empty(triggerBody()?['AnswerText'])", true ] }
+            ]
+          },
+          "actions": {
+            "Run_Percy_agent": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "https://REPLACE-with-copilot-studio-agent-endpoint",
+                "body": { "ConversationJson": "@triggerBody()?['ConversationJson']", "UserEmail": "@triggerBody()?['UserEmail']" }
+              }
+            },
+            "Compose_AnswerText": {
+              "type": "Compose",
+              "runAfter": { "Run_Percy_agent": [ "Succeeded" ] },
+              "inputs": "@if(empty(trim(coalesce(body('Run_Percy_agent')?['text'], ''))), 'Sorry, I couldn''t answer that one — please try again.', body('Run_Percy_agent')?['text'])"
+            },
+            "Write_AnswerText_Answered": {
+              "type": "OpenApiConnection",
+              "runAfter": { "Compose_AnswerText": [ "Succeeded" ] },
+              "inputs": {
+                "host": { "connectionName": "shared_sharepointonline", "operationId": "PatchItem", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+                "parameters": { "dataset": "##percy_SiteUrl##", "table": "##percy_ListName##", "id": "@triggerBody()?['ID']", "item/AnswerText": "@outputs('Compose_AnswerText')", "item/Status": "Answered" }
+              }
+            },
+            "On_error_write_friendly_answer": {
+              "type": "OpenApiConnection",
+              "runAfter": { "Run_Percy_agent": [ "Failed", "TimedOut" ], "Write_AnswerText_Answered": [ "Failed", "TimedOut" ] },
+              "inputs": {
+                "host": { "connectionName": "shared_sharepointonline", "operationId": "PatchItem", "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline" },
+                "parameters": { "dataset": "##percy_SiteUrl##", "table": "##percy_ListName##", "id": "@triggerBody()?['ID']", "item/AnswerText": "Sorry, I couldn't reach the assistant just now — please try again.", "item/Status": "Answered" }
+              }
+            }
+          },
+          "else": { "actions": {} }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

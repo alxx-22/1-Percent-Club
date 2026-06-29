@@ -1,0 +1,76 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_powerbi": {
+        "runtimeSource": "embedded",
+        "connection": { "connectionReferenceLogicalName": "percy_pbi" },
+        "api": { "name": "shared_powerbi" }
+      },
+      "shared_microsoftcopilotstudio": {
+        "runtimeSource": "embedded",
+        "connection": { "connectionReferenceLogicalName": "percy_copilot" },
+        "api": { "name": "shared_microsoftcopilotstudio" }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "comment": "SCAFFOLD. Pattern for ALL 8 tool flows — only the input(s), DAX body, and projection differ (see ../../flows-manifest.md). Workspace/Dataset come from env vars percy_WorkspaceId / percy_DatasetId (bind in portal; ##...## are placeholders). DAX = build pack Template B; keep the @@OPE@@ token. OPE regex validation happens in Copilot Studio before this is called.",
+      "parameters": {},
+      "triggers": {
+        "When_Copilot_Studio_calls_the_flow": {
+          "type": "OpenApiConnectionWebhook",
+          "inputs": {
+            "host": { "connectionName": "shared_microsoftcopilotstudio", "operationId": "CreateFlowTrigger", "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio" },
+            "parameters": { "schema": { "type": "object", "properties": { "ope": { "type": "string" } } } }
+          }
+        }
+      },
+      "actions": {
+        "Validate_ope_not_empty": {
+          "type": "If",
+          "expression": { "and": [ { "equals": [ "@empty(triggerBody()?['ope'])", false ] } ] },
+          "actions": {
+            "Compose_DaxQuery": {
+              "type": "Compose",
+              "inputs": "@replace('DEFINE VAR Ope = \"@@OPE@@\" VAR OppRows = FILTER ( ''Final'', ''Final''[HPE Opportunity Id] = Ope ) EVALUATE ROW ( \"OPE\", Ope, \"Found\", IF ( COUNTROWS ( OppRows ) > 0, \"Yes\", \"No\" ), \"CCPointsTotal\", MAXX ( OppRows, ''Final''[CC Points Final] ) + 0 )', '@@OPE@@', toUpper(trim(triggerBody()?['ope'])))"
+            },
+            "Run_a_query_against_a_dataset": {
+              "type": "OpenApiConnection",
+              "runAfter": { "Compose_DaxQuery": [ "Succeeded" ] },
+              "inputs": {
+                "host": { "connectionName": "shared_powerbi", "operationId": "ExecuteQueries", "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerbi" },
+                "parameters": { "groupId": "##percy_WorkspaceId##", "datasetId": "##percy_DatasetId##", "requestBody": { "queries": [ { "query": "@outputs('Compose_DaxQuery')" } ], "serializerSettings": { "includeNulls": true } } }
+              }
+            },
+            "Compose_Evidence": {
+              "type": "Compose",
+              "runAfter": { "Run_a_query_against_a_dataset": [ "Succeeded" ] },
+              "inputs": "@first(outputs('Run_a_query_against_a_dataset')?['body/firstTableRows'])"
+            },
+            "Respond_to_Copilot": {
+              "type": "OpenApiConnection",
+              "runAfter": { "Compose_Evidence": [ "Succeeded" ] },
+              "inputs": {
+                "host": { "connectionName": "shared_microsoftcopilotstudio", "operationId": "RespondToFlow", "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio" },
+                "parameters": { "evidence": "@string(outputs('Compose_Evidence'))" }
+              }
+            }
+          },
+          "else": {
+            "actions": {
+              "Respond_invalid_ope": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": { "connectionName": "shared_microsoftcopilotstudio", "operationId": "RespondToFlow", "apiId": "/providers/Microsoft.PowerApps/apis/shared_microsoftcopilotstudio" },
+                  "parameters": { "evidence": "{\"error\":\"invalid_ope\"}" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "1.0.0.0"
+}

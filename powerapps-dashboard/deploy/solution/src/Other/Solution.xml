@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SCAFFOLD — unpacked Dataverse solution manifest for Percy.
+  Placeholder GUIDs/prefix; pack with `pac solution pack` then test-import in a Dataverse env.
+  The GUARANTEED-valid zip comes from building the components in the maker portal and Exporting.
+  RootComponent types: 29 = Workflow (cloud flow), 10070 = connectionreference, 380 = environment
+  variable definition. (Verify these against your platform version — they are version-sensitive.)
+-->
+<ImportExportXml version="9.2.0.0" SolutionPackageVersion="9.2" languagecode="1033" generatedBy="CrmLive" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SolutionManifest>
+    <UniqueName>Percy1PctClub</UniqueName>
+    <LocalizedNames>
+      <LocalizedName description="Percy 1% Club" languagecode="1033" />
+    </LocalizedNames>
+    <Descriptions>
+      <Description description="Percy assistant: Copilot Studio agent + diagnostic flows." languagecode="1033" />
+    </Descriptions>
+    <Version>1.0.0.0</Version>
+    <Managed>0</Managed>
+    <Publisher>
+      <UniqueName>percypub</UniqueName>
+      <LocalizedNames>
+        <LocalizedName description="Percy Publisher" languagecode="1033" />
+      </LocalizedNames>
+      <Descriptions />
+      <EMailAddress xsi:nil="true" />
+      <SupportingWebsiteUrl xsi:nil="true" />
+      <CustomizationPrefix>percy</CustomizationPrefix>
+      <CustomizationOptionValuePrefix>10000</CustomizationOptionValuePrefix>
+      <Addresses />
+    </Publisher>
+    <RootComponents>
+      <!-- Cloud flows (type 29). One row per flow; behavior 0 = include. -->
+      <RootComponent type="29" id="{11111111-1111-1111-1111-111111111101}" behavior="0" />
+      <RootComponent type="29" id="{11111111-1111-1111-1111-111111111102}" behavior="0" />
+      <!-- TODO: add the other 7 tool flows here once their .json + Customizations entries exist. -->
+      <!-- Connection references (type 10070). -->
+      <RootComponent type="10070" schemaName="percy_sp" behavior="0" />
+      <RootComponent type="10070" schemaName="percy_pbi" behavior="0" />
+      <RootComponent type="10070" schemaName="percy_copilot" behavior="0" />
+      <!-- Environment variable definitions (type 380). -->
+      <RootComponent type="380" schemaName="percy_WorkspaceId" behavior="0" />
+      <RootComponent type="380" schemaName="percy_DatasetId" behavior="0" />
+      <RootComponent type="380" schemaName="percy_SiteUrl" behavior="0" />
+      <RootComponent type="380" schemaName="percy_ListName" behavior="0" />
+      <!-- Copilot Studio agent (bot) — NOT hand-authored here. Add it in the portal inside this
+           solution, then re-export so its components land in Solution.xml / Customizations.xml. -->
+    </RootComponents>
+    <MissingDependencies />
+  </SolutionManifest>
+</ImportExportXml>
