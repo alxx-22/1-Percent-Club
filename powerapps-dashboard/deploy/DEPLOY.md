@@ -15,7 +15,7 @@ Honest reliability tiers up front, then the order of operations.
 |---|---|---|---|
 | ✅ **Already done / run-and-done** | SharePoint `PercyConversations` list | (you have it) — [`sharepoint/Provision-PercyConversations.ps1`](sharepoint/Provision-PercyConversations.ps1) is greenfield-only | Idempotent if you ever rebuild. For your build: just confirm `Status` exists. |
 | ✅ **Paste-and-use** | Percy instructions + DAX | [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md), [`flows/dax-templates.md`](flows/dax-templates.md) → build pack §10 | Correct, ready to paste. |
-| 🛠️ **Build by hand (no import)** | Power Automate flows | [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md), [`flows/Percy-Tools.build.md`](flows/Percy-Tools.build.md) | Click-by-click designer steps (every action/field/expression). This environment can't import flows. |
+| 🛠️ **Build by hand (no import)** | Power Automate flows (×2) | [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md), [`flows/Percy-Query.build.md`](flows/Percy-Query.build.md) | Click-by-click designer steps. Two flows total: the orchestrator + the one `Percy-Query` (Switch over template keys). This environment can't import flows. |
 | ❌ **Configure by hand** | Copilot Studio agent · Power Apps canvas app | [`copilot-studio/`](copilot-studio/) (paste-in) | No reliable hand-import. The app stays the copy-paste `.powerfx` in [`../formulas/percy/`](../formulas/percy/). |
 
 There is **no single "import everything" button** without a Dataverse managed-solution (the
@@ -32,13 +32,13 @@ flows are **built by hand from the instructions**, and the rest is paste-ready.
    + dataset Build**. Note the **workspace id** and **dataset id**. Confirm whether the model stores
    the OPE with or without the `OPE-` prefix (sets the normalisation in the tool flows).
 
-3. **Tool flows** (×8) — build by hand following [`flows/Percy-Tools.build.md`](flows/Percy-Tools.build.md)
-   (build one, clone for the rest), pasting the matching DAX from
-   [`flows/dax-templates.md`](flows/dax-templates.md). Copilot trigger → validate → Power BI "Run a
-   query against a dataset" → return JSON.
+3. **`Percy-Query`** (one flow) — build by hand following [`flows/Percy-Query.build.md`](flows/Percy-Query.build.md):
+   Copilot trigger (`template`,`ope`,`who`) → **`Switch(template)`** pastes the matching DAX from
+   [`flows/dax-templates.md`](flows/dax-templates.md) → Power BI "Run a query against a dataset" →
+   return `firstTableRows`. The agent passes a **template key, never DAX**.
 
 4. **Copilot Studio agent (Percy)** — paste [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md)
-   (append the §9 rules), add the 8 tool flows as actions, add topics from
+   (append the §9 rules), add the one `Percy-Query` flow as the action "Run Percy Diagnostic", add topics from
    [`copilot-studio/topics.md`](copilot-studio/topics.md), generative orchestration on, web/general
    knowledge off. Publish.
 

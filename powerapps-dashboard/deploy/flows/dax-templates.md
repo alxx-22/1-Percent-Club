@@ -1,24 +1,25 @@
-# DAX bodies for the Percy tool flows
+# DAX bodies for `Percy-Query`
 
-The **canonical, commented DAX** for every tool lives in
+The **canonical, commented DAX** for every template lives in
 [`../../formulas/percy/backend/PERCY_BUILD_PACK.md` §10](../../formulas/percy/backend/PERCY_BUILD_PACK.md#10-dax-templates).
-This file is the **deployment mapping**: which flow uses which template, what parameter it injects,
-and the exact Power BI action payload. Keep §10 as the single source of truth — copy each query from
-there into the matching flow.
+This file is the **deployment mapping**: which **template key** (the `Switch` case in the single
+`Percy-Query` flow — see [`Percy-Query.build.md`](Percy-Query.build.md)) uses which DAX, what it
+inserts, and the Power BI action output. Keep §10 as the single source of truth — copy each query
+into the matching `Switch` case.
 
-## Tool flow → template → input
+## template key → DAX → insert
 
-| Tool flow | Build-pack template | Input param(s) injected | Returns |
+| `template` (Switch case) | Build-pack DAX | Insert | Returns |
 |---|---|---|---|
-| `Percy-Tool-Locate`            | A | `Ope` | existence across schemes |
-| `Percy-Tool-CompleteCare`      | B | `Ope` | New Logo / Uplift evidence |
-| `Percy-Tool-CAP`               | E | `Ope`, `Who` | engagement + order + name-match |
-| `Percy-Tool-IBExpand`          | H | `Ope` | renewal+expand + CC-suppression |
-| `Percy-Tool-CustomerCentricity`| F | `Ope`, `Who` | per-meeting classification + name-match |
-| `Percy-Tool-IPGreenLake`       | I | `Who` | monthly % tier |
-| `Percy-Tool-Accreditation`     | J | `Who` | S-coded / CSM eligibility |
-| `Percy-Tool-Summary`           | G | `Who` | all categories + pending |
-| *(reference only)*             | C, D | `Ope` | current / expected CC points |
+| `Locate`             | A | `ope` | existence across schemes |
+| `CompleteCare`       | B | `ope` | New Logo / Uplift evidence |
+| `CAP`                | E | `ope`, `who` | engagement + order + name-match |
+| `IBExpand`           | H | `ope` | renewal+expand + CC-suppression |
+| `CustomerCentricity` | F | `ope`, `who` | per-meeting classification + name-match |
+| `IPGreenLake`        | I | `who` | monthly % tier |
+| `Accreditation`      | J | `who` | S-coded / CSM eligibility |
+| `Summary`            | G | `who` | all categories + pending |
+| *(reference only)*   | C, D | `ope` | current / expected CC points |
 
 ## Dropping the OPE / email into the DAX (the simple way)
 
@@ -45,7 +46,7 @@ which runs **before** the action is called:
 ## Power BI action — "Run a query against a dataset"
 
 Connector: **Power BI**, action **Run a query against a dataset** (added in the designer — see
-[`Percy-Tools.build.md`](Percy-Tools.build.md) step 5).
+[`Percy-Query.build.md`](Percy-Query.build.md) step 5).
 
 - **Workspace** = the workspace holding the 1% Club semantic model.
 - **Dataset** = the semantic model.
