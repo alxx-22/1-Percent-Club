@@ -22,6 +22,12 @@ There is **no single "import everything" button** without a Dataverse managed-so
 premium/service-principal path you've ruled out), and this environment can't import flows — so the
 flows are **built by hand from the instructions**, and the rest is paste-ready.
 
+> **Packaging-as-a-solution (test):** an alternative that bundles the **agent + all 9 flows** into
+> one portable Dataverse solution is documented in
+> [`solution/SOLUTION-PACKAGING.md`](solution/SOLUTION-PACKAGING.md) — colour-coded for every manual
+> input, with limitations called out. It needs Dataverse in the target and that the target permits
+> solution import; build-by-hand here stays the fallback.
+
 ## Order of operations
 
 1. **SharePoint** — you already have `PercyConversations` with `ConversationJson` + `AnswerText`.
