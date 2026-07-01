@@ -43,15 +43,28 @@ For **each case** (`Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentric
    - *(Plain text + dynamic content — **no** `fx replace()`, no quote-doubling. DAX `=` on text is
      case-insensitive, so no upper-casing needed.)*
 
+> ⚠️ **Inside each branch put the `Compose` ONLY — do NOT add the Power BI "Run a query" action here.**
+> Each branch's whole job is to *set its DAX text*. The query runs **once, after the Switch** (step 5).
+> Adding the Power BI action inside a branch means building + maintaining it 8× and re-picking the
+> workspace/dataset each time — that's the trap. One branch = one `Compose`, nothing else.
+
 In the Switch's **Default**, respond with the error in step 7 (no DAX runs).
 
 > **Collect the result with one Compose:** after the Switch, add **Compose `DaxQuery`** =
 > `coalesce(outputs('Dax_Locate'), outputs('Dax_CompleteCare'), outputs('Dax_CAP'), outputs('Dax_IBExpand'), outputs('Dax_CustomerCentricity'), outputs('Dax_IPGreenLake'), outputs('Dax_Accreditation'), outputs('Dax_Summary'))`
 > — only the matched case ran, so `coalesce` returns that case's DAX.
+>
+> ⚠️ **Match the names to YOUR branches — spaces become underscores.** In `outputs('…')` Power Automate
+> uses each Compose's *internal* name, where every space is an underscore. If you named a branch
+> **"Dax CC"** reference it as `outputs('Dax_CC')`; **"Dax IPGreenLake"** → `outputs('Dax_IPGreenLake')`.
+> A mismatch here is the usual cause of a `null`/empty `DaxQuery`.
 
-## 5. Run the query (Power BI) — once, after the Switch
-Add **Power BI → Run a query against a dataset**.
-- **Workspace / Dataset:** the 1% Club workspace + semantic model.
+## 5. Run the query (Power BI) — ONE action, after the Switch (not one per branch)
+Add **Power BI → Run a query against a dataset** — **a single action, placed *after* the Switch**, fed
+by `DaxQuery`. (Do not add one inside each Switch case — see the warning in step 4.)
+- **Workspace / Dataset:** the 1% Club workspace + semantic model. *(These two, plus Query text, are
+  what a fresh action needs — until all three are set the action shows **"⚠️ Invalid parameters,"**
+  which is expected, not a placement error.)*
 - **Query text:** the **Outputs** of `DaxQuery`.
 - Returns **`firstTableRows`** — an array of row objects keyed by the DAX column names in `[...]`.
 

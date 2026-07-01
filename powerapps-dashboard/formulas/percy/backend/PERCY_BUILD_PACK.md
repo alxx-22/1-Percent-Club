@@ -598,6 +598,12 @@ echoes**. One flow replaces the earlier eight per-metric flows, while keeping ev
 - **Logic:** validate inputs → **`Switch(template)`** sets the approved DAX (§10) with `ope`/`who`
   dropped in → **Power BI "Run a query against a dataset"** → return `firstTableRows`. An unknown key
   hits the `default` branch → `{ "error":"unknown_template" }`, so **only approved queries ever run**.
+- **Shape (this trips people up):** each Switch case holds **only a `Compose Dax_<key>`** — its DAX
+  text, nothing else. **After** the Switch, a single `Compose DaxQuery = coalesce(<all branch Composes>)`
+  picks whichever branch ran, feeding **one** Power BI "Run a query" action. The query action is
+  **placed once, after the Switch — NOT one inside each branch** (that would mean maintaining it 8×).
+  In the `coalesce`, reference each Compose by its internal name (spaces → underscores: `Dax CC` →
+  `outputs('Dax_CC')`). Click-by-click: [`Percy-Query.build.md`](../../../deploy/flows/Percy-Query.build.md) steps 4–5.
 - **Output:** `evidence` (string) = the `firstTableRows` JSON array — **one** row for the single-row
   templates, **several** rows for `CustomerCentricity` (one per logged meeting). Percy reads the array
   and explains it in plain English; it never echoes the JSON.

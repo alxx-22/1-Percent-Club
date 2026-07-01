@@ -48,9 +48,19 @@ which runs **before** the action is called:
 Connector: **Power BI**, action **Run a query against a dataset** (added in the designer — see
 [`Percy-Query.build.md`](Percy-Query.build.md) step 5).
 
+> **Placement: ONE action, *after* the Switch — not one per branch.** Each Switch case holds only a
+> `Compose Dax_<key>` (its DAX text). After the Switch, a single `Compose DaxQuery = coalesce(all the
+> branch Composes)` picks whichever branch ran, and this **one** Power BI action reads it. Adding the
+> query action inside every branch means maintaining it 8× — don't.
+
 - **Workspace** = the workspace holding the 1% Club semantic model.
 - **Dataset** = the semantic model.
 - **Query text** = the **Outputs** of your `DaxQuery` Compose (the injected DAX).
+
+> In the `coalesce`, reference each branch by its **internal** name — spaces become underscores
+> (`Dax CC` → `outputs('Dax_CC')`). A blank/`null` `DaxQuery` (and a Power BI action stuck on
+> **"Invalid parameters"**) is almost always a name mismatch here, or the Workspace/Dataset/Query
+> fields not yet filled — not a wiring problem.
 
 The connector returns **`firstTableRows`** — an array of row objects whose keys are the DAX column
 names in square brackets:
