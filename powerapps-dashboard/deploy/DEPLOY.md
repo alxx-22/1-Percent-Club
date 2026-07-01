@@ -30,6 +30,14 @@ flows are **built by hand from the instructions**, and the rest is paste-ready.
 
 ## Order of operations
 
+> ⚠️ **Before you start — environment governance (DLP/ACP).** The **SharePoint**, **Power BI**, and
+> **Copilot Studio agent** (`agentnode`) connectors must all be in the **same DLP data group** for
+> your environment, or flows that combine them are blocked. Symptom when the agent connector is
+> disallowed: adding the "Run a prompt / call an agent" action fails with **status 442 — "Request
+> blocked due to data loss prevention (DLP) or advanced connector policies (ACP)"**. Fix = a Power
+> Platform admin allows the Copilot Studio connector in that environment's data policy (Admin Center →
+> **Policies → Data policies**). See [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md).
+
 1. **SharePoint** — you already have `PercyConversations` with `ConversationJson` + `AnswerText`.
    **Just confirm a single-line-text `Status` column exists** (values `Pending` / `Answered`).
    *(Skip the provisioning script — it builds the alternative Shape-B layout for a greenfield app.)*

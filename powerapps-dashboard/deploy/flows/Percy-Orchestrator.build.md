@@ -6,6 +6,17 @@ Shape-A app (`ConversationJson` in → `AnswerText` out, `Status` `Pending → A
 
 **Connections used:** SharePoint, and the Copilot Studio agent action. No premium, no service principal.
 
+> ⚠️ **Governance prerequisite (DLP/ACP).** SharePoint, Power BI, **and** the **Copilot Studio agent**
+> connector (runtime name `agentnode`, the "Run a prompt / call an agent" action) must all sit in the
+> **same DLP data group** for this environment. If the agent connector is Blocked or in a different
+> group, adding the agent action fails at design time with **status 442 — "Request blocked due to
+> data loss prevention (DLP) or advanced connector policies (ACP)"** (it can't even fetch the output
+> schema). Fix: a Power Platform admin moves the Copilot Studio connector into the same group as
+> SharePoint/Power BI (Admin Center → **Policies → Data policies** → the policy covering this
+> environment), or adds an ACP exception for `agentnode`. Policy changes take a few minutes to
+> propagate. Build in an environment where this connector is allowed (the **default** environment is
+> often the most restricted).
+
 > **Trigger = "When an item is created" (not "created or modified").** The app writes a **new row on
 > every send**, and each row carries the **whole conversation so far** in `ConversationJson` (it's the
 > cumulative transcript, so the agent always has full context). One created row = one question to
