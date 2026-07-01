@@ -14,14 +14,19 @@ so you may need few explicit topics. Add these where you want deterministic beha
 | **IB / Expand Diagnostic** | "IB points", "expand", "pen rate", "win-back" | Run Percy Diagnostic (template `IBExpand`, ope) → motions + CC-suppression. |
 | **IP in GreenLake Diagnostic** | "IP points", "GreenLake", "monthly %" | Run Percy Diagnostic (template `IPGreenLake`, who) → tier. |
 | **Accreditation Diagnostic** | "accreditation", "S-coded", "CSM", "the race" | Run Percy Diagnostic (template `Accreditation`, who) → eligibility/status. |
-| **Fallback / Clarification** | (no match / missing input) | Greeting/nonsense → friendly menu; missing OPE → ask; ambiguous metric → template `Locate` or ask. |
+| **Clarify & Guide** (the vague one) | "why aren't my points showing", "where are my points", "I should have more" | **Act first:** Run Percy Diagnostic (template `Summary`, who) → lead with total + **pending**, then offer "send me the OPE". Metric named but no OPE → ask only for the OPE. Bare OPE → `Locate` then route. **One question at a time; never dump the list.** |
+| **Refresh Dashboard** | "refresh", "update the dashboard", "not there yet", "I closed it today", "not updating" | Call **Refresh Dashboard** action → "kicked off a refresh, check back in a few minutes" (or "already updating"). One per request. |
+| **Fallback / Clarification** | (no match / off-topic) | Greeting/nonsense → friendly one-liner on what Percy can do; off-topic → politely redirect. Never loop; never dump the category list. |
 
-## The one action to add (build pack §15.2)
+## The two actions to add (build pack §15.2)
 
-Add the single `Percy-Query` flow as the action **"Run Percy Diagnostic"**, with inputs
-**`template`** (Locate · CompleteCare · CAP · IBExpand · CustomerCentricity · IPGreenLake ·
-Accreditation · Summary), **`ope`**, **`who`**. Give it the description from build pack §15.2 so
-orchestration fills the right `template` key. The agent passes a **key, never DAX**.
+1. **"Run Percy Diagnostic"** = the `Percy-Query` flow, inputs **`template`** (Locate · CompleteCare ·
+   CAP · IBExpand · CustomerCentricity · IPGreenLake · Accreditation · Summary), **`ope`**, **`who`**.
+   Description from build pack §15.2 so orchestration fills the right `template`. The agent passes a
+   **key, never DAX**.
+2. **"Refresh Dashboard"** = the `Percy-Refresh` flow, **no inputs**. Description: *"Refresh the 1%
+   Club dashboard data. Use when the user asks to refresh/update, or a deal isn't showing yet. Returns
+   a short status."* One refresh per request.
 
 ## Settings
 - Generative orchestration: **on**.

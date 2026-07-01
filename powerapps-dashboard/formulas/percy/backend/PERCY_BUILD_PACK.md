@@ -58,14 +58,18 @@ Complete Care logic were read from the live TMDL and the dashboard build
 between *"answer from the rules"* and *"run a diagnostic lookup"*, and only an agent that can
 **call a controlled action and then reason over its result** does that cleanly.
 
-### 1.2 Two flows total
+### 1.2 The flows
 
-There are **exactly two Power Automate flows**:
+**One orchestrator + two agent actions:**
 
 | Flow | Trigger | Role |
 |---|---|---|
 | **`Percy-Orchestrator`** (main) | SharePoint *item created/modified* on `PercyConversations` | Guards the row, hands the conversation JSON to the Percy agent, writes the plain-text answer, sets Status. |
-| **`Percy-Query`** (the one diagnostic action) | *Called by Copilot Studio* (agent action) | The agent passes an **approved template key** (`CompleteCare`, `CAP`, …) + `ope`/`who` — **never DAX**. The flow `Switch`es to the matching **approved DAX template** (§10), runs it via the **Power BI connector** (signed-in shared connection), and returns **compact JSON evidence**. One flow for all diagnostics (§7). |
+| **`Percy-Query`** (diagnostic action, read-only) | *Called by Copilot Studio* (agent action) | The agent passes an **approved template key** (`CompleteCare`, `CAP`, …) + `ope`/`who` — **never DAX**. The flow `Switch`es to the matching **approved DAX template** (§10), runs it via the **Power BI connector** (signed-in shared connection), and returns **compact JSON evidence**. One flow for all diagnostics (§7). |
+| **`Percy-Refresh`** (refresh action) | *Called by Copilot Studio* (agent action) | The agent calls it when the user asks to refresh / a deal isn't in the data yet. It triggers a **Power BI "Refresh a dataset"** on the semantic model and returns a short status (started / already running). No inputs. (§7.5) |
+
+> *(A future `Add Points` action — programme owners asking Percy to award points — is deliberately
+> deferred; it needs approval/identity context and a governed write path. Not in scope here.)*
 
 > **Why one flow, not eight, and why the agent passes a *key* not a *query*.** The 8 per-metric
 > flows were near-identical, so they collapse into one `Percy-Query` with a `Switch`. Crucially the
@@ -313,64 +317,86 @@ You receive the conversation as a JSON array of objects with "Seq", "Role" and "
 Never answer an older user message; always act on the latest one.
 
 OPE NUMBERS
-An OPE is an opportunity id like "OPE-123456789". Extract it from the latest user message, or
-from earlier context if the user clearly still means the same one. Accept it with or without the
-"OPE-" prefix and with surrounding text. If a diagnostic is needed and no OPE is present anywhere
-in the conversation, ASK for the OPE before calling any tool.
+An OPE is a deal id like "OPE-123456789". Pull it from the latest message OR anywhere earlier in the
+chat. Accept it messy: with/without the "OPE-" prefix, wrong case, extra words, a stray space. If a
+check needs an OPE and there's none anywhere, ask in plain words ("what's the deal number? it looks
+like OPE-123456789") — but first see the GOLDEN RULES: usually you can act without asking.
 
-ROUTING — WHEN TO DO WHAT
-1. FAQ / "how does X score?" / rule questions  → answer DIRECTLY from the Programme Rules below.
-   Do not call a tool. State exact point values from the rules.
-2. "Why can't I see points for OPE-…" / "check <metric> for OPE-…" / a specific opportunity
-   → this is a DIAGNOSTIC. IDENTIFY THE METRIC, then call the ONE action "Run Percy Diagnostic"
-   with the matching template key (map below). Explain the returned evidence in plain English.
-3. Metric unclear but OPE present → if context makes the metric obvious, proceed; otherwise ask
-   which points they expected (Complete Care, CAP, Customer Centricity, IB/Expand, IP in GreenLake,
-   or Accreditation). If they just say "why no points for this opp?" with no metric, call the action
-   with template "Locate" first to see which schemes it touches, then dig into the relevant one.
-4. Greeting / nonsense / mixed ("beep boop how do i get points") → be friendly, extract any real
-   intent, and answer the real part (e.g. give the "how to earn points" overview).
+GOLDEN RULES FOR VAGUE MESSAGES (this is MOST of what you'll get)
+Salespeople will often just say "why aren't my points showing", paste an OPE with no context, or name
+a scheme loosely ("the cc thing", "my meetings", "cap"). Handle it like this:
+1. ACT BEFORE YOU ASK. If a quick lookup will probably answer them, DO IT, then reply. Asking is a
+   last resort, not a first move.
+2. ONE SMALL QUESTION AT A TIME. If you must ask, ask for the single most useful thing, in plain
+   words. NEVER ask for two things at once. NEVER dump the list of point types at them.
+3. ASSUME GOOD INTENT. Work out what they mean through typos, no capitals, no prefix, extra words.
+4. NEVER LOOP. If one clarifying question doesn't get you there, give them the most useful thing you
+   can (their summary, or the how-to) and invite an OPE.
 
-IDENTIFY THE METRIC (map the user's words to a template key for the action):
-- "complete care", "CC", "9X", "new logo", "uplift"                → template "CompleteCare" (OPE)
-- "CAP request/engagement", "support request", "Gemma signed off"  → template "CAP" (OPE [+email])
-- "CAP order", "CAP-generated order", "campaign code"              → template "CAP" (OPE [+email])
-- "customer meeting", "channel meeting", "leadership intro",
-  "logged an event/activity", "CUSTOMER/CHANNEL/LEADERSHIP"        → template "CustomerCentricity" (OPE [+email])
-- "IB", "expand", "renewal + expand", "pen rate", "win-back"        → template "IBExpand" (OPE)
-- "IP", "GreenLake", "IP in GL", "monthly %"                        → template "IPGreenLake" (email)
-- "accreditation", "S-coded", "CSM", "the race", "completion"       → template "Accreditation" (email)
-- "how many do I have", "what's pending", "my total"               → template "Summary" (email)
-- metric unclear / "no points at all"                              → template "Locate" (OPE)
+THE TWO MESSAGES YOU'LL GET MOST — do exactly this:
+A) "Why aren't my points showing?" / "where are my points" / "I should have more" (no deal, no metric)
+   → Call Run Percy Diagnostic, template Summary (their email). Tell them their total and, crucially,
+     what's PENDING (waiting on approval is the #1 reason points look missing). Then OFFER, don't
+     demand: "Is there a particular deal you're chasing? Pop the OPE in and I'll check it." Do NOT ask
+     them to choose a category.
+B) A bare OPE, or "why no points on OPE-123456789" (a deal, but no metric)
+   → Call template Locate (that OPE) to see which schemes the deal is in, then:
+     • in exactly ONE scheme → go straight to that scheme's diagnostic. Don't ask.
+     • in MORE THAN ONE → say what's on it plainly and ask which they meant ("This one's got a CAP
+       request and a couple of meetings logged — were you after the CAP points or the meeting points?").
+     • in NONE → "I can't find that deal in the scoring yet — double-check the number, or it might just
+       need a refresh. Want me to refresh the dashboard?"
 
-THE ONLY DIAGNOSTIC ACTION — "Run Percy Diagnostic" (Percy-Query)
-You may ONLY obtain data by calling the single action "Run Percy Diagnostic". You pass:
-  • template = exactly one of: Locate, CompleteCare, CAP, IBExpand, CustomerCentricity,
-    IPGreenLake, Accreditation, Summary
-  • ope     = the OPE number (for opportunity templates)
-  • who     = the user's email (for CAP, CustomerCentricity, IPGreenLake, Accreditation, Summary)
-NEVER write, request, or pass DAX — you only ever pass a template key and ope/who. The approved
-query lives inside the action. Call it once per diagnostic unless the user asks about several
-metrics. Pass the user's email for CAP and CustomerCentricity so the name-match check runs (those
-two schemes are credited by the logged-in person's NAME, and a name mismatch silently kills points).
-If the action returns "not found" or an error, say so plainly and suggest next steps — never guess.
+ROUTING
+1. FAQ / "how do I get points / where do I log / do I need a code" → answer from the Programme Rules
+   below. No tool. Give the exact number.
+2. A deal + a clear metric → call Run Percy Diagnostic with the matching template (map below).
+3. Vague deal question → use the TWO MESSAGES playbook above (Summary or Locate first — act, don't ask).
+4. "Refresh / update the dashboard", "my points aren't there yet", "I closed it today", "it's not
+   updating" → offer or run the Refresh Dashboard action (see ACTIONS).
+5. Greeting / nonsense / off-topic → be friendly, pull out any real intent and answer that; if there's
+   none, say in one line what you can help with (points questions, checking a deal, refreshing the board).
 
-COMMON "WHY ISN'T IT SHOWING" CAUSES (use the tool's flags to pick the real one, in plain English):
-- Pending approval (status blank) — VERY common; say "pending sign-off", not "ineligible".
-- Logged under a different/mistyped name than your dashboard name (CAP request, meetings).
-- Meeting subject doesn't START with CUSTOMER / CHANNEL / LEADERSHIP (typo or wrong prefix).
+MAP LOOSE WORDS → template (be generous — match sloppy phrasing):
+   complete care / CC / "the cc thing" / new logo / uplift / 9x        → CompleteCare (ope)
+   cap / cap request / support request / gemma / cap order / campaign  → CAP (ope + who)
+   meeting / customer / channel / leadership / "my events" / activity  → CustomerCentricity (ope + who)
+   IB / expand / renewal / pen rate / win-back / naked box             → IBExpand (ope)
+   IP / greenlake / GL / monthly %                                     → IPGreenLake (who)
+   accreditation / accred / s-coded / csm / "the race" / completion    → Accreditation (who)
+   "how many points do I have" / "what's pending" / "my total"         → Summary (who)
+   just an OPE, or "why no points", metric unclear                     → Locate (ope) → then route
+
+ACTIONS — YOU HAVE TWO (never touch the data any other way)
+1. "Run Percy Diagnostic" (READ-ONLY). Pass template (one key above) + ope and/or who. You NEVER
+   write, request, or pass a query/DAX — only a template key + ope/who. Call it once per diagnostic
+   (unless they ask about several metrics). Pass the user's email (who) for CAP and CustomerCentricity
+   so the name-match runs (those credit by the logged person's NAME — a mismatch silently kills points).
+2. "Refresh Dashboard" (REFRESHES THE DATA). Use it when the user asks to refresh/update, or when a
+   deal isn't found / points "should be there by now". Say a refresh takes a few minutes and to check
+   back shortly. One refresh per request — don't spam it. If it says a refresh is already running, tell
+   them it's already updating.
+If an action returns "not found" or an error, say so plainly and give the next step (often: refresh, or
+double-check the number) — never guess a number.
+
+COMMON REASONS POINTS AREN'T SHOWING (pick the real one from the evidence, say it simply):
+- Waiting on approval (status blank) — VERY common; say "pending sign-off", not "ineligible".
+- Logged under a different or mistyped name than theirs (CAP requests, meetings).
+- Meeting subject doesn't START with CUSTOMER / CHANNEL / LEADERSHIP (typo or wrong first word).
 - Close date before the 1 May 2026 cut-off.
-- Opportunity not won yet (Complete Care / IB points land on win).
-- Complete Care points already scored on the opp, which suppresses IB/Expand on the same opp.
-- Opp not found yet (typo, or new opp awaiting a data refresh).
+- Deal not won yet (Complete Care / IB points land when it's won).
+- Complete Care already scoring on the deal, so IB/Expand isn't paid on the same deal.
+- Just closed / very new → the data may not have refreshed yet (offer a refresh).
+- Deal not found at all (wrong number, or awaiting a refresh).
 
 HARD RULES
 - NEVER invent programme rules, point values, dates, or eligibility criteria. If the rules below
   don't cover it, say you can only help with the 1% Club rules you know, and suggest who to ask.
-- NEVER invent an opportunity's data. If you haven't called a tool, you don't know its status.
+- NEVER invent a deal's data. If you haven't run a check, you don't know its status.
 - NEVER expose JSON/DAX/table names/entity IDs. Translate everything into business language.
-- If the available evidence does not confirm an answer, say what you can confirm and what is
-  uncertain, and give the most likely reason(s) — don't overstate certainty.
+- If the evidence doesn't confirm it, say what you CAN confirm and what's uncertain, and give the
+  most likely reason — don't overstate certainty.
+- Keep replies short. Lead with the answer, then (if useful) one next step.
 
 PROGRAMME RULES (your only source of truth for scoring)
 << paste the nine rules from §9 here, verbatim >>
@@ -384,16 +410,27 @@ Copilot Studio routes either via **generative orchestration** (recommended — t
 tool descriptions drive routing) or classic **trigger-phrase topics**. Define these topics so
 behaviour is explicit and testable.
 
+> **Design for vague input.** Most real messages are short and underspecified ("why aren't my
+> points showing", a bare OPE, "cap??"). The topics below are built to **act first** (Summary /
+> Locate) and only ask when they must — one small question at a time. See the instruction block §5
+> ("GOLDEN RULES" + "THE TWO MESSAGES") — the topics implement it.
+
 ### 6.1 `Process SharePoint Conversation JSON` (system / first)
 - **Purpose:** normalise input every turn — parse the JSON, isolate the latest user message,
-  collect prior OPE/metric context.
+  collect prior OPE/metric context, and classify how vague it is.
 - **Trigger:** runs first on every invocation (On-Conversation-Start / highest priority).
 - **Inputs:** `ConversationJson` (string), `UserEmail`.
 - **Decision logic:** parse array → select `Role="user"` with max `Seq` → set `var_LatestText`.
-  Scan all `Body` values for an OPE regex → `var_OPE`. Infer `var_Metric` from keywords
-  (Complete Care / CC / "complete care", CAP, Customer Centricity / meeting, IB / expand, IP /
-  GreenLake, accreditation).
-- **Output:** sets variables; routes to the matching topic below. No user-facing text.
+  **Scan ALL `Body` values** (not just the latest) for an OPE with a forgiving regex
+  (`OPE-?\d{6,12}`, case-insensitive, allow surrounding text) → `var_OPE`. Infer `var_Metric` from
+  **loose** keywords (cc / "cc thing" / new logo / uplift; cap / support request / gemma / campaign;
+  meeting / customer / channel / leadership / event; ib / expand / renewal / pen rate; ip / greenlake;
+  accred / s-coded / csm / race; refresh / update / "not there yet"). Set `var_Shape`:
+  `has_ope+has_metric` · `has_ope_only` · `metric_only` · `neither` · `refresh` · `faq`.
+- **Output:** sets `var_LatestText / var_OPE / var_Metric / var_Shape`; routes:
+  `has_ope+metric`→scheme topic · `has_ope_only`→Locate (6.4→route) · `metric_only`→scheme topic (ask
+  OPE) · `neither`→Clarify (6.11, defaults to Summary) · `refresh`→Refresh (6.12) · `faq`→FAQ. No
+  user-facing text.
 
 ### 6.2 Query routing map (symptom → metric → template key)
 
@@ -499,12 +536,40 @@ matching **template key**. The DAX behind each key lives in the flow (§7), not 
   complete / excluded), or the CSM 30.
 
 ### 6.10 `Fallback / Clarification`
-- **Purpose:** handle greetings, nonsense, ambiguous/missing inputs.
-- **Trigger:** no other topic matched, or required input missing.
-- **Decision logic:** greeting/nonsense → friendly nudge + "how to earn points" menu. Diagnostic
-  intent but no OPE (for an opp-level metric) → ask for the OPE. OPE but ambiguous metric → call
-  `Run Percy Diagnostic` (template `Locate`), or ask which metric.
-- **Output:** one short clarifying question OR the helpful overview. Never a tool call.
+- **Purpose:** handle greetings, nonsense, off-topic.
+- **Trigger:** no other topic matched.
+- **Decision logic:** greeting/nonsense/mixed → be friendly, pull out any real intent and answer
+  that; if there's genuinely none, one line on what Percy can do (points questions · check a deal ·
+  refresh the board). Off-topic → politely redirect. **Never loop; never dump the category list.**
+- **Output:** one short friendly line. Usually no tool call.
+
+### 6.11 `Clarify & Guide` (the vague-message handler — the important one)
+- **Purpose:** the catch for the most common real message — **vague, no deal, no metric** ("why
+  aren't my points showing", "where are my points", "I should have more"). Act first, don't interrogate.
+- **Trigger:** `var_Shape = neither` (diagnostic intent, no OPE, no clear metric); low-context.
+- **Decision logic (act-before-ask):**
+  1. **Default to Summary.** Call `Run Percy Diagnostic` (template **`Summary`**, who) and lead with
+     their total + **what's pending** (approval is the #1 reason points look missing).
+  2. Then **offer** one next step: "Chasing a particular deal? Pop the OPE in and I'll check it." —
+     do **not** ask them to pick a category.
+  3. If they only named a **metric** but no OPE (`var_Shape = metric_only`) → ask the single thing you
+     need: "Sure — what's the deal number? (looks like OPE-123456789)". One question, plain words.
+  4. If they gave a **bare OPE** (`var_Shape = has_ope_only`) → this is the Locate path (6.4 routes
+     here): call `Locate`, then route to the one scheme, or say what's on the deal and ask which they
+     meant. Don't ask before Locate.
+- **Output:** their summary (+ pending) and an open door, OR one small clarifying question. Never two
+  questions; never a wall of text.
+
+### 6.12 `Refresh Dashboard`
+- **Purpose:** refresh the data when a deal isn't in the scoring yet or the user asks to update.
+- **Trigger phrases:** "refresh", "update the dashboard", "my points aren't there yet", "I closed it
+  today", "it's not updating", "still not showing after…". Also reached from other topics when a
+  diagnostic returns *not found* / *just closed*.
+- **Inputs:** none.
+- **Decision logic:** call the **Refresh Dashboard** action (`Percy-Refresh`, §7.5) → tell them a
+  refresh takes a few minutes and to check back. **One refresh per request** — if it reports one is
+  already running, say it's already updating. Don't loop refreshes.
+- **Output:** a short "kicked off a refresh — check back in a few minutes" (or "already updating").
 
 ---
 
@@ -603,6 +668,34 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - **Connection:** least-privilege **signed-in shared account** with workspace read + dataset
   **Build**; rotate per policy. The `activeCCContract` flag mirrors the model's entity-id match
   (§11 caveat) — Percy speaks to it qualitatively, never quotes IDs.
+
+### 7.5 `Percy-Refresh` — the second action (refresh the dashboard)
+The agent's other action. Simple by design (build steps: `deploy/flows/Percy-Refresh.build.md`).
+
+- **Purpose:** kick a data refresh so newly-closed deals / logged activity show up. Percy calls it
+  when the user asks to "refresh/update" the dashboard, or when a diagnostic returns *not found* /
+  *just closed*.
+- **Trigger:** Copilot Studio calls the flow. **No inputs** (it always refreshes the one 1% Club
+  semantic model).
+- **Logic:** **Power BI → Refresh a dataset** (workspace + dataset from env/config) → return a short
+  status to the agent.
+- **Output:** `status` (string) — `"started"` | `"already_running"` | `"error"`.
+- **What Percy says:**
+  - `started` → "I've kicked off a refresh — it takes a few minutes. Check back shortly and your
+    points should be up to date."
+  - `already_running` → "A refresh is already running — give it a few minutes and it'll be current."
+  - `error` → "I couldn't start a refresh just now — try again shortly, or ping the programme team."
+- **Guardrails / notes:**
+  - **Rate limits:** Power BI caps scheduled+API refreshes per day (Pro ~8/day, Premium/PPU ~48).
+    The flow should **not** refresh on a loop — **one refresh per user request**; if a refresh is in
+    progress, return `already_running` rather than starting another. (Check the last refresh status
+    before triggering, or just handle the connector's "another refresh is in progress" response.)
+  - **Read/refresh only:** this triggers a refresh; it does **not** write to the model. It's the
+    only "action that changes something," and even then only the data's freshness.
+  - **Connection:** the same signed-in shared account (needs dataset refresh permission).
+- **Future (deferred):** an `Add Points` action (programme owners award points) is **out of scope**
+  — it needs approver identity, an approval/audit trail, and a governed write to the source, not a
+  quick action. Design it separately when ready.
 
 ## 8. Complete Care diagnostic logic
 
@@ -1199,6 +1292,23 @@ suppression)*
 > same opp — so the points are coming through under Complete Care instead, not as IB/Expand. Nothing's
 > missing; it's just counted in the other category.
 
+**"why arent my points showing"** *(vague — no deal, no metric → **act first** with template
+`Summary`, don't interrogate)*
+> You're on **175 points** so far. Two things are sitting as **pending approval** — a CAP order (50)
+> waiting on Gemma, and a customer meeting (10) waiting on your manager — so they'll land once
+> signed off. If there's a particular deal you're chasing, pop its OPE number in and I'll check it.
+
+**"OPE-123456789"** *(a bare deal number, nothing else → template `Locate`, then route)*
+> Found it. This one's got a **CAP request** and a couple of **meetings** logged, but no CAP order
+> yet. Which were you expecting points for — the CAP engagement, or the meetings?
+
+**"i closed OPE-123456789 today but nothing's showing"** *(recency → check, then offer refresh)*
+> Nice one on closing it! It can take a little while to flow through — the scoring data may not have
+> refreshed since you won it. Want me to **refresh the dashboard**? It'll be up to date in a few minutes.
+
+**"refresh the dashboard"** *(explicit → Refresh Dashboard action)*
+> Done — I've kicked off a refresh. Give it a few minutes and your points should be up to date. 👍
+
 ---
 
 ## 13. Testing plan
@@ -1210,8 +1320,8 @@ suppression)*
 | 3 | FAQ: campaign code | "Do I need a campaign code for Complete Care?" | `[…]` | FAQ/CC | — | none | "No campaign code for CC" | Correct "no", mentions CAP exception |
 | 4 | Diag: latest-msg selection | "why can't I see complete care points for OPE-123456789" preceded by greeting+nonsense+error | the 4-row example from the brief | CC diagnostic | `OPE-123456789` | template `CompleteCare` | CC explanation | Acts on **max-Seq user** row only; extracts OPE; calls CC tool |
 | 5 | Diag: explicit check | "Check Complete Care for OPE-123456789" | `[…]` | CC diagnostic | `OPE-123456789` | template `CompleteCare` | Evidence-based CC answer | Calls CC tool; no JSON/DAX leaked |
-| 6 | Diag: ambiguous metric | "Why can't I see points for OPE-123456789?" | `[…]` | Clarify | `OPE-123456789` | none (yet) | Asks CC/CAP/CustCent? | Asks one clarifying question; no tool until answered |
-| 7 | Diag: missing OPE | "why aren't my complete care points showing?" | `[…]` | CC diagnostic | — | none (yet) | Asks for the OPE | Asks for OPE; no tool call |
+| 6 | Bare OPE, no metric | "Why can't I see points for OPE-123456789?" | `[…]` | Probe (Locate) | `OPE-123456789` | template `Locate` | says what's on the deal; one scheme→diagnoses, many→asks which | **Acts first** (Locate), doesn't just ask; routes on schemes present |
+| 7 | Metric named, no OPE | "why aren't my complete care points showing?" | `[…]` | CC diagnostic | — | none (yet) | asks ONLY for the OPE, plain words | One question (the OPE); no tool until answered; no second question |
 | 8 | Diag: CAP | "It's a CAP order, why no points?" + earlier OPE | `[{user OPE…},{user "it's a CAP order…"}]` | CAP diagnostic | from context | template `CAP` | Approval/eligibility reason | Pulls OPE from context; calls CAP tool |
 | 9 | FAQ: log meeting | "Where do I log a customer meeting?" | `[…]` | FAQ/CustCent | — | none | SFDC path + CUSTOMER/CHANNEL/LEADERSHIP + values | Correct path & subject rule |
 | 10 | Nonsense + intent | "beep boop are you working how do i get points yeah cheers" | `[…]` | Fallback→FAQ | — | none | Friendly + 9-category overview | Stays friendly; answers the real part |
@@ -1237,6 +1347,14 @@ suppression)*
 | 30 | Accreditation CSM | "do I get points for my CSM cert?", `isCSM_L2plus:Yes` | `[…]` | Accreditation | — | template `Accreditation` | "30 on completion (CSM)" | Correct CSM value; excludes Adrian/Garren |
 | 31 | Overall summary | "how many points do I have / what's pending?" | `[…]` | Overall | — | template `Summary` | per-category + pending total | Uses dashboard category names; reports pending |
 | 32 | Wrong-tool guard | "complete care for OPE-…" must NOT call CAP | `[…]` | CC diagnostic | `OPE-…` | template `CompleteCare` only | CC answer | Exactly one call; correct template (CompleteCare), not CAP |
+| 33 | Vague — no OPE, no metric | "why arent my points showing" | `[…]` | Clarify→Summary | — | template `Summary` | total + **pending**, then "send me the OPE" | **Acts first** (Summary); leads with pending; offers OPE; does **not** ask them to pick a category |
+| 34 | Totally bare | "no points" | `[…]` | Clarify→Summary | — | template `Summary` | summary + one open offer | Never asks two things; never dumps the 9-list |
+| 35 | Loose metric + OPE | "cap?? OPE-123456789" | `[…]` | CAP | `OPE-123456789` | template `CAP` (+who) | CAP answer | Matches sloppy "cap"; passes email |
+| 36 | Messy casing / no prefix | "check complete care 123456789" | `[…]` | CC diagnostic | `OPE-123456789` | template `CompleteCare` | CC answer | Extracts OPE without prefix/caps |
+| 37 | Just closed → refresh | "closed OPE-123456789 today but no points" | `[…]` | Diagnose + refresh | `OPE-123456789` | `Locate`/`CompleteCare` then **offer Refresh** | "may not have refreshed yet — want me to refresh?" | Recognises recency; offers/does a refresh |
+| 38 | Explicit refresh | "refresh the dashboard" / "update it" | `[…]` | Refresh | — | **Refresh Dashboard** | "kicked off — check back in a few minutes" | Calls Refresh action; one refresh |
+| 39 | Refresh already running | as 38, action returns `already_running` | `[…]` | Refresh | — | **Refresh Dashboard** | "already updating" | Distinguishes already-running; doesn't re-fire |
+| 40 | Refresh no-loop | user asks refresh 3× in a row | `[…]` | Refresh | — | Refresh (guarded) | one refresh, then "already running" | Doesn't loop refreshes (rate-limit safe) |
 
 **Pass/fail criteria (global):** correct latest-message selection (max `Seq`, `Role="user"`);
 correct intent + OPE extraction; correct tool (or none); **plain-text** reply with **no** JSON/DAX/
@@ -1277,21 +1395,23 @@ not-found/error handling; no invented rules or numbers.
 - [ ] Scope + run-after error branch → `Status=Error`, friendly `Reply`, technical `ErrorMessage`.
 - [ ] Set trigger concurrency cap.
 
-**Power Automate — one diagnostic flow `Percy-Query`**
+**Power Automate — the two agent-action flows**
 - [ ] Build `Percy-Query`: Copilot trigger with inputs `template` + `ope` + `who` → **`Switch(template)`**
       sets the approved DAX (A/B/E/H/F/I/J/G) with `ope`/`who` dropped in → **Power BI → Run a query
       against a dataset** (signed-in shared connection) → return `firstTableRows`. `default` →
-      `{"error":"unknown_template"}`.
-- [ ] Validation (OPE regex `^OPE-?\d{6,12}$` / email = caller-or-admin) lives in **Copilot Studio**;
-      keep a non-empty backstop in the flow. The agent passes a **key, never DAX**.
-- [ ] Confirm the connection account has workspace read + dataset Build.
+      `{"error":"unknown_template"}`. Validation (OPE regex / email = caller-or-admin) lives in
+      **Copilot Studio**; non-empty backstop in the flow. The agent passes a **key, never DAX**.
+- [ ] Build `Percy-Refresh` (§7.5): Copilot trigger, **no inputs** → **Power BI → Refresh a dataset**
+      → return `status` (`started` / `already_running`). **One refresh per request** — don't loop
+      (Power BI daily refresh limits).
+- [ ] Confirm the connection account has workspace read + dataset **Build** + **refresh**.
 
 **Copilot Studio (Percy)**
-- [ ] Create agent; paste **Overview → Instructions** (§5 / §15) incl. the routing map + §9 rules.
-- [ ] Add the **one** action `Run Percy Diagnostic` (= `Percy-Query`); describe its `template` enum
-      (§15.2) so orchestration fills the right key per scheme.
-- [ ] Build topics (§6): Process JSON, Query routing map, General FAQ, CC/CAP/Customer Centricity/
-      IB-Expand/IP-GreenLake/Accreditation diagnostics, Fallback/Clarify.
+- [ ] Create agent; paste **Overview → Instructions** (§5 / §15) incl. GOLDEN RULES + TWO MESSAGES + §9 rules.
+- [ ] Add **two** actions: `Run Percy Diagnostic` (= `Percy-Query`, describe its `template` enum,
+      §15.2) and `Refresh Dashboard` (= `Percy-Refresh`, no inputs).
+- [ ] Build topics (§6): Process JSON, routing map, FAQ, the six diagnostics, **Clarify & Guide**
+      (vague → Summary first), **Refresh Dashboard**, Fallback.
 - [ ] Enable generative orchestration; turn off web/general knowledge so Percy stays on-rules.
 - [ ] Publish; connect the agent action in `Percy-Orchestrator`.
 
@@ -1314,11 +1434,11 @@ not-found/error handling; no invented rules or numbers.
 ### 15.1 Percy Overview Instructions
 *(Paste into Copilot Studio → Overview → Instructions — full text in [§5](#5-percy-copilot-studio-overview-instructions); append the [§9](#9-programme-rules-canonical) rules verbatim.)*
 
-### 15.2 The one action + its description (for Copilot Studio orchestration)
-Percy has **one** diagnostic action, `Run Percy Diagnostic` (`Percy-Query`), with inputs
-**`template`** (enum) + **`ope`** + **`who`**. Describe it so orchestration fills the right key:
+### 15.2 The two actions + their descriptions (for Copilot Studio orchestration)
+Percy has **two** actions:
 
-> *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the opp exist /
+**1. `Run Percy Diagnostic` (`Percy-Query`)** — inputs **`template`** (enum) + **`ope`** + **`who`**:
+> *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the deal exist /
 > which schemes — input ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope), `CAP` (CAP engagement
 > 20 + order 50, incl. 'request isn't showing' — ope and the user's email), `CustomerCentricity`
 > (logged customer/channel/leadership meetings, incl. mistyped subject — ope and email), `IBExpand`
@@ -1327,6 +1447,10 @@ Percy has **one** diagnostic action, `Run Percy Diagnostic` (`Percy-Query`), wit
 > as `who` for CAP/CustomerCentricity so the name-match check runs. Returns compact evidence JSON to
 > interpret in plain English. Never send DAX — only a template key and ope/who."*
 
+**2. `Refresh Dashboard` (`Percy-Refresh`)** — **no inputs**:
+> *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
+> showing yet / was just closed. Returns a short status. One refresh per request."*
+
 ### 15.3 Power Automate flow outline
 **`Percy-Orchestrator`:** `When item created/modified` → **guard `Status=Pending` & empty `AnswerText`**
 → read `ConversationJson` off the item → **Run Percy agent** → sanitise → `Update item: AnswerText
@@ -1334,6 +1458,8 @@ Percy has **one** diagnostic action, `Run Percy Diagnostic` (`Percy-Query`), wit
 `Status=Answered`.
 **`Percy-Query`:** Copilot trigger (`template`,`ope`,`who`) → **`Switch(template)`** sets approved DAX
 → Power BI *Run a query against a dataset* → return `firstTableRows`; unknown key → error.
+**`Percy-Refresh`:** Copilot trigger (no inputs) → Power BI *Refresh a dataset* → return `status`
+(`started` / `already_running`). One refresh per request.
 
 ### 15.4 DAX templates
 A Locate · **B Complete Care diagnosis** · C current points by OPE · D expected CC points ·
@@ -1342,8 +1468,9 @@ summary · **J Accreditation** — all in [§10](#10-dax-templates); open items 
 [§10.8](#108-what-could-not-be-written-from-the-schema-todo-not-guessed).
 
 ### 15.5 Test matrix
-32 cases in [§13](#13-testing-plan), covering latest-message selection, intent/OPE extraction,
-per-scheme tool routing (Complete Care, CAP request/order, Customer Centricity, IB/Expand, IP,
+40 cases in [§13](#13-testing-plan), covering vague/low-context handling (Summary-first, Locate,
+one-question-at-a-time), refresh (incl. already-running / no-loop), latest-message selection,
+intent/OPE extraction, per-scheme tool routing (Complete Care, CAP request/order, Customer Centricity, IB/Expand, IP,
 Accreditation, Locate, Summary), the granular failure modes (name mismatch, mistyped meeting
 subject, CC-suppresses-IB, pending-vs-ineligible, IP tiers, accreditation eligibility), plain-text/
 no-leak guards, not-found/error handling, and the Power Apps duplicate-submit guard.
