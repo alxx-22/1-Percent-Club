@@ -37,8 +37,9 @@ For **each case** (`Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentric
 1. Add **Data Operation → Compose** named e.g. `Dax_CompleteCare`.
 2. In its **Inputs**, **paste that template's DAX as plain text** from [`dax-templates.md`](dax-templates.md)
    (→ build pack §10). On the `VAR Ope = "…"` line, **clear what's between the quotes** and insert the
-   **`ope`** input from **Dynamic content**. For `CAP`/`CustomerCentricity`, also clear the
-   `VAR Who = "…"` quotes and insert the **`who`** input.
+   **`ope`** input from **Dynamic content**. For the **owner/name templates** (`CompleteCare`,
+   `IBExpand`, `CAP`, `CustomerCentricity`), also clear the `VAR Who = "…"` quotes and insert the
+   **`who`** input.
    - *(Plain text + dynamic content — **no** `fx replace()`, no quote-doubling. DAX `=` on text is
      case-insensitive, so no upper-casing needed.)*
 
@@ -74,9 +75,9 @@ Save. Add this one flow to the Percy agent as the action **"Run Percy Diagnostic
 When Copilot Studio calls the flow   (inputs: template, ope, who)
 ├─ Switch(template)
 │   ├─ Locate              → Compose Dax_Locate              (Template A, insert ope)
-│   ├─ CompleteCare        → Compose Dax_CompleteCare        (Template B, insert ope)
+│   ├─ CompleteCare        → Compose Dax_CompleteCare        (Template B, insert ope + who)
 │   ├─ CAP                 → Compose Dax_CAP                 (Template E, insert ope + who)
-│   ├─ IBExpand            → Compose Dax_IBExpand            (Template H, insert ope)
+│   ├─ IBExpand            → Compose Dax_IBExpand            (Template H, insert ope + who)
 │   ├─ CustomerCentricity  → Compose Dax_CustomerCentricity  (Template F, insert ope + who)
 │   ├─ IPGreenLake         → Compose Dax_IPGreenLake         (Template I, insert who)
 │   ├─ Accreditation       → Compose Dax_Accreditation       (Template J, insert who)
@@ -92,9 +93,9 @@ When Copilot Studio calls the flow   (inputs: template, ope, who)
 | `template` | DAX (§10 / dax-templates.md) | Insert | Returns |
 |---|---|---|---|
 | `Locate` | A | ope | counts per scheme |
-| `CompleteCare` | B | ope | CC evidence (1 row) |
+| `CompleteCare` | B | ope + who | CC evidence + credits-to-you (1 row) |
 | `CAP` | E | ope + who | CAP evidence (1 row) |
-| `IBExpand` | H | ope | IB evidence (1 row) |
+| `IBExpand` | H | ope + who | IB evidence + credits-to-you (1 row) |
 | `CustomerCentricity` | F | ope + who | one row per meeting |
 | `IPGreenLake` | I | who | tier (1 row) |
 | `Accreditation` | J | who | eligibility (1 row) |

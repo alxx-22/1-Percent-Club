@@ -358,10 +358,10 @@ ROUTING
    none, say in one line what you can help with (points questions, checking a deal, refreshing the board).
 
 MAP LOOSE WORDS → template (be generous — match sloppy phrasing):
-   complete care / CC / "the cc thing" / new logo / uplift / 9x        → CompleteCare (ope)
+   complete care / CC / "the cc thing" / new logo / uplift / 9x        → CompleteCare (ope + who)
    cap / cap request / support request / gemma / cap order / campaign  → CAP (ope + who)
    meeting / customer / channel / leadership / "my events" / activity  → CustomerCentricity (ope + who)
-   IB / expand / renewal / pen rate / win-back / naked box             → IBExpand (ope)
+   IB / expand / renewal / pen rate / win-back / naked box             → IBExpand (ope + who)
    IP / greenlake / GL / monthly %                                     → IPGreenLake (who)
    accreditation / accred / s-coded / csm / "the race" / completion    → Accreditation (who)
    "how many points do I have" / "what's pending" / "my total"         → Summary (who)
@@ -370,8 +370,10 @@ MAP LOOSE WORDS → template (be generous — match sloppy phrasing):
 ACTIONS — YOU HAVE TWO (never touch the data any other way)
 1. "Run Percy Diagnostic" (READ-ONLY). Pass template (one key above) + ope and/or who. You NEVER
    write, request, or pass a query/DAX — only a template key + ope/who. Call it once per diagnostic
-   (unless they ask about several metrics). Pass the user's email (who) for CAP and CustomerCentricity
-   so the name-match runs (those credit by the logged person's NAME — a mismatch silently kills points).
+   (unless they ask about several metrics). Pass the user's email (who) for CompleteCare, IBExpand,
+   CAP and CustomerCentricity — it's how the check confirms the points credit to THIS person:
+   CompleteCare/IBExpand credit by owner email (a deal can score points that go to someone else),
+   CAP/CustomerCentricity credit by name (a mismatch silently kills points).
 2. "Refresh Dashboard" (REFRESHES THE DATA). Use it when the user asks to refresh/update, or when a
    deal isn't found / points "should be there by now". Say a refresh takes a few minutes and to check
    back shortly. One refresh per request — don't spam it. If it says a refresh is already running, tell
@@ -441,19 +443,21 @@ matching **template key**. The DAX behind each key lives in the flow (§7), not 
 | User says / symptom | Metric | template key | DAX behind it (§10) | Pass |
 |---|---|---|---|---|
 | "does this opp exist", "no points at all", metric unclear | (probe) | `Locate` | A | ope |
-| "complete care", "CC", "new logo", "uplift", "9X" | Complete Care | `CompleteCare` | B | ope |
+| "complete care", "CC", "new logo", "uplift", "9X" | Complete Care | `CompleteCare` | B | ope + who |
 | "CAP request not showing", "support request", "engagement", "Gemma" | CAP engagement (20) | `CAP` | E | ope (+who) |
 | "CAP order", "CAP-generated order", "campaign code", "why no 50" | CAP order (50) | `CAP` | E | ope (+who) |
 | "customer meeting", "channel meeting", "leadership intro", "logged event/activity" | Customer Centricity | `CustomerCentricity` | F | ope (+who) |
-| "IB", "expand", "renewal + expand", "pen rate", "win-back" | IB / Expand | `IBExpand` | H | ope |
+| "IB", "expand", "renewal + expand", "pen rate", "win-back" | IB / Expand | `IBExpand` | H | ope + who |
 | "IP", "GreenLake", "IP in GL", "monthly %" | IP in GreenLake | `IPGreenLake` | I | who |
 | "accreditation", "S-coded", "CSM", "the race", "completion" | Accreditation | `Accreditation` | J | who |
 | "how many points do I have", "what's pending", "my total" | all | `Summary` | G | who |
 
-> **Pass the user's email (`who`)** with the `CAP` and `CustomerCentricity` templates whenever you
-> have it (you usually do — it's on the SharePoint row). Those two schemes credit by the logged
-> person's **name**, so the query resolves the caller's dashboard name and flags a **name mismatch** —
-> a frequent reason points "don't flow."
+> **Pass the user's email (`who`)** with `CompleteCare`, `IBExpand`, `CAP` and `CustomerCentricity`
+> whenever you have it (you usually do — it's on the SharePoint row). It's how the query checks the
+> points actually **credit to THIS user**: `CompleteCare`/`IBExpand` credit by **owner email**
+> (opportunity owner / primary pipeline owner / OS sales), so a deal can score points that go to
+> someone else (`CreditsToYou = No`); `CAP`/`CustomerCentricity` credit by **name**, so it flags a
+> **name mismatch**. Both are frequent reasons points "don't flow" to the person asking.
 
 ### 6.3 `General 1% Club FAQ`
 - **Purpose:** answer rule questions directly, no tool call.
@@ -469,8 +473,10 @@ matching **template key**. The DAX behind each key lives in the flow (§7), not 
 - **Trigger phrases:** "complete care", "CC points", "complete care for OPE", "why no complete care".
 - **Inputs:** `var_OPE` (required), context.
 - **Decision logic:** see §8. No OPE → ask for it. OPE present → call `Run Percy Diagnostic`
-  (template **`CompleteCare`**, ope) → interpret flags (found, product line, sales motion, close
-  date, active contract, awarded points, in-funnel) → plain-English explanation.
+  (template **`CompleteCare`**, ope **+ who**) → interpret flags (found, product line, sales motion,
+  close date, active contract, awarded points, in-funnel, **credits-to-you**) → plain-English
+  explanation. **If it scores CC points but `creditsToYou = No`, that's the answer** — the deal
+  credits to the opportunity/pipeline owner, not the caller.
 - **Output:** plain text: what's confirmed, the points (if any), and the most likely reason if zero.
 
 ### 6.5 `CAP Diagnostic`
@@ -506,11 +512,12 @@ matching **template key**. The DAX behind each key lives in the flow (§7), not 
 - **Purpose:** explain IB Upsell / Expand Pen Rate points (1 per 4% expand, ≤25) for an OPE.
 - **Trigger phrases:** "IB points", "expand", "renewal plus expand", "pen rate", "win-back", "naked box".
 - **Inputs:** `var_OPE` (required).
-- **Decision logic:** call `Run Percy Diagnostic` (template **`IBExpand`**, ope) → needs BOTH a
-  renewal/IB motion AND
-  an expand/new motion, **Won**, close ≥ 1 May. **Key gotcha:** if the opp already scores Complete
-  Care points, IB/Expand is **suppressed on that opp by design** — say so. If not won, it shows in the
-  funnel only.
+- **Decision logic:** call `Run Percy Diagnostic` (template **`IBExpand`**, ope **+ who**) → needs
+  BOTH a renewal/IB motion AND
+  an expand/new motion, **Won**, close ≥ 1 May. **Key gotchas:** (1) if the opp already scores
+  Complete Care points, IB/Expand is **suppressed on that opp by design** — say so; (2) if it earns
+  IB/Expand but **`creditsToYou = No`**, it credits to the owner / pipeline / OS-sales person, not the
+  caller. If not won, it shows in the funnel only.
 - **Output:** plain text with the awarded value or the blocker (incl. the CC-suppression case).
 
 ### 6.8 `IP in GreenLake Diagnostic`
@@ -599,9 +606,9 @@ echoes**. One flow replaces the earlier eight per-metric flows, while keeping ev
 | `template` | Metric | DAX (§10) | Needs | Returns |
 |---|---|---|---|---|
 | `Locate` | existence probe | A | `ope` | counts per scheme |
-| `CompleteCare` | Complete Care 100 / 75 | B | `ope` | CC evidence (1 row) |
+| `CompleteCare` | Complete Care 100 / 75 | B | `ope` (+`who`) | CC evidence + credits-to-you (1 row) |
 | `CAP` | CAP engagement 20 + order 50 | E | `ope` (+`who`) | CAP evidence (1 row) |
-| `IBExpand` | IB / Expand ≤25 | H | `ope` | IB evidence (1 row) |
+| `IBExpand` | IB / Expand ≤25 | H | `ope` (+`who`) | IB evidence + credits-to-you (1 row) |
 | `CustomerCentricity` | meetings 10 / 10 / 20 | F | `ope` (+`who`) | one row **per meeting** |
 | `IPGreenLake` | IP tier 10–75 | I | `who` | tier (1 row) |
 | `Accreditation` | S-coded race + CSM | J | `who` | eligibility (1 row) |
@@ -615,8 +622,9 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - some > 0 → "I found OPE-… — it's in the opportunity data, has a CAP request and two logged meetings, but no CAP order. Which did you want to dig into?"
 - all 0 → "I can't find that opportunity anywhere yet — double-check the number, or it may be awaiting a refresh."
 
-**`CompleteCare`** — `{ ope, found, opportunityName, account, forecastCategory, closeDate, hasCCProductLine, hasNewSolutionMotion, hasDay1Motion, closedOnOrAfter1May2026, activeCCContract, newLogoPointsAwarded, upliftPointsAwarded, ccPointsTotal, inFunnelNotYetWon }`.
-- `ccPointsTotal=100` → "scoring the full 100 Complete Care New Logo points."
+**`CompleteCare`** — `{ ope, found, opportunityName, account, forecastCategory, closeDate, opportunityOwner, primaryPipelineOwner, creditsToYou, hasCCProductLine, hasNewSolutionMotion, hasDay1Motion, closedOnOrAfter1May2026, activeCCContract, newLogoPointsAwarded, upliftPointsAwarded, ccPointsTotal, inFunnelNotYetWon }`.
+- `ccPointsTotal=100`, `creditsToYou=Yes` → "scoring the full 100 Complete Care New Logo points — and they're crediting to you."
+- `ccPointsTotal>0`, `creditsToYou=No` → "this deal IS scoring Complete Care points, but they're crediting to **<opportunityOwner>** (the opportunity / pipeline owner), not you. If you should hold it, get the owner updated on the deal."
 - `inFunnelNotYetWon=Yes`, total 0 → "qualifies on product and timing, but it hasn't been **Won** yet — points land on win."
 - `activeCCContract=Yes` → "customer already has an active Complete Care contract, so it fails the **New Logo** condition; an uplift would score 75 — want me to re-check as uplift?"
 - `hasCCProductLine=No` → "no Complete Care product lines on this opp, so it isn't picking up CC points."
@@ -630,8 +638,9 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - order: won + qualifies + approval blank → "**won and eligible** but **pending Gemma's validation** — 50 points on approval; also confirm campaign code **UKIMEA CSLV CAP Adoption**."
 - `capWonCloseQualifies=No` → "close date before 1 May 2026, the CAP-order cut-off."
 
-**`IBExpand`** — `{ ope, found, forecastCategory, closeDate, closedOnOrAfter1May2026, hasRenewalIBMotion, hasExpandNewMotion, completeCarePointsPresent, expandPointsAwarded, inFunnelNotYetWon }`.
-- `expandPointsAwarded>0` → "scoring <n> IB/Expand points (renewal + expand, capped 25)."
+**`IBExpand`** — `{ ope, found, forecastCategory, closeDate, opportunityOwner, primaryPipelineOwner, creditsToYou, closedOnOrAfter1May2026, hasRenewalIBMotion, hasExpandNewMotion, completeCarePointsPresent, expandPointsAwarded, inFunnelNotYetWon }`.
+- `expandPointsAwarded>0`, `creditsToYou=Yes` → "scoring <n> IB/Expand points (renewal + expand, capped 25)."
+- `expandPointsAwarded>0`, `creditsToYou=No` → "this deal earns IB/Expand points, but they credit to **<opportunityOwner>** (owner / pipeline / OS sales), not you."
 - `completeCarePointsPresent=Yes`, award 0 → "already scores Complete Care points; IB/Expand isn't awarded on the same opp — it's counted under Complete Care instead."
 - one motion missing → "IB/Expand needs **both** a renewal/IB motion and an expand motion; I only see one."
 - `inFunnelNotYetWon=Yes` → "qualifies but hasn't been **won** yet — IB/Expand lands on win."
@@ -705,10 +714,16 @@ The exact reasoning Percy follows (mirrors the model in §11). Decision order:
 0. No OPE anywhere in the conversation?            → ASK for the OPE. Stop.
 1. OPE present but metric unclear, context unclear → ASK "Complete Care, CAP, or Customer
                                                        Centricity?". Stop.
-2. Metric = Complete Care, OPE present             → call `Run Percy Diagnostic` (template `CompleteCare`).
+2. Metric = Complete Care, OPE present             → call `Run Percy Diagnostic` (template
+                                                     `CompleteCare`, ope + who).
 3. found = No                                      → "can't find that opportunity yet" (refresh/typo).
-4. ccPointsTotal = 100                             → confirm New Logo 100.
-5. ccPointsTotal = 75                              → confirm Uplift 75.
+3b. ccPointsTotal > 0 AND creditsToYou = No         → **this is the answer:** the deal IS scoring CC
+                                                     points, but they credit to the opportunity /
+                                                     pipeline owner (name in the evidence), not the
+                                                     caller. Say who; suggest the owner be corrected
+                                                     if the caller should hold the deal. Stop.
+4. ccPointsTotal = 100 (creditsToYou = Yes)         → confirm New Logo 100.
+5. ccPointsTotal = 75 (creditsToYou = Yes)          → confirm Uplift 75.
 6. ccPointsTotal = 0 → explain using the flags, in this priority:
      a. hasCCProductLine = No        → no Complete Care product lines on the opp.
      b. closedOnOrAfter1May2026 = No → closed/created before the 1 May window.
@@ -732,15 +747,17 @@ The exact reasoning Percy follows (mirrors the model in §11). Decision order:
 
 **Likely reasons points are missing (Percy's checklist, plain English):**
 1. OPE not found in the data (typo, or new opp not yet refreshed).
-2. Opportunity not in the qualifying date window (cut-off 1 May 2026).
-3. No Complete Care product lines detected on the opportunity.
-4. Customer already has an active Complete Care contract → **New Logo** condition fails (could be
+2. **The deal scores CC points, but they credit to the opportunity / primary pipeline owner — not the
+   caller** (they're not the owner on the deal). Very common; check `creditsToYou` first.
+3. Opportunity not in the qualifying date window (cut-off 1 May 2026).
+4. No Complete Care product lines detected on the opportunity.
+5. Customer already has an active Complete Care contract → **New Logo** condition fails (could be
    an **Uplift** at 75 instead).
-5. Recognised as **Uplift**, not **New Logo** (so 75, not 100).
-6. Eligible but **not yet won** — Complete Care points are credited on win.
-7. Dashboard / semantic-model **refresh delay**.
-8. Unclear or incomplete source data (e.g. missing sales motion / entity id).
-9. The available guidance doesn't confirm it — Percy states what it can and flags the rest.
+6. Recognised as **Uplift**, not **New Logo** (so 75, not 100).
+7. Eligible but **not yet won** — Complete Care points are credited on win.
+8. Dashboard / semantic-model **refresh delay**.
+9. Unclear or incomplete source data (e.g. missing sales motion / entity id).
+10. The available guidance doesn't confirm it — Percy states what it can and flags the rest.
 
 > **Important nuance to honour:** the dashboard's **"New CC Logo Points"** column actually sums
 > **both** New Logo (100) and Uplift (75) for the user (it aggregates `CC Points Final`). So a rep
@@ -799,8 +816,9 @@ Read against the live TMDL. Rules followed: **no invented tables/columns**; narr
 row per OPE, or a tiny array); comments explain each query; assumptions are stated. Each template
 is an **`executeQueries`** body for the Power BI connector. The flow substitutes the **validated**
 parameter(s) into `VAR Ope` / `VAR Who` — **string-injection-safe** because each parameter is
-regex-validated upstream (§7). When a tool takes both (CAP, Customer Centricity), the flow injects
-`Ope` and `Who`; if no email is supplied, inject `Who = ""` and the name-match flag returns `"No"`.
+regex-validated upstream (§7). The **opportunity + owner** templates (**B CompleteCare, H IBExpand,
+E CAP, F CustomerCentricity**) take **both** `Ope` and `Who`; if no email is supplied, inject
+`Who = ""` and the credit / name-match flags return `"Unknown"` / `"No"` by design.
 
 **Template index:** A Locate · B Complete Care · C current points · D expected CC · E CAP ·
 H IB/Expand · F Customer Centricity · I IP-in-GreenLake · G overall summary · J Accreditation.
@@ -835,10 +853,15 @@ ROW (
 
 ### 10.2 Template B — Complete Care diagnosis by OPE  *(primary)*
 ```dax
-// One-row Complete Care evidence for one OPE. Each flag recomputes the model's own
-// sub-conditions from real columns so Percy can explain WHY points are/aren't there.
+// One-row Complete Care evidence for one OPE, SCOPED TO THE CALLER (who). The opp can SCORE CC
+// points yet credit to someone else: per Teams[New CC Logo Points], CC points credit to the user
+// only where their email = Final[Opportunity Owner Email] OR Final[Primary Pipeline Owner User
+// Email]. So we report both CCPointsTotal (does the deal score at all) AND CreditsToYou (does it
+// credit to THIS user) — a common "why aren't MY points showing" cause. Each flag recomputes the
+// model's own sub-conditions from real columns.
 DEFINE
     VAR Ope       = "OPE-123456789"                                  // injected
+    VAR Who       = "jane.rep@hpe.com"                               // injected (caller email; "" if unknown)
     VAR OppRows   = FILTER ( 'Final', 'Final'[HPE Opportunity Id] = Ope )
     VAR CountryId = MAXX ( OppRows, 'Final'[Country Sales Entity ID] )
     // Active Complete Care contract — mirrors the model's current match (see §11 caveat:
@@ -849,6 +872,11 @@ DEFINE
                 'CC Contracts'[End Customer Country Entity Id] = CountryId
                 || 'CC Contracts'[End Customer Global Entity Id] = CountryId )
         ) + 0
+    // Does this deal credit to the caller? (owner OR primary pipeline owner — matches the model)
+    VAR CreditsYou =
+        COUNTROWS ( FILTER ( OppRows,
+            'Final'[Opportunity Owner Email] = Who
+            || 'Final'[Primary Pipeline Owner User Email] = Who ) ) > 0
 EVALUATE
 ROW (
     "OPE",                      Ope,
@@ -857,6 +885,10 @@ ROW (
     "Account",                  MAXX ( OppRows, 'Final'[Account Name] ),
     "ForecastCategory",         MAXX ( OppRows, 'Final'[Forecast Category] ),
     "CloseDate",                MAXX ( OppRows, 'Final'[Close Date] ),
+    // Who it credits to, and whether that's the caller.
+    "OpportunityOwner",         MAXX ( OppRows, 'Final'[Opportunity Owner] ),
+    "PrimaryPipelineOwner",     MAXX ( OppRows, 'Final'[Primary Pipeline Owner User] ),
+    "CreditsToYou",             IF ( Who = "" || ISBLANK ( Who ), "Unknown", IF ( CreditsYou, "Yes", "No" ) ),
     // Complete Care product line present? (model proxy: Product Name contains "9X")
     "HasCCProductLine",         IF ( COUNTROWS ( FILTER ( OppRows, CONTAINSSTRING ( 'Final'[Product Name], "9X" ) ) ) > 0, "Yes", "No" ),
     "HasNewSolutionMotion",     IF ( COUNTROWS ( FILTER ( OppRows, 'Final'[Sales Motion] = "New Solution S" ) ) > 0, "Yes", "No" ),
@@ -870,6 +902,10 @@ ROW (
     "InFunnelNotYetWon",        IF ( MAXX ( OppRows, 'Final'[CC Points Funnel] ) = "Y", "Yes", "No" )
 )
 ```
+> **Interpretation:** if `CCPointsTotal > 0` but `CreditsToYou = No`, the deal is scoring Complete
+> Care points but they're crediting to the **opportunity owner / primary pipeline owner** (name in
+> `OpportunityOwner` / `PrimaryPipelineOwner`), not the caller — Percy should say so and suggest the
+> owner be corrected if the caller should hold it.
 
 ### 10.3 Template C — current dashboard points by OPE
 ```dax
@@ -966,21 +1002,34 @@ ROW (
 
 ### 10.5a Template H — IB / Expand diagnosis by OPE
 ```dax
-// IB Upsell / Expand Pen Rate (1 pt per 4% expand, capped 25). Mirrors Final[IB & NS Points NEW]:
-// needs BOTH an IB/renewal motion AND an expand/new motion, Won, Close >= 1 May, AND no CC points
-// on the opp (Complete Care SUPPRESSES IB/Expand on the same opportunity — the key gotcha).
+// IB Upsell / Expand Pen Rate (1 pt per 4% expand, capped 25), SCOPED TO THE CALLER (who). Mirrors
+// Final[IB & NS Points NEW]: needs BOTH an IB/renewal motion AND an expand/new motion, Won, Close >=
+// 1 May, AND no CC points on the opp (Complete Care SUPPRESSES IB/Expand on the same opp). Credit
+// requires the caller be the owner: per Teams[IB & NS Points], user email = Final[OS Sales Email] OR
+// Final[Primary Pipeline Owner User Email] OR Final[Opportunity Owner Email]. So we also report
+// CreditsToYou — the deal can earn IB/Expand yet credit to someone else.
 DEFINE
-    VAR Ope      = "OPE-123456789"   // injected
+    VAR Ope      = "OPE-123456789"      // injected
+    VAR Who      = "jane.rep@hpe.com"   // injected (caller email; "" if unknown)
     VAR OppRows  = FILTER ( 'Final', 'Final'[HPE Opportunity Id] = Ope )
     VAR HasIB    = COUNTROWS ( FILTER ( OppRows, 'Final'[Sales Motion] IN { "Renewal", "Conversion", "PWCP Bus Type 'W'" } ) )
     VAR HasExpand= COUNTROWS ( FILTER ( OppRows, 'Final'[Sales Motion] IN { "New Solution S", "Per Event P" } ) )
     VAR CCpts    = MAXX ( OppRows, 'Final'[CC Points Final] ) + 0
+    // Does this deal credit to the caller? (OS sales OR primary pipeline owner OR opp owner)
+    VAR CreditsYou =
+        COUNTROWS ( FILTER ( OppRows,
+            'Final'[OS Sales Email] = Who
+            || 'Final'[Primary Pipeline Owner User Email] = Who
+            || 'Final'[Opportunity Owner Email] = Who ) ) > 0
 EVALUATE
 ROW (
     "OPE",                       Ope,
     "Found",                     IF ( COUNTROWS ( OppRows ) > 0, "Yes", "No" ),
     "ForecastCategory",          MAXX ( OppRows, 'Final'[Forecast Category] ),
     "CloseDate",                 MAXX ( OppRows, 'Final'[Close Date] ),
+    "OpportunityOwner",          MAXX ( OppRows, 'Final'[Opportunity Owner] ),
+    "PrimaryPipelineOwner",      MAXX ( OppRows, 'Final'[Primary Pipeline Owner User] ),
+    "CreditsToYou",              IF ( Who = "" || ISBLANK ( Who ), "Unknown", IF ( CreditsYou, "Yes", "No" ) ),
     "ClosedOnOrAfter1May2026",   IF ( MAXX ( OppRows, 'Final'[Close Date] ) >= DATE ( 2026, 5, 1 ), "Yes", "No" ),
     "HasRenewalIBMotion",        IF ( HasIB > 0, "Yes", "No" ),
     "HasExpandNewMotion",        IF ( HasExpand > 0, "Yes", "No" ),
@@ -989,6 +1038,8 @@ ROW (
     "InFunnelNotYetWon",         IF ( MAXX ( OppRows, 'Final'[IB & NS Points Funnel] ) = "Y", "Yes", "No" )
 )
 ```
+> **Interpretation:** if `ExpandPointsAwarded > 0` but `CreditsToYou = No`, the deal earns IB/Expand
+> but credits to the OS sales / pipeline owner / opportunity owner, not the caller.
 
 ### 10.6 Template F — Customer Centricity by OPE
 ```dax
@@ -1309,6 +1360,13 @@ suppression)*
 **"refresh the dashboard"** *(explicit → Refresh Dashboard action)*
 > Done — I've kicked off a refresh. Give it a few minutes and your points should be up to date. 👍
 
+**"why havent I got my complete care points for OPE-123456789"** *(template `CompleteCare` + who;
+example = deal scores CC points but credits to another owner)*
+> Good news and a catch: OPE-123456789 **is** scoring the full **100** Complete Care points — but on
+> the deal they're crediting to **Azza Ali Hassan** (the opportunity owner), not you. If that should
+> be your deal, ask for the owner (or pipeline owner) to be updated to you, and the points will move
+> across.
+
 ---
 
 ## 13. Testing plan
@@ -1355,6 +1413,8 @@ suppression)*
 | 38 | Explicit refresh | "refresh the dashboard" / "update it" | `[…]` | Refresh | — | **Refresh Dashboard** | "kicked off — check back in a few minutes" | Calls Refresh action; one refresh |
 | 39 | Refresh already running | as 38, action returns `already_running` | `[…]` | Refresh | — | **Refresh Dashboard** | "already updating" | Distinguishes already-running; doesn't re-fire |
 | 40 | Refresh no-loop | user asks refresh 3× in a row | `[…]` | Refresh | — | Refresh (guarded) | one refresh, then "already running" | Doesn't loop refreshes (rate-limit safe) |
+| 41 | CC credits to another owner | "why no complete care points on OPE-123456789" (caller isn't the owner) | `[…]` | CC diagnostic | `OPE-123456789` | template `CompleteCare` (+who), `ccPointsTotal:100`, `creditsToYou:No` | "scoring 100, but crediting to **<owner>**, not you" | Passes `who`; uses `creditsToYou`; names the owner; suggests owner correction |
+| 42 | IB credits to another owner | "why no IB points on OPE-123456789" (caller isn't the owner) | `[…]` | IB / Expand | `OPE-123456789` | template `IBExpand` (+who), `creditsToYou:No` | "earns IB/Expand, but credits to **<owner>**, not you" | Passes `who`; distinguishes credit from earning |
 
 **Pass/fail criteria (global):** correct latest-message selection (max `Seq`, `Role="user"`);
 correct intent + OPE extraction; correct tool (or none); **plain-text** reply with **no** JSON/DAX/
@@ -1439,13 +1499,15 @@ Percy has **two** actions:
 
 **1. `Run Percy Diagnostic` (`Percy-Query`)** — inputs **`template`** (enum) + **`ope`** + **`who`**:
 > *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the deal exist /
-> which schemes — input ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope), `CAP` (CAP engagement
-> 20 + order 50, incl. 'request isn't showing' — ope and the user's email), `CustomerCentricity`
-> (logged customer/channel/leadership meetings, incl. mistyped subject — ope and email), `IBExpand`
-> (IB Upsell / Expand ≤25 — ope), `IPGreenLake` (monthly IP tier 10–75 — email), `Accreditation`
-> (S-coded race + CSM — email), `Summary` (all categories + pending — email). Pass the user's email
-> as `who` for CAP/CustomerCentricity so the name-match check runs. Returns compact evidence JSON to
-> interpret in plain English. Never send DAX — only a template key and ope/who."*
+> which schemes — input ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope and the user's email),
+> `CAP` (CAP engagement 20 + order 50, incl. 'request isn't showing' — ope and email),
+> `CustomerCentricity` (logged customer/channel/leadership meetings, incl. mistyped subject — ope and
+> email), `IBExpand` (IB Upsell / Expand ≤25 — ope and email), `IPGreenLake` (monthly IP tier 10–75 —
+> email), `Accreditation` (S-coded race + CSM — email), `Summary` (all categories + pending — email).
+> Pass the user's email as `who` for CompleteCare/IBExpand/CAP/CustomerCentricity so the check
+> confirms the points credit to THIS person (owner-email for CC/IB, name-match for CAP/meetings).
+> Returns compact evidence JSON to interpret in plain English. Never send DAX — only a template key
+> and ope/who."*
 
 **2. `Refresh Dashboard` (`Percy-Refresh`)** — **no inputs**:
 > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't

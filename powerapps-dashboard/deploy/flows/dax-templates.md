@@ -12,9 +12,9 @@ into the matching `Switch` case.
 | `template` (Switch case) | Build-pack DAX | Insert | Returns |
 |---|---|---|---|
 | `Locate`             | A | `ope` | existence across schemes |
-| `CompleteCare`       | B | `ope` | New Logo / Uplift evidence |
+| `CompleteCare`       | B | `ope`, `who` | New Logo / Uplift + credits-to-you |
 | `CAP`                | E | `ope`, `who` | engagement + order + name-match |
-| `IBExpand`           | H | `ope` | renewal+expand + CC-suppression |
+| `IBExpand`           | H | `ope`, `who` | renewal+expand + CC-suppression + credits-to-you |
 | `CustomerCentricity` | F | `ope`, `who` | per-meeting classification + name-match |
 | `IPGreenLake`        | I | `who` | monthly % tier |
 | `Accreditation`      | J | `who` | S-coded / CSM eligibility |
