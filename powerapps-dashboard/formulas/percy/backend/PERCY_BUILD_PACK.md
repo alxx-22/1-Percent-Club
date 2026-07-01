@@ -134,7 +134,8 @@ is selected server-side, so there is no endpoint that runs agent-supplied DAX.
 ## 2. SharePoint list design
 
 List: **`PercyConversations`** — **already created**. There are two possible shapes; **your live
-build uses Shape A, and that is the path the flow targets.**
+build uses Shape A, and that is the path the flow targets. The app already creates a new item per
+send, so no Power Apps formula change is needed.**
 
 - **Shape A (IN USE — one row per *send*)** — the app creates a **new item on every send**
   (`Patch(PercyConversations, Defaults(...), …)`), and that item holds the **whole conversation so
@@ -227,18 +228,19 @@ The chat UI already exists ([`PERCY.md`](../../../PERCY.md)): `galChat` bound to
 2. **Create a new SharePoint row (Shape A)** — Patch a **fresh** row with the **whole conversation
    so far** as JSON, answer empty, `Status = "Pending"`:
    ```powerfx
-   Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+   Set( varChatJson, JSON( ShowColumns( colChat, Seq, Role, Body ) ) );
    Set( varAsk,
        Patch( PercyConversations,
            Defaults( PercyConversations ),
-           { Title: varSessionId, SessionId: varSessionId, ConversationJson: varChatJson,
+           { Title: Text(varSessionId) & " - " & Text(Now(), "yyyymmddhhmmss"),
+             SessionId: Text(varSessionId), ConversationJson: varChatJson,
              UserEmail: Lower(User().Email), LastQuestion: varPercyQ,
              MessageCount: CountRows(colChat), AnswerText: "", Status: "Pending" } ) );
    Set( varAskId, varAsk.ID ); Set( varPollN, 0 ); Set( varPercyThinking, true );
    ```
-   *(Each send creates a new row carrying the cumulative transcript, so the created item the flow
-   fires on always has the full conversation — the flow never has to rebuild it. `SessionId` still
-   tags every row for the same chat; the poll keys off the returned `varAskId`, not `SessionId`.)*
+   *(This is the existing app formula — nothing to change. Each send creates a new row carrying the
+   cumulative transcript, so the created item the flow fires on always has the full conversation.
+   `SessionId` still tags every row for the same chat; the poll keys off the returned `varAskId`.)*
 3. **Pending / typing state** — `Set(varPercyThinking, true)` shows `imgThinking` and **starts**
    `tmrPercyPoll` (`Start = varPercyThinking`). The send button is disabled while thinking.
 4. **Polling refresh** — `tmrPercyPoll.OnTimerEnd` (every 2s): `Refresh(PercyConversations)`,

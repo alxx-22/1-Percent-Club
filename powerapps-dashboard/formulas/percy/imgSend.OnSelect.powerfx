@@ -1,46 +1,69 @@
 // ============================================================================
-//  imgSend.OnSelect  —  send the question.  NO PREMIUM: SharePoint Patch + poll.
+//  imgSend.OnSelect — send the question.  NO PREMIUM: SharePoint Create + poll.
 //
-//  Creates a NEW row in the "PercyConversations" list on every send (one row
-//  per message). Each row carries the WHOLE conversation so far as JSON, so the
-//  agent always has full context; the answer starts empty and Status "Pending".
-//  A SharePoint-triggered flow ("when an item is created") fills AnswerText +
-//  sets "Answered"; tmrPercyPoll watches THIS row (by ID) and shows the reply.
-//  (New-row-per-send lets the flow trigger on create only — the write-back is a
-//   modify it ignores, so it never re-triggers itself. No loop guard needed.)
+//  Creates a NEW PercyConversations item on every send (so the flow's
+//  "When an item is created" trigger fires each time). Each item carries the
+//  WHOLE conversation so far as JSON, so the agent always has full context.
+//  The flow fills AnswerText + sets Status "Answered"; tmrPercyPoll watches
+//  THIS item (by ID) and shows the reply.
 //
-//  LIST = PercyConversations (add it as a data source — standard SharePoint
-//  connector, no premium). Columns: Title, SessionId, ConversationJson,
-//  UserEmail, LastQuestion, MessageCount  PLUS two you add:  Status (text),
-//  AnswerText (multi-line).  See backend/README.md.
+//  LIST = PercyConversations (standard SharePoint connector, no premium).
 //  (txtChat = chat TextInput;  galChat.Items = Sort(colChat, Seq).)
 // ============================================================================
 If(
-    !IsBlank( Trim( txtChat.Text ) ) && !varPercyThinking,
+    !IsBlank(Trim(txtChat.Text)) && !varPercyThinking,
 
-    // 1) show the user's message immediately
-    Set( varPercyQ, Trim( txtChat.Text ) );
-    Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
-    Reset( txtChat );
+    // 1) Show the user's message immediately
+    Set(varPercyQ, Trim(txtChat.Text));
 
-    // 2) create a NEW row for this send (whole conversation as JSON for AI context)
-    Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
-    Set( varAsk,
-        Patch( PercyConversations,
-            Defaults( PercyConversations ),
-            { Title:            varSessionId,
-              SessionId:        varSessionId,
-              ConversationJson: varChatJson,
-              UserEmail:        Lower( User().Email ),
-              LastQuestion:     varPercyQ,
-              MessageCount:     CountRows( colChat ),
-              AnswerText:       "",
-              Status:           "Pending" } ) );
-    Set( varAskId, varAsk.ID );
+    Collect(
+        colChat,
+        {
+            Seq: CountRows(colChat) + 1,
+            Role: "user",
+            Body: varPercyQ
+        }
+    );
 
-    // 3) wait for the flow's reply (tmrPercyPoll polls while varPercyThinking;
-    //    imgThinking shows "Percy is thinking/typing…")
-    Set( varThinkOut, false );    // clean state so the indicator plays its entrance
-    Set( varPollN, 0 );
-    Set( varPercyThinking, true )
+    Reset(txtChat);
+
+    // 2) Build JSON for the whole conversation
+    Set(
+        varChatJson,
+        JSON(
+            ShowColumns(
+                colChat,
+                Seq,
+                Role,
+                Body
+            )
+        )
+    );
+
+    // 3) Create a NEW SharePoint item every time
+    Set(
+        varAsk,
+        Patch(
+            PercyConversations,
+            Defaults(PercyConversations),
+            {
+                Title: Text(varSessionId) & " - " & Text(Now(), "yyyymmddhhmmss"),
+                SessionId: Text(varSessionId),
+                ConversationJson: varChatJson,
+                UserEmail: Lower(User().Email),
+                LastQuestion: varPercyQ,
+                MessageCount: CountRows(colChat),
+                AnswerText: "",
+                Status: "Pending"
+            }
+        )
+    );
+
+    // 4) Save the new SharePoint item ID for polling
+    Set(varAskId, varAsk.ID);
+
+    // 5) Start polling timer
+    Set(varPollN, 0);
+    Set(varThinkOut, false);
+    Set(varPercyThinking, true)
 )

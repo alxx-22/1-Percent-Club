@@ -40,20 +40,22 @@ site → `PercyConversations`). Standard connector — no premium.
 **`tmrPercyPoll`** settings: `Duration=2000`, `Repeat=true`, `AutoStart=false`,
 `Start = varPercyThinking`, `Reset = !varPercyThinking`, `Visible=false`.
 
-Send button (create a new row for this send, whole transcript as JSON, mark Pending):
+Send button (the existing formula — creates a new row per send, whole transcript as JSON, `Pending`):
 ```powerfx
 Set( varPercyQ, Trim( txtChat.Text ) );
 Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
 Reset( txtChat );
-Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
+Set( varChatJson, JSON( ShowColumns( colChat, Seq, Role, Body ) ) );
 Set( varAsk,
     Patch( PercyConversations,
         Defaults( PercyConversations ),
-        { Title: varSessionId, SessionId: varSessionId, ConversationJson: varChatJson,
+        { Title: Text(varSessionId) & " - " & Text(Now(), "yyyymmddhhmmss"),
+          SessionId: Text(varSessionId), ConversationJson: varChatJson,
           UserEmail: Lower(User().Email), LastQuestion: varPercyQ,
           MessageCount: CountRows(colChat), AnswerText: "", Status: "Pending" } ) );
 Set( varAskId, varAsk.ID );
 Set( varPollN, 0 );
+Set( varThinkOut, false );
 Set( varPercyThinking, true )
 ```
 `tmrPercyPoll` then re-reads `LookUp(PercyConversations, ID = varAskId)` every 2s until

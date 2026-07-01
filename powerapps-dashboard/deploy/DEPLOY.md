@@ -10,13 +10,12 @@ Honest reliability tiers up front, then the order of operations.
 
 ## What actually imports (reliability tiers)
 
-> **Your live schema (Shape A):** `PercyConversations` already exists. The app writes the whole
-> transcript to **`ConversationJson`** + `Status="Pending"` as a **new row per send**; the flow
-> (trigger: *item created*) writes **`AnswerText`** + `Status="Answered"`. **One Power Apps tweak:**
-> `imgSend` patches `Defaults(PercyConversations)` (new row each send) rather than upserting the
-> session row — that's what lets the flow trigger on *item created* only. The provisioning script
-> below is **greenfield-only (Shape B)** — skip it; at most confirm a single-line-text **`Status`**
-> column exists.
+> **Your live schema (Shape A):** `PercyConversations` already exists. The app already writes the
+> whole transcript to **`ConversationJson`** + `Status="Pending"` as a **new row per send** (`imgSend`
+> patches `Defaults(PercyConversations)`); the flow (trigger: *item created*) writes **`AnswerText`**
+> + `Status="Answered"`. **No Power Apps change** — new-row-per-send is exactly what lets the flow
+> trigger on *item created* only. The provisioning script below is **greenfield-only (Shape B)** —
+> skip it; at most confirm a single-line-text **`Status`** column exists.
 
 | Tier | Piece | Artifact | Notes |
 |---|---|---|---|
@@ -58,11 +57,11 @@ flows are **built by hand from the instructions**, and the rest is paste-ready.
    **`AnswerText`** + **`Status=Answered`** → error branch (friendly `AnswerText` + `Status=Answered`).
    **No conversation rebuild — the transcript is already on the item.**
 
-6. **Power Apps** — the chat UI already exists ([`../PERCY.md`](../PERCY.md)):
-   `imgSend.OnSelect` creates a **new row per send** with `ConversationJson`+`Status="Pending"`;
-   `tmrPercyPoll` reads `AnswerText` (by `ID`) when `Status="Answered"` (build pack §3). The only
-   formula change for the create-only trigger is `imgSend` patching `Defaults(PercyConversations)`
-   (new row) instead of upserting the session row — see [`../formulas/percy/imgSend.OnSelect.powerfx`](../formulas/percy/imgSend.OnSelect.powerfx).
+6. **Power Apps** — unchanged. The chat UI already exists ([`../PERCY.md`](../PERCY.md)):
+   `imgSend.OnSelect` already creates a **new row per send** (`Patch(Defaults(...))`) with
+   `ConversationJson`+`Status="Pending"`; `tmrPercyPoll` reads `AnswerText` (by `ID`) when
+   `Status="Answered"` (build pack §3). **No formula change** — see
+   [`../formulas/percy/imgSend.OnSelect.powerfx`](../formulas/percy/imgSend.OnSelect.powerfx).
 
 ## Smoke test
 
