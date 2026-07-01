@@ -503,7 +503,8 @@ matching **template key**. The DAX behind each key lives in the flow (§7), not 
   is it **classified** (`meetingType` non-blank)? If not, the **Subject didn't start with CUSTOMER /
   CHANNEL / LEADERSHIP** — quote back the `subjectPrefix` and tell them to re-log with the keyword at
   the very start (covers typos like "CUSTMER", wrong word, or a leading phrase before the keyword).
-  Then check the **logged-by name matches** the caller, and the **approval status** (manager approves
+  Also check **`createdQualifies`** — meetings logged **before 1 May 2026** don't count (Customer
+  Centricity gates on **created date**). Then check the **logged-by name matches** the caller, and the **approval status** (manager approves
   weekly). Explain 10 (customer/channel) / 20 (leadership) values.
 - **Output:** plain text naming the blocker (no meeting / unrecognised subject prefix / name mismatch
   / pending approval / approved).
@@ -645,9 +646,10 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - one motion missing → "IB/Expand needs **both** a renewal/IB motion and an expand motion; I only see one."
 - `inFunnelNotYetWon=Yes` → "qualifies but hasn't been **won** yet — IB/Expand lands on win."
 
-**`CustomerCentricity`** — array of `{ meetingType, meetingClassified, subjectPrefix, startsCustomer, startsChannel, startsLeadership, loggedBy, loggedByMatchesCaller, approvalStatus, points }` (+ `ope`, `callerName`, `meetingCount`).
+**`CustomerCentricity`** — array of `{ meetingType, meetingClassified, subjectPrefix, startsCustomer, startsChannel, startsLeadership, createdDate, createdQualifies, loggedBy, loggedByMatchesCaller, approvalStatus, points }` (+ `ope`, `callerName`, `meetingCount`).
 - `meetingCount=0` → "no logged events on this opp (Opportunity → Activities → New Event)."
 - `meetingClassified=No` → "your meeting's subject (\"<subjectPrefix>…\") doesn't **start** with CUSTOMER/CHANNEL/LEADERSHIP, so it isn't classified — re-log with the keyword at the very start."
+- `createdQualifies=No` → "this meeting was logged before the **1 May 2026** cut-off, so it doesn't count towards Customer Centricity."
 - `loggedByMatchesCaller=No` → "logged under **<loggedBy>**, not you, so it's crediting to them."
 - classified, approval blank → "I see a <meetingType> — <points> points once your manager approves (weekly)."
 - classified, `Approve` → "confirmed — <points> points for this <meetingType>."
@@ -833,7 +835,12 @@ H IB/Expand · F Customer Centricity · I IP-in-GreenLake · G overall summary �
 - **Complete Care product line** is proxied by `CONTAINSSTRING(Final[Product Name],"9X")` — the
   model's own definition (see §11 caveat).
 - **Approval:** `"Approve"` = approved; **blank** = pending (calculated via `1 Percent Approvals`).
-- **Window:** the model gates on **`Close Date` ≥ 2026-05-01** (not `Created Date`) — see §11.
+- **Date gates (1 May 2026 cut-off) differ by metric — get these right:**
+  - **Complete Care (New Logo + Uplift), IB/Expand, CAP order (Cap Won)** → **`Close Date` ≥ 1 May 2026**.
+  - **CAP engagement (Cap Requests)** → **`Created Date Time` ≥ 1 May 2026**.
+  - **Customer Centricity (Customer Meetings)** → **`Created Date` ≥ 1 May 2026** (enforced in the model
+    via the Approvals build; Template F applies it explicitly).
+  - IP-in-GreenLake / Accreditation are period/standings-based, not per-deal date-gated.
 
 ### 10.1 Template A — lookup by OPE (where does it exist?)
 ```dax
@@ -1044,9 +1051,11 @@ ROW (
 ### 10.6 Template F — Customer Centricity by OPE
 ```dax
 // One row per logged meeting on the opp (narrow). Mirrors the model: Leadership 20, Customer/Channel
-// 10, only when Approval Status = "Approve". Adds CLASSIFICATION flags (the model classifies by the
-// Subject's leading word — "CUSTOMER"/"CHANNEL"/"LEADERSHIP"; if none matches, Meeting Type is blank
-// and no points are earned) and a NAME-MATCH flag (credit is by Last Modified By: Full Name).
+// 10, only when Approval Status = "Approve". DATE GATE: Customer Centricity is gated on the meeting's
+// CREATED DATE >= 1 May 2026 (the model enforces this via the Approvals build; here it's explicit so a
+// pre-cutoff meeting scores 0 and Percy can say why). Adds CLASSIFICATION flags (the model classifies
+// by the Subject's leading word — "CUSTOMER"/"CHANNEL"/"LEADERSHIP"; if none matches, Meeting Type is
+// blank and no points are earned) and a NAME-MATCH flag (credit is by Last Modified By: Full Name).
 DEFINE
     VAR Ope        = "OPE-123456789"      // injected
     VAR Who        = "jane.rep@hpe.com"   // injected (optional; "" if not supplied)
@@ -1061,10 +1070,13 @@ SELECTCOLUMNS (
     "StartsCustomer",    IF ( LEFT ( 'Customer Meetings'[Subject], 8 )  = "CUSTOMER",   "Yes", "No" ),
     "StartsChannel",     IF ( LEFT ( 'Customer Meetings'[Subject], 7 )  = "CHANNEL",    "Yes", "No" ),
     "StartsLeadership",  IF ( LEFT ( 'Customer Meetings'[Subject], 10 ) = "LEADERSHIP", "Yes", "No" ),
+    "CreatedDate",       'Customer Meetings'[Created Date],
+    "CreatedQualifies",  IF ( 'Customer Meetings'[Created Date] >= DATE ( 2026, 5, 1 ), "Yes", "No" ),  // logged on/after the 1 May cut-off
     "LoggedBy",          'Customer Meetings'[Last Modified By: Full Name],
     "LoggedByMatchesCaller", IF ( CallerName <> "" && 'Customer Meetings'[Last Modified By: Full Name] = CallerName, "Yes", "No" ),
     "ApprovalStatus",    'Customer Meetings'[Approval Status],
     "Points",            SWITCH ( TRUE (),
+                            'Customer Meetings'[Created Date] < DATE ( 2026, 5, 1 ), 0,   // before the cut-off → doesn't count
                             'Customer Meetings'[Approval Status] <> "Approve", 0,
                             'Customer Meetings'[Meeting Type] = "Leadership Meeting", 20,
                             'Customer Meetings'[Meeting Type] = "Customer Meeting", 10,
@@ -1415,6 +1427,7 @@ example = deal scores CC points but credits to another owner)*
 | 40 | Refresh no-loop | user asks refresh 3× in a row | `[…]` | Refresh | — | Refresh (guarded) | one refresh, then "already running" | Doesn't loop refreshes (rate-limit safe) |
 | 41 | CC credits to another owner | "why no complete care points on OPE-123456789" (caller isn't the owner) | `[…]` | CC diagnostic | `OPE-123456789` | template `CompleteCare` (+who), `ccPointsTotal:100`, `creditsToYou:No` | "scoring 100, but crediting to **<owner>**, not you" | Passes `who`; uses `creditsToYou`; names the owner; suggests owner correction |
 | 42 | IB credits to another owner | "why no IB points on OPE-123456789" (caller isn't the owner) | `[…]` | IB / Expand | `OPE-123456789` | template `IBExpand` (+who), `creditsToYou:No` | "earns IB/Expand, but credits to **<owner>**, not you" | Passes `who`; distinguishes credit from earning |
+| 43 | Meeting before cut-off | "logged a customer meeting on OPE-… but no points", evidence `createdQualifies:No` | `[…]` | Cust. Centricity | `OPE-…` | template `CustomerCentricity` | "logged before the 1 May 2026 cut-off, so it doesn't count" | Uses **created date** gate; names the cut-off as the cause |
 
 **Pass/fail criteria (global):** correct latest-message selection (max `Seq`, `Role="user"`);
 correct intent + OPE extraction; correct tool (or none); **plain-text** reply with **no** JSON/DAX/
@@ -1530,7 +1543,7 @@ summary · **J Accreditation** — all in [§10](#10-dax-templates); open items 
 [§10.8](#108-what-could-not-be-written-from-the-schema-todo-not-guessed).
 
 ### 15.5 Test matrix
-40 cases in [§13](#13-testing-plan), covering vague/low-context handling (Summary-first, Locate,
+43 cases in [§13](#13-testing-plan), covering vague/low-context handling (Summary-first, Locate,
 one-question-at-a-time), refresh (incl. already-running / no-loop), latest-message selection,
 intent/OPE extraction, per-scheme tool routing (Complete Care, CAP request/order, Customer Centricity, IB/Expand, IP,
 Accreditation, Locate, Summary), the granular failure modes (name mismatch, mistyped meeting
