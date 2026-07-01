@@ -32,8 +32,16 @@ On the trigger, **+ Add an input → Text** three times:
 ## 4. Switch on the template → set the DAX
 Add **Control → Switch**. Set **On** = the **`template`** input (Dynamic content).
 
-For **each case** (`Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentricity`, `IPGreenLake`,
-`Accreditation`, `Summary`):
+Add a case per template key. For **each case**, type the key into its **"Equals"** field as **plain
+text** (exact spelling/case): `Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentricity`,
+`IPGreenLake`, `Accreditation`, `Summary`.
+
+> ⚠️ **Every case's "Equals" box must be filled**, and don't leave a stray empty case. A blank Equals
+> throws `Flow clientdata is in invalid format … Required property 'case' … got null` (code
+> `0x80060468`) on save. The value must match what the agent sends in `template` exactly, or that
+> branch never runs.
+
+Then in **each case**:
 1. Add **Data Operation → Compose** named e.g. `Dax_CompleteCare`.
 2. In its **Inputs**, **paste that template's DAX as plain text** from [`dax-templates.md`](dax-templates.md)
    (→ build pack §10). On the `VAR Ope = "…"` line, **clear what's between the quotes** and insert the
