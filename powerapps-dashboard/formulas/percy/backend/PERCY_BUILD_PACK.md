@@ -411,9 +411,17 @@ PROGRAMME RULES (your only source of truth for scoring)
 
 ## 6. Percy topic design
 
-Copilot Studio routes either via **generative orchestration** (recommended — the instructions +
-tool descriptions drive routing) or classic **trigger-phrase topics**. Define these topics so
-behaviour is explicit and testable.
+Percy runs with **generative orchestration ON**: routing is driven by the **instructions + the two
+action descriptions**, and each custom topic is triggered by **"The agent chooses"** (a plain-language
+description of when it applies) — **not** classic trigger phrases. The "trigger phrases" listed per
+topic below are the **intents each description should cover** (and what you'd paste if orchestration
+were off). The per-topic decision logic still applies as the agent's reasoning, whether it runs inside
+a scripted topic or straight from the instructions + `Run Percy Diagnostic` action.
+
+> **Build few topics.** Because the `Run Percy Diagnostic` action covers all eight diagnostics, the
+> per-scheme topics (6.4–6.9) are **optional** — build one only to lock that scheme's wording. The
+> paste-in, orchestration-native version (descriptions + node flows, marked Build vs Optional) is
+> [`deploy/copilot-studio/topics.md`](../../../deploy/copilot-studio/topics.md).
 
 > **Design for vague input.** Most real messages are short and underspecified ("why aren't my
 > points showing", a bare OPE, "cap??"). The topics below are built to **act first** (Summary /
