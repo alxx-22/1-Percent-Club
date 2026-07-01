@@ -15,8 +15,9 @@ list (have it)   prereqs          (diagnostic flow)     Percy agent         Perc
                                                          as its action)      published agent)
 ```
 
-> Power Apps chat UI is **already built** and **unchanged** ([`../PERCY.md`](../PERCY.md)) — it isn't
-> a phase here. The full step detail lives in [`DEPLOY.md`](DEPLOY.md); this page is the map + order.
+> Power Apps chat UI is **already built** ([`../PERCY.md`](../PERCY.md)) — it isn't a phase here. Its
+> only change for the create-only trigger is `imgSend` creating a **new row per send** (Phase 5). The
+> full step detail lives in [`DEPLOY.md`](DEPLOY.md); this page is the map + order.
 
 ---
 
@@ -55,11 +56,11 @@ account** the flow will use has workspace read + dataset **Build**.
 4. **Settings + publish:** generative orchestration **on**, web/general knowledge **off**; **Publish**.
 
 ### Phase 5 — Build `Percy-Orchestrator` *(build this LAST)*
-SharePoint *item created/modified* → guard `Status=Pending` & empty `AnswerText` → read
-`ConversationJson` → **run the published Percy agent** (Phase 4) → write `AnswerText` +
-`Status="Answered"` → error branch. **No Power Apps changes.**
+SharePoint ***item created*** (new row per send → no loop guard) → read `ConversationJson` →
+**run the published Percy agent** (Phase 4) → write `AnswerText` + `Status="Answered"` → error
+branch. *(One small Power Apps tweak: `imgSend` patches a new row via `Defaults(...)` each send.)*
 - 📄 [`flows/Percy-Orchestrator.build.md`](flows/Percy-Orchestrator.build.md) — **the click-by-click build**.
-- 📄 [`PERCY_BUILD_PACK.md` §4](../formulas/percy/backend/PERCY_BUILD_PACK.md#4-main-power-automate-flow-percy-orchestrator) — flow design; [§3](../formulas/percy/backend/PERCY_BUILD_PACK.md#3-power-apps-behaviour) — the (unchanged) Power Apps contract.
+- 📄 [`PERCY_BUILD_PACK.md` §4](../formulas/percy/backend/PERCY_BUILD_PACK.md#4-main-power-automate-flow-percy-orchestrator) — flow design; [§3](../formulas/percy/backend/PERCY_BUILD_PACK.md#3-power-apps-behaviour) — the Power Apps write contract.
 
 ### Phase 6 — Test
 Run the smoke test, then the full matrix.

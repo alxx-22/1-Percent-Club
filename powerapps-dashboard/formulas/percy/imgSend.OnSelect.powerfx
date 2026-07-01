@@ -1,11 +1,13 @@
 // ============================================================================
 //  imgSend.OnSelect  —  send the question.  NO PREMIUM: SharePoint Patch + poll.
 //
-//  Upserts THIS session's row in the "PercyConversations" list (one row per
-//  conversation, keyed by SessionId): writes the whole conversation as JSON,
-//  clears the answer, and marks Status "Pending". A SharePoint-triggered flow
-//  ("when an item is created or modified") fills AnswerText + sets "Answered";
-//  tmrPercyPoll watches the row and shows the reply.
+//  Creates a NEW row in the "PercyConversations" list on every send (one row
+//  per message). Each row carries the WHOLE conversation so far as JSON, so the
+//  agent always has full context; the answer starts empty and Status "Pending".
+//  A SharePoint-triggered flow ("when an item is created") fills AnswerText +
+//  sets "Answered"; tmrPercyPoll watches THIS row (by ID) and shows the reply.
+//  (New-row-per-send lets the flow trigger on create only — the write-back is a
+//   modify it ignores, so it never re-triggers itself. No loop guard needed.)
 //
 //  LIST = PercyConversations (add it as a data source — standard SharePoint
 //  connector, no premium). Columns: Title, SessionId, ConversationJson,
@@ -21,12 +23,11 @@ If(
     Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
     Reset( txtChat );
 
-    // 2) upsert this session's row (whole conversation as JSON for AI context)
+    // 2) create a NEW row for this send (whole conversation as JSON for AI context)
     Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
-    Set( varConvRow, LookUp( PercyConversations, SessionId = varSessionId ) );
     Set( varAsk,
         Patch( PercyConversations,
-            If( IsBlank( varConvRow ), Defaults( PercyConversations ), varConvRow ),
+            Defaults( PercyConversations ),
             { Title:            varSessionId,
               SessionId:        varSessionId,
               ConversationJson: varChatJson,

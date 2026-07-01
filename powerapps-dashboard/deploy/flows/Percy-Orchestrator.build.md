@@ -6,32 +6,30 @@ Shape-A app (`ConversationJson` in → `AnswerText` out, `Status` `Pending → A
 
 **Connections used:** SharePoint, and the Copilot Studio agent action. No premium, no service principal.
 
+> **Trigger = "When an item is created" (not "created or modified").** The app writes a **new row on
+> every send**, and each row carries the **whole conversation so far** in `ConversationJson` (it's the
+> cumulative transcript, so the agent always has full context). One created row = one question to
+> answer. This also means **no loop guard is needed**: when the flow writes `AnswerText` + `Status =
+> "Answered"` it *modifies* the row, and a create-only trigger ignores modifies — so it can't re-fire
+> itself. Simpler flow, no self-trigger, one run per question.
+
 ---
 
 ## 1. Create the flow
 - Power Automate → **Create → Automated cloud flow**.
 - Name: `Percy-Orchestrator`.
-- Trigger: search **SharePoint** → **When an item is created or modified** → **Create**.
+- Trigger: search **SharePoint** → **When an item is created** → **Create**.
 
-## 2. Trigger — When an item is created or modified
+## 2. Trigger — When an item is created
 - **Site Address:** your site (the one holding `PercyConversations`).
 - **List Name:** `PercyConversations`.
 
-## 3. Guard — only act on fresh asks (a Condition)
-Add **Control → Condition**. This stops the self-update loop (when the flow later writes
-`Status = Answered`, the modify re-fires but fails this guard).
+*(No Condition/guard step. Every created row is a fresh ask — `Status = "Pending"`, `AnswerText`
+empty — because only the app creates rows, and it always seeds them that way. The old
+`Status = "Pending"` guard existed only to swallow the self-modify from a "created or modified"
+trigger; a create-only trigger never sees that modify, so the guard is gone.)*
 
-- Left value: `Status` (dynamic content from the trigger).
-- Operator: **is equal to**.
-- Right value: `Pending`.
-- Click **+ Add → Add row**, set the group to **And**:
-  - Left value (expression): `empty(triggerOutputs()?['body/AnswerText'])`
-  - Operator: **is equal to**
-  - Right value (expression): `true`
-
-Put everything below in the **If yes** branch. Leave **If no** empty.
-
-## 4. Run the Percy agent  *(If yes)*
+## 3. Run the Percy agent
 Add the **Copilot Studio** action that runs your published Percy agent (e.g. *Microsoft Copilot
 Studio → Run a prompt / call an agent*; the exact name depends on your tenant's connector version).
 
@@ -46,7 +44,7 @@ Studio → Run a prompt / call an agent*; the exact name depends on your tenant'
 > the §9 rules; *Prompt* = `Conversation (JSON): ` then the `ConversationJson` dynamic content.
 > (FAQ-only; the per-OPE tools need the Copilot Studio agent path.)
 
-## 5. Compose — sanitise the answer
+## 4. Compose — sanitise the answer
 Add **Data Operation → Compose**, name it `AnswerTextOut`. In the **Inputs**, paste this expression
 (swap `body('Run_a_prompt')?['text']` for your agent action's real output path):
 
@@ -54,7 +52,7 @@ Add **Data Operation → Compose**, name it `AnswerTextOut`. In the **Inputs**, 
 if(empty(trim(coalesce(body('Run_a_prompt')?['text'], ''))), 'Sorry, I couldn''t answer that one — please try again.', body('Run_a_prompt')?['text'])
 ```
 
-## 6. Update item — write `AnswerText` + `Status = Answered`
+## 5. Update item — write `AnswerText` + `Status = Answered`
 Add **SharePoint → Update item**.
 - **Site Address / List Name:** same as the trigger.
 - **Id:** `ID` (trigger dynamic content).
@@ -62,7 +60,7 @@ Add **SharePoint → Update item**.
 - **Status:** `Answered`.
 - *(Optional, if you added the columns)* **MetricType / OPE:** from the agent's structured output.
 
-## 7. Error branch — friendly answer on failure
+## 6. Error branch — friendly answer on failure
 The app's poll only shows a bubble when `Status = "Answered"`, so on failure we still write
 `Answered` with a friendly message (don't invent an `Error` status the app won't read).
 
@@ -73,7 +71,7 @@ The app's poll only shows a bubble when `Status = "Answered"`, so on failure we 
   (untick *is successful*). Set the run-after to depend on **Run the Percy agent**, the **Compose**,
   and **Update item** (so any failure in the happy path routes here).
 
-## 8. Settings (recommended)
+## 7. Settings (recommended)
 - Flow **⋯ → Settings → Concurrency Control: On**, Degree of Parallelism ~10 (so a burst of chats
   doesn't exhaust the agent / Power BI connection).
 - Save. Test by sending a message from the app and watching the run history.
@@ -82,11 +80,10 @@ The app's poll only shows a bubble when `Status = "Answered"`, so on failure we 
 
 ### Flow at a glance
 ```
-When an item is created or modified  (PercyConversations)
-└─ If: Status = "Pending"  AND  empty(AnswerText) = true
-   ├─ Run Percy agent            (in: ConversationJson, UserEmail   → out: plain text)
-   ├─ Compose AnswerTextOut      (sanitise / fallback if empty)
-   ├─ Update item                (AnswerText = AnswerTextOut, Status = "Answered")
-   └─ Update item — on error     (run after: failed/timed out → friendly text, Status = "Answered")
+When an item is created  (PercyConversations)     ⟵ create-only: no self-trigger, no guard
+├─ Run Percy agent            (in: ConversationJson, UserEmail   → out: plain text)
+├─ Compose AnswerTextOut      (sanitise / fallback if empty)
+├─ Update item                (AnswerText = AnswerTextOut, Status = "Answered")
+└─ Update item — on error     (run after: failed/timed out → friendly text, Status = "Answered")
 ```
-Build pack cross-ref: §4.
+Build pack cross-ref: §4. App write contract (new row per send): §3.

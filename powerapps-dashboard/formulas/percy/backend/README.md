@@ -1,21 +1,26 @@
 # Percy backend — SharePoint trigger (NO premium) · Stage 1: FAQ
 
-No premium connectors. The app **upserts the conversation into a SharePoint list**, a flow that
-triggers **"when an item is created or modified"** generates the answer and **writes it back**,
-and the app **polls** the row for the reply. The conversation travels as **JSON**.
+No premium connectors. The app **writes each send as a new row in a SharePoint list**, a flow that
+triggers **"when an item is created"** generates the answer and **writes it back**, and the app
+**polls** the row for the reply. The conversation travels as **JSON** (each row carries the whole
+transcript so far).
 
 ```
 Percy chat (app)
-   │  Patch -> PercyConversations row for this SessionId (one row per conversation)
+   │  Patch -> NEW PercyConversations row per send (whole transcript as JSON)
    │  { …, ConversationJson, AnswerText:"", Status:"Pending" }
    ▼
-Power Automate  (SharePoint "When an item is created or modified")
-   ├─ Condition: Status = "Pending"   ← stops the trigger looping on its own update
+Power Automate  (SharePoint "When an item is created")
    ├─ AI (system prompt = your scoring FAQ + ConversationJson) -> answer
-   └─ Update item: AnswerText = answer, Status = "Answered"
+   └─ Update item: AnswerText = answer, Status = "Answered"   ← a modify; create-only ignores it
    ▼
-tmrPercyPoll (app)  re-reads the row every 2s -> shows Percy's reply
+tmrPercyPoll (app)  re-reads the row (by ID) every 2s -> shows Percy's reply
 ```
+
+> **New row per send → no loop guard.** The answer write-back is a *modify*, and a create-only
+> trigger doesn't fire on modifies, so the flow can't re-trigger itself. (The old "created or
+> modified" trigger needed a `Status = "Pending"` Condition to swallow that self-modify; create-only
+> drops it.)
 
 Stage 2 ("why isn't my opp scoring?") is **not built yet** — hooks at the end.
 
@@ -29,22 +34,21 @@ site → `PercyConversations`). Standard connector — no premium.
 | Control | Property | File |
 |---|---|---|
 | **App** | `OnStart` | [`../../dashboard/App_OnStart.powerfx`](../../dashboard/App_OnStart.powerfx) — adds `varAskId`, `varPollN` (plus existing `varSessionId`, `varPercyThinking`, `colChat`) |
-| `imgSend` | `OnSelect` | [`../imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx) — upsert the row + start polling |
+| `imgSend` | `OnSelect` | [`../imgSend.OnSelect.powerfx`](../imgSend.OnSelect.powerfx) — create a new row + start polling |
 | **`tmrPercyPoll`** (new Timer in `conPercyChat`) | `OnTimerEnd` | [`../tmrPercyPoll.OnTimerEnd.powerfx`](../tmrPercyPoll.OnTimerEnd.powerfx) — poll for the answer |
 
 **`tmrPercyPoll`** settings: `Duration=2000`, `Repeat=true`, `AutoStart=false`,
 `Start = varPercyThinking`, `Reset = !varPercyThinking`, `Visible=false`.
 
-Send button (upsert this session's row, clear the answer, mark Pending):
+Send button (create a new row for this send, whole transcript as JSON, mark Pending):
 ```powerfx
 Set( varPercyQ, Trim( txtChat.Text ) );
 Collect( colChat, { Seq: CountRows(colChat) + 1, Role: "user", Body: varPercyQ } );
 Reset( txtChat );
 Set( varChatJson, JSON( ShowColumns( colChat, "Seq", "Role", "Body" ) ) );
-Set( varConvRow, LookUp( PercyConversations, SessionId = varSessionId ) );
 Set( varAsk,
     Patch( PercyConversations,
-        If( IsBlank( varConvRow ), Defaults( PercyConversations ), varConvRow ),
+        Defaults( PercyConversations ),
         { Title: varSessionId, SessionId: varSessionId, ConversationJson: varChatJson,
           UserEmail: Lower(User().Email), LastQuestion: varPercyQ,
           MessageCount: CountRows(colChat), AnswerText: "", Status: "Pending" } ) );
@@ -56,7 +60,7 @@ Set( varPercyThinking, true )
 `Status="Answered"` & `AnswerText` is filled, then shows the reply.
 
 > **Timeout** = `tmrPercyPoll.Duration` × `varPollMax` (set in `App.OnStart`; default
-> `2000ms × 60 = 120s`). The SharePoint *"created/modified" trigger can take 30–60s+ just to
+> `2000ms × 60 = 120s`). The SharePoint *"when an item is created" trigger can take 30–60s+ just to
 > fire*, so don't set this too low. Raise `varPollMax` (and/or `Duration`) if Percy times out
 > before the flow answers; lower them to give up sooner.
 
@@ -97,18 +101,18 @@ You already have it. **Add the last two columns** (the others are yours, unchang
 
 ## 3. Power Automate flow (your existing trigger)
 
-**Trigger:** SharePoint **"When an item is created or modified"** on `PercyConversations`.
+**Trigger:** SharePoint **"When an item is created"** on `PercyConversations`.
 
-1. **Condition (critical — prevents an infinite loop):** `Status` **is equal to** `Pending`.
-   Put steps 2–3 in the **If yes** branch. (When the flow updates the row it becomes `Answered`,
-   which re‑fires the trigger but fails this condition, so it stops.)
-2. **Generate the answer** — **AI Builder → "Create text with GPT"** (or HTTP → Azure OpenAI):
+*(No loop-guard Condition needed: the app writes a **new row per send**, so a created row is always a
+fresh `Pending` ask, and the answer write-back is a *modify* the create-only trigger ignores — it
+can't re-fire itself.)*
+
+1. **Generate the answer** — **AI Builder → "Create text with GPT"** (or HTTP → Azure OpenAI):
    - *Instructions / system* = your **scoring FAQ prompt** (section 4).
    - *Prompt / input* = `Conversation (JSON): @{triggerOutputs()?['body/ConversationJson']}`
    - Output used as **`AiText`**.
-3. **Update item** — *Id* = `@{triggerOutputs()?['body/ID']}`, `AnswerText` = `AiText`,
-   `Status` = `Answered`. *(Optional: also append the answer into `ConversationJson` and bump
-   `MessageCount` so the stored transcript stays complete.)*
+2. **Update item** — *Id* = `@{triggerOutputs()?['body/ID']}`, `AnswerText` = `AiText`,
+   `Status` = `Answered`.
 
 No "Respond to PowerApp" step (that's the premium path) — the app sees the update by polling.
 
@@ -135,13 +139,13 @@ Customer Centricity, Accreditation Race, IP Push) and state point values explici
 
 ## 5. Test
 
-1. Add the `Status` + `AnswerText` columns (§2); build the flow (§3) with the **Pending**
-   condition; paste your prompt (§4).
+1. Add the `Status` + `AnswerText` columns (§2); build the flow (§3) on the **item-created**
+   trigger; paste your prompt (§4).
 2. In the app: add `PercyConversations` as a data source, then apply the §1 formulas.
 3. Open Percy, ask "How are CAP orders scored?" → the row's `Status` goes `Pending`, the flow
    flips it to `Answered` with `AnswerText`, and within ~2s Percy's reply appears.
 
-Troubleshooting: flow not firing → check the trigger list + the `Pending` condition; reply never
+Troubleshooting: flow not firing → check the trigger list (**item created**); reply never
 shows → confirm `Status` becomes `Answered`, `AnswerText` is non‑blank, and the app has
 `PercyConversations` as a data source (and timers tick — see the §1 note).
 
