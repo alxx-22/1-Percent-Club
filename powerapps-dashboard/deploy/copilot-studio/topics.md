@@ -22,8 +22,17 @@ descriptions** — it picks the template and calls `Run Percy Diagnostic` itself
 
 1. Open the **Percy** agent → left nav **Topics** → **+ Add a topic → From blank**.
 2. **Name** it (top-left), e.g. *General 1% Club FAQ*.
-3. Click the **Trigger** node → **Phrases** → paste the trigger phrases from the table below.
-   *(Generative mode also lets you describe the trigger in plain language instead.)*
+3. Set the **Trigger**. With **generative orchestration on** the menu shows **"The agent chooses"**
+   (not "Phrases") — pick it and write a short **description** of when the topic applies; that's the
+   routing signal. Use the trigger-phrase list in the table below as the intents the description
+   should cover. **Don't pick "A message is received"** — it fires on every message and swallows
+   everything. *(If orchestration were off, you'd instead get a **Phrases** trigger and paste the
+   phrases directly.)*
+   - *FAQ description:* "Use when the user asks how 1% Club points are earned, how many points a
+     category is worth, whether a campaign code is needed, or where to log an activity — general
+     programme-rules questions that don't need a specific deal."
+   - *Refresh description:* "Use when the user asks to refresh or update the dashboard, or says their
+     points/deal aren't showing yet, they just closed a deal, or the data isn't updating."
 4. Add nodes with **+**:
    - **Send a message** — plain-text answer (FAQ → the nine ways to earn points).
    - **Ask a question** — capture input (e.g. the OPE) into a variable, only if the topic needs it.
