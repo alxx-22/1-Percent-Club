@@ -83,6 +83,14 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
      **`status`** — that's what Step 4 branches on. Values: **`started`** / **`already_running`**.
    - *If you built the **minimal** `Percy-Refresh` (returns `"started"` only), `status` is always
      `started` and the other branches below simply won't fire — that's fine.*
+   - ⚠️ **"Output status has been removed because variable data type not eligible" / "Destination
+     agent was updated" / output shows `unknown`:** the flow was re-saved after this node was added,
+     so the mapping went stale. Confirm the flow's *Respond to the agent* has one **Text** output
+     `status` with a non-empty value and is saved; then on this node click the **`>`** on the
+     `unknown` output row and **create a new variable** (it'll be `Topic.status`, string). If it
+     stays stuck, delete this Tool node and re-add it — a fresh node reads the current schema. Either
+     way, **re-select the variable in the Condition node** afterwards. This applies any time a flow's
+     inputs/outputs change after it's attached: the topic mapping never auto-heals.
 4. **Node — Add a condition:** **+ → Add a condition**.
    - Condition: **`status`** **is equal to** `already_running`.
      - **Send a message:** *"It's already updating — give it a few minutes and your points will be
