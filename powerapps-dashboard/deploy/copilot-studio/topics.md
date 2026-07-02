@@ -72,8 +72,17 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 2. **Trigger → The agent chooses:**
    > *Use when the user asks to refresh or update the dashboard, or says their points/deal aren't
    > showing yet, they just closed a deal today, or the data isn't updating.*
-3. **Node — Add a tool:** **+ → Add a tool → Refresh Dashboard**. No inputs to map. Its output is a
-   status string — note its variable name (e.g. **`status`**).
+3. **Node — call the Refresh flow.** This node runs `Percy-Refresh` and captures what it returns.
+   - Under the trigger click **+ → Add a tool**.
+   - In the tool list, pick **Refresh Dashboard** (the `Percy-Refresh` flow you added in setup Step A).
+     *If it isn't listed, choose **+ Add a tool / New tool → Flow**, find `Percy-Refresh`, add it, then
+     select **Refresh Dashboard** here.*
+   - **Inputs:** none — `Percy-Refresh` takes no inputs, so there's nothing to fill in.
+   - **Outputs:** the flow's "Respond to Copilot Studio" returns a **Text** output named **`status`**;
+     Copilot Studio stores it in a variable of the same name. Click the node to confirm you see
+     **`status`** — that's what Step 4 branches on. Values: **`started`** / **`already_running`**.
+   - *If you built the **minimal** `Percy-Refresh` (returns `"started"` only), `status` is always
+     `started` and the other branches below simply won't fire — that's fine.*
 4. **Node — Add a condition:** **+ → Add a condition**.
    - Condition: **`status`** **is equal to** `already_running`.
      - **Send a message:** *"It's already updating — give it a few minutes and your points will be
