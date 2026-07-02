@@ -84,9 +84,12 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    - *If you built the **minimal** `Percy-Refresh` (returns `"started"` only), `status` is always
      `started` and the other branches below simply won't fire — that's fine.*
    - ⚠️ **"Output status has been removed because variable data type not eligible" / "Destination
-     agent was updated" / output shows `unknown`:** the flow was re-saved after this node was added,
-     so the mapping went stale. **A page/tool refresh will NOT fix this** — once the topic variable
-     is typed `unknown` it stays broken; it must be rebuilt. In order:
+     agent was updated" / "Output binding 'status' is not found, refresh this flow to get the latest
+     bindings" / output variable shows `unknown`:** the flow was re-saved after this node was added,
+     so the node holds a stale snapshot of the flow's outputs. **A page/tool refresh will NOT fix
+     this** — once the topic variable is typed `unknown` it stays broken; it must be rebuilt. (The
+     variable is scoped to this topic — nothing elsewhere binds it, and topic build order is
+     irrelevant.) In order:
      1. Flow side: confirm *Respond to the agent* has one **Text** output `status` whose value is the
         **Outputs of `StatusOut`** (hover the chip to check it's not another action's), and save.
      2. **Delete the Tool node** in the topic (⋯ → Delete) and **re-add it** (+ → Add a tool →
