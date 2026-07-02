@@ -91,7 +91,11 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
         **Outputs of `StatusOut`** (hover the chip to check it's not another action's), and save.
      2. **Delete the Tool node** in the topic (⋯ → Delete) and **re-add it** (+ → Add a tool →
         Refresh Dashboard) — a fresh node reads the current schema; on its output row click **`>` →
-        Create a new variable** (`Topic.status`, string).
+        Create a new variable** (`Topic.status`, string). *(This is on the Tool **node in the topic
+        canvas** — Outputs row, right-hand chip. NOT the agent-level **Tools → Percy-Refresh** page:
+        that page only defines display name/description and has no variables. While you're on that
+        page though, give `status` a description — "'started' = new refresh kicked off,
+        'already_running' = one in progress, 'error' = failed" — it helps orchestration read it.)*
      3. **Re-select `Topic.status` in the Condition node** — it still points at the dead variable.
      4. Still `unknown`? The **agent-level tool** is caching the old schema: agent → **Tools** →
         remove Percy-Refresh → re-add it → redo step 2. And if the flow shows under Copilot Studio's
