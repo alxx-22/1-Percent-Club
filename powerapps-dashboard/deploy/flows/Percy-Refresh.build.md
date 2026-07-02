@@ -42,12 +42,14 @@ Build it like this:
 3. **Compose `StatusOut` — rejoining the branches.** There's no "merge" line to draw: **the join IS
    the run-after dependencies** — an action "rejoins" branches by running after *both* of them.
    Two ways to get there:
-   - **The converge +:** below the whole parallel block (where the two branch lines meet and the flow
-     returns to a single column) there's a centre **+** — an action added *there* depends on both
-     branches automatically. ⚠️ The + hanging under either Compose extends **that branch only**.
-   - **By hand (always works):** add the Compose anywhere after the branches (even inside one), then
-     open **Configure run after** on it and **add the other branch's Compose as a second predecessor**
-     ("+ select actions").
+   - **The converge +** *(classic designer only)*: below the whole parallel block there's a centre
+     **+** — an action added there depends on both branches automatically. ⚠️ **The new designer has
+     no converge +** — the branches just dangle, and the + under either Compose extends **that branch
+     only**. In the new designer, use the by-hand method:
+   - **By hand (always works):** add the Compose **inside one branch** (the + under `Status_started`
+     is fine), then select it → **Settings → Run after** → in the **Select actions** dropdown tick the
+     **other** branch's Compose as a second predecessor. The canvas redraws with the Compose centred
+     below both branches — that's the visual confirmation the join worked.
 
    Either way: rename it **`StatusOut`** and set **Inputs** via the **fx / Expression** tab (not
    plain text): `coalesce(outputs('Status_started'), outputs('Status_already'))`
