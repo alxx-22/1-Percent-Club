@@ -85,12 +85,19 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
      `started` and the other branches below simply won't fire — that's fine.*
    - ⚠️ **"Output status has been removed because variable data type not eligible" / "Destination
      agent was updated" / output shows `unknown`:** the flow was re-saved after this node was added,
-     so the mapping went stale. Confirm the flow's *Respond to the agent* has one **Text** output
-     `status` with a non-empty value and is saved; then on this node click the **`>`** on the
-     `unknown` output row and **create a new variable** (it'll be `Topic.status`, string). If it
-     stays stuck, delete this Tool node and re-add it — a fresh node reads the current schema. Either
-     way, **re-select the variable in the Condition node** afterwards. This applies any time a flow's
-     inputs/outputs change after it's attached: the topic mapping never auto-heals.
+     so the mapping went stale. **A page/tool refresh will NOT fix this** — once the topic variable
+     is typed `unknown` it stays broken; it must be rebuilt. In order:
+     1. Flow side: confirm *Respond to the agent* has one **Text** output `status` whose value is the
+        **Outputs of `StatusOut`** (hover the chip to check it's not another action's), and save.
+     2. **Delete the Tool node** in the topic (⋯ → Delete) and **re-add it** (+ → Add a tool →
+        Refresh Dashboard) — a fresh node reads the current schema; on its output row click **`>` →
+        Create a new variable** (`Topic.status`, string).
+     3. **Re-select `Topic.status` in the Condition node** — it still points at the dead variable.
+     4. Still `unknown`? The **agent-level tool** is caching the old schema: agent → **Tools** →
+        remove Percy-Refresh → re-add it → redo step 2. And if the flow shows under Copilot Studio's
+        **Flows** tab as an agent flow, make sure it's **published**, not draft.
+     This applies any time a flow's inputs/outputs change after it's attached: the mapping never
+     auto-heals — rebuild it.
 4. **Node — Add a condition:** **+ → Add a condition**.
    - Condition: **`status`** **is equal to** `already_running`.
      - **Send a message:** *"It's already updating — give it a few minutes and your points will be
