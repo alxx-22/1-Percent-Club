@@ -1,159 +1,303 @@
-# Percy — topics for a **generative-orchestration** agent (paste-in)
+# Percy — topics, one complete recipe each (generative orchestration)
 
-Percy runs with **generative orchestration ON**. That changes how topics work:
-
-- **Routing is done by the agent**, from the **Overview → Instructions** + the **two action
-  descriptions** — not by trigger-phrase matching. Every custom topic is triggered by **"The agent
-  chooses"**: you write a short **description** of *when* the topic applies and the agent routes to it.
-- **You build far fewer topics.** The `Run Percy Diagnostic` action already covers all eight
-  diagnostics; the agent calls it and explains the result in plain English using the instructions. So
-  the per-scheme diagnostic topics are **optional** — build one only when you want that scheme's
-  wording locked/deterministic.
-- **The conversation-JSON parsing is not a topic.** The agent reads `ConversationJson`, finds the
-  latest user turn, and scans for an OPE **per the instructions** — no Power Fx topic needed.
-
-Full decision logic per topic: [`PERCY_BUILD_PACK.md` §6](../../formulas/percy/backend/PERCY_BUILD_PACK.md#6-percy-topic-design).
+Percy runs with **generative orchestration ON**, so every custom topic is triggered by **"The agent
+chooses"** (a plain-language description) — not trigger phrases. Each topic below is a **standalone,
+click-by-click recipe**: create → trigger → inputs → every node with exact values and message text.
+Build them top to bottom; you don't need to read anything else.
 
 ---
 
-## Step 0 — the two actions ARE the routing engine (build these first)
+## Before you build any topic (one-time setup)
 
-With orchestration on, these two agent-level **Actions** (Tools) do most of the work. Add them under
-the agent's **Tools/Actions**, paste the descriptions (build pack §15.2) so the orchestrator fills the
-right inputs, then most diagnostics need **no topic at all**.
+**A. Add the two Actions first** (agent → **Tools/Actions → + Add a tool**). Topics call these.
+- **`Run Percy Diagnostic`** = the `Percy-Query` flow. Inputs: `template`, `ope`, `who`. Paste this
+  description so orchestration fills them:
+  > *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate`, `CompleteCare`,
+  > `CAP`, `CustomerCentricity`, `IBExpand`, `IPGreenLake`, `Accreditation`, `Summary`. Pass the
+  > user's email as `who` for CompleteCare/IBExpand/CAP/CustomerCentricity so the check confirms the
+  > points credit to THIS person. Returns compact evidence JSON to explain in plain English. Never
+  > send DAX — only a template key and ope/who."*
+- **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.**
+  > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
+  > showing yet / was just closed. Returns a short status. One refresh per request."*
 
-1. **`Run Percy Diagnostic`** = the **`Percy-Query`** flow — inputs **`template`** (Locate ·
-   CompleteCare · CAP · IBExpand · CustomerCentricity · IPGreenLake · Accreditation · Summary),
-   **`ope`**, **`who`**. The agent passes a **template key, never DAX**. Description:
-   > *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the deal exist
-   > / which schemes — input ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope + user email), `CAP`
-   > (CAP engagement 20 + order 50, incl. 'request isn't showing' — ope + email), `CustomerCentricity`
-   > (logged customer/channel/leadership meetings, incl. mistyped subject — ope + email), `IBExpand`
-   > (IB Upsell / Expand ≤25 — ope + email), `IPGreenLake` (monthly IP tier 10–75 — email),
-   > `Accreditation` (S-coded race + CSM — email), `Summary` (all categories + pending — email). Pass
-   > the user's email as `who` for CompleteCare/IBExpand/CAP/CustomerCentricity so the check confirms
-   > the points credit to THIS person. Returns compact evidence JSON to interpret in plain English.
-   > Never send DAX — only a template key and ope/who."*
-2. **`Refresh Dashboard`** = the **`Percy-Refresh`** flow — **no inputs**. Description:
-   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
-   > showing yet / was just closed. Returns a short status. One refresh per request."*
+**B. The caller's email (`who`).** Diagnostics need the **caller's** email, which the orchestrator
+passes into the agent. Create one **Global variable** to hold it:
+- **Variables → + New variable → Global**, name **`Global.UserEmail`**, type **String**.
+- Set it from the value the orchestrator passes in (the SharePoint row's `UserEmail`).
+- ⚠️ **Do NOT use `System.User.Email`** — the agent runs under the shared service account, so that
+  would be the wrong person. Always use `Global.UserEmail` for `who`.
 
-> **`who` in a topic:** map it to the **`UserEmail`** the orchestrator passes into the agent (it's on
-> the SharePoint row). Reference that variable wherever a topic calls the action with `who`.
-
----
-
-## How to create a topic (click-by-click)
-
-1. **Topics → + Add a topic → From blank**; **name** it (top-left).
-2. Click the **Trigger** node → **Change trigger** → **"The agent chooses"** → paste the topic's
-   **description** (below). **Don't** pick *"A message is received"* (fires on every message and
-   swallows everything).
-3. Add nodes with **+**: **Send a message** (plain-text answer) · **Ask a question** (capture the OPE
-   into a variable) · **Add a condition** (branch) · **Add a tool** (call `Run Percy Diagnostic` /
-   `Refresh Dashboard`, map inputs, read the output in a following message).
-4. **Save**, then exercise it in the **Test** pane.
+**C. Every "The agent chooses" trigger** is set the same way: click the **Trigger** node → **Change
+trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's description into the box.
 
 ---
 
-## Topics to build
+## Topic 1 — General 1% Club FAQ  **(build this)**
 
-Legend: **[Build]** = create it · **[Optional]** = the `Run Percy Diagnostic` action + instructions
-already handle this; build only to lock the wording.
+*Answers rules/how-to questions with exact values. No action call.*
 
-### 1. General 1% Club FAQ  **[Build]**  *(no tool)*
-- **The agent chooses — description:** *"Use when the user asks how 1% Club points are earned, how many
-  points a category is worth, whether a campaign/code is needed, or where to log an activity — general
-  programme-rules questions that don't need a specific deal (OPE)."*
-- **Nodes:** a single **Send a message** with the answer. For "how do I get points?", list the nine
-  ways (build pack §9) with exact values. No action call. *(A topic here gives consistent, exact rule
-  wording instead of a paraphrase.)*
-
-### 2. Refresh Dashboard  **[Build]**  *(calls `Refresh Dashboard`)*
-- **Description:** *"Use when the user asks to refresh or update the dashboard, or says their
-  points/deal aren't showing yet, they just closed a deal today, or the data isn't updating."*
-- **Nodes:** **Add a tool → Refresh Dashboard** → **Add a condition** on the returned status →
-  **Send a message**: *started* → "I've kicked off a refresh — give it a few minutes and check again.";
-  *already running* → "It's already updating — check back shortly." **One refresh per request.**
-
-### 3. Clarify & Guide — the vague message  **[Build]**  *(calls `Run Percy Diagnostic` → Summary)*
-- **Description:** *"Use when the user asks a vague question about their points with no specific deal
-  and no clear category — e.g. 'why aren't my points showing', 'where are my points', 'I should have
-  more', 'nothing's showing up'."*
-- **Nodes:** **Add a tool → Run Percy Diagnostic** (`template = Summary`, `who = UserEmail`) →
-  **Send a message**: lead with their **total** and what's **pending** (waiting on approval is the #1
-  reason points look missing), then **offer** one next step — "Chasing a particular deal? Send me the
-  OPE and I'll check it." **Do not** ask them to pick a category, and never ask two things at once.
-
-### 4. Complete Care Diagnostic  **[Optional]**  *(→ `CompleteCare`)*
-- **Description:** *"Use when the user asks why Complete Care / New Logo / uplift points are or aren't
-  showing for a specific deal (OPE)."*
-- **Nodes:** **Condition** — is the OPE known (from context)? If not, **Ask a question** ("What's the
-  deal number? looks like OPE-123456789"). → **Add a tool → Run Percy Diagnostic** (`template =
-  CompleteCare`, `ope`, `who = UserEmail`) → **Send a message** explaining the flags: found / product
-  line / sales motion / close date / active contract / awarded points / in-funnel / **creditsToYou**.
-  **If it scores points but `creditsToYou = No`, that's the answer** — it credits to the
-  opportunity/pipeline owner, not the caller.
-
-### 5. CAP Diagnostic  **[Optional]**  *(→ `CAP`)*
-- **Description:** *"Use when the user asks about CAP points for a deal — a CAP engagement/request or a
-  CAP-generated order, incl. 'my CAP request isn't showing', 'Gemma', 'campaign code'."*
-- **Nodes:** (OPE condition as above) → **Run Percy Diagnostic** (`template = CAP`, `ope`, `who`) →
-  **Send a message** naming the FIRST failing gate. *Engagement:* exists in CAP requests? → created
-  ≥ 1 May 2026? → logged-by name matches the caller? → approval blank = **pending Gemma/BD sign-off**
-  (not "ineligible"). *Order:* in CAP-won? → won? → close ≥ 1 May? → approval. Mention the campaign
-  code **UKIMEA CSLV CAP Adoption** for orders but say you can't verify it from here.
-
-### 6. Customer Centricity Diagnostic  **[Optional]**  *(→ `CustomerCentricity`)*
-- **Description:** *"Use when the user asks why a logged customer / channel / leadership meeting (or
-  'event/activity') isn't scoring for a deal."*
-- **Nodes:** (OPE condition) → **Run Percy Diagnostic** (`template = CustomerCentricity`, `ope`,
-  `who`) → **Send a message** per meeting: **classified?** (subject must START with CUSTOMER / CHANNEL
-  / LEADERSHIP — quote back the prefix for typos like "CUSTMER"); **createdQualifies?** (meetings
-  created **before 1 May 2026** don't count — Customer Centricity gates on **created date**);
-  name-match; approval (manager approves weekly). Values: 10 customer/channel, 20 leadership.
-
-### 7. IB / Expand Diagnostic  **[Optional]**  *(→ `IBExpand`)*
-- **Description:** *"Use when the user asks about IB Upsell / Expand (pen-rate) points for a deal —
-  'IB', 'expand', 'renewal + expand', 'win-back', 'naked box'."*
-- **Nodes:** (OPE condition) → **Run Percy Diagnostic** (`template = IBExpand`, `ope`, `who`) →
-  **Send a message**: needs BOTH a renewal/IB motion AND an expand/new motion, **Won**, close ≥ 1 May.
-  **Two gotchas:** (1) if the deal already scores Complete Care, IB/Expand is **suppressed on that deal
-  by design** — say so; (2) if it earns points but **`creditsToYou = No`**, it credits to the
-  owner / pipeline / OS-sales person, not the caller. Not won → shows in the funnel only.
-
-### 8. IP in GreenLake Diagnostic  **[Optional]**  *(→ `IPGreenLake`, user-level)*
-- **Description:** *"Use when the user asks about IP-in-GreenLake points or their monthly IP % — this
-  is per-user, not per-deal."*
-- **Nodes:** **Add a tool → Run Percy Diagnostic** (`template = IPGreenLake`, `who = UserEmail`) →
-  **Send a message** with the % band and tier (0–10→10, 10–25→20, 25–40→30, 40–50→50, 50%+→75). No OPE
-  needed; no row / 0% → 0.
-
-### 9. Accreditation Diagnostic  **[Optional]**  *(→ `Accreditation`, user-level)*
-- **Description:** *"Use when the user asks about accreditation-race or CSM points, being 'S-coded',
-  'the race', or completion — person/team-level, not per-deal."*
-- **Nodes:** **Add a tool → Run Percy Diagnostic** (`template = Accreditation`, `who = UserEmail`) →
-  **Send a message**: S-coded? accreditation COMPLETE? excluded job family/individual? CSM L2+ → 30.
-  The 100/50/20 is a **team race** decided by completion standings — the tool shows eligibility/status.
-
-### 10. Fallback / Clarification  **[Build — customise the system topic]**  *(usually no tool)*
-- **Trigger:** this is the built-in **Fallback** system topic (fires when nothing else matches) — edit
-  it, don't recreate it.
-- **Nodes:** greeting / nonsense / mixed → be friendly, pull out any real intent and answer it; if
-  there's genuinely none, one line on what Percy can do (points questions · check a deal · refresh the
-  board). Off-topic → politely redirect. **Never loop; never dump the category list.**
-
-> **Not a topic — `Process Conversation JSON`:** under orchestration the agent parses the transcript
-> and finds the latest user turn + any OPE from the **instructions**. Don't build a topic for it.
+1. **Create:** Topics → **+ Add a topic → From blank**. Rename (top-left) to **`General 1% Club FAQ`**.
+2. **Trigger:** Trigger node → Change trigger → **The agent chooses** → paste:
+   > *Use when the user asks how 1% Club points are earned, how many points a category is worth,
+   > whether a campaign/code is needed, or where to log an activity — general programme-rules
+   > questions that don't need a specific deal (OPE).*
+3. **Node — Send a message:** click **+ → Send a message**, paste exactly:
+   > Here's how you earn 1% Club points:
+   > • **Complete Care – New Logo: 100** — a new Complete Care deal (customer has no active CC
+   >   contract), created from 1 May 2026. Auto-calculated, no code needed.
+   > • **Complete Care – Uplift: 75** — per uplift in an existing customer environment.
+   > • **IB Upsell / Expand: 1 point per 4% expand, max 25** — deal has a renewal *plus* an expand.
+   > • **IP in GreenLake (monthly %):** 0–10% = 10, 10–25% = 20, 25–40% = 30, 40–50% = 50, 50%+ = 75.
+   > • **CAP Engagement: 20** — per approved CAP request (log in SFDC → Support Requests → CAP Team
+   >   Engagement/Support; signed off by Gemma/BD).
+   > • **CAP-Generated Order: 50** — won, campaign code **UKIMEA CSLV CAP Adoption**, close date after
+   >   1 May 2026 (validated by Gemma).
+   > • **Accreditation (S-coded race): 100 / 50 / 20** for your team's 1st / 2nd / 3rd completion.
+   > • **Accreditation (CSMs): 30** per completion.
+   > • **Customer Centricity: 10** per customer meeting, **10** per channel meeting, **20** per
+   >   leadership introduction (log via Opportunity → Activities → New Event; the Subject must start
+   >   CUSTOMER / CHANNEL / LEADERSHIP; your manager approves weekly).
+   >
+   > Want me to check a specific deal? Send me the OPE and I'll take a look.
+4. **Save** (top-right). **Test:** type *"how do I get points?"* → expect the list above.
 
 ---
 
-## Settings (confirm these)
-- **Generative orchestration: ON.** (This is why triggers are "The agent chooses", not phrases.)
-- **General knowledge / web search: OFF** — keeps Percy strictly on the programme rules.
+## Topic 2 — Refresh Dashboard  **(build this)**
+
+*Kicks a data refresh when someone's numbers aren't showing yet.*
+
+1. **Create:** + Add a topic → From blank. Rename to **`Refresh Dashboard`**.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks to refresh or update the dashboard, or says their points/deal aren't
+   > showing yet, they just closed a deal today, or the data isn't updating.*
+3. **Node — Add a tool:** **+ → Add a tool → Refresh Dashboard**. No inputs to map. Its output is a
+   status string — note its variable name (e.g. **`status`**).
+4. **Node — Add a condition:** **+ → Add a condition**.
+   - Condition: **`status`** **is equal to** `already_running`.
+     - **Send a message:** *"It's already updating — give it a few minutes and your points will be
+       current."*
+   - **+ New branch → `status` is equal to** `error`.
+     - **Send a message:** *"I couldn't start a refresh just now — try again shortly, or ping the
+       programme team."*
+   - **All other conditions (else):**
+     - **Send a message:** *"I've kicked off a refresh — it takes a few minutes. Check back shortly
+       and your points should be up to date."*
+5. **Save.** **Test:** type *"my points aren't showing, refresh it"* → expect the "kicked off"
+   message. **One refresh per request** — don't add a loop.
+
+---
+
+## Topic 3 — Clarify & Guide (the vague message)  **(build this — most common)**
+
+*Handles "why aren't my points showing" with no deal and no category: act first, then offer.*
+
+1. **Create:** + Add a topic → From blank. Rename to **`Clarify and Guide`**.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks a vague question about their points with no specific deal and no clear
+   > category — e.g. "why aren't my points showing", "where are my points", "I should have more",
+   > "nothing's showing up".*
+3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**. Map inputs:
+   - **`template`** = `Summary`  *(type it as a literal value)*
+   - **`ope`** = *(leave blank)*
+   - **`who`** = **`Global.UserEmail`**
+   - Note the output variable (e.g. **`evidence`**).
+4. **Node — Send a message:** paste:
+   > Here's where you stand: {your total and what's pending}. Waiting on approval is the most common
+   > reason points look missing. Chasing a particular deal? Send me the OPE and I'll check it.
+
+   *(Let the agent fill the `{…}` from the `evidence` — leave that sentence as guidance, or insert the
+   `evidence` variable. Do **not** ask them to pick a category.)*
+5. **Save.** **Test:** type *"why aren't my points showing"* → expect a total + pending + an offer to
+   check a specific OPE.
+
+---
+
+## Topic 4 — Complete Care Diagnostic  *(optional — the action already covers this)*
+
+*Explains why Complete Care / New Logo / uplift points are or aren't showing for a deal.*
+
+1. **Create:** + Add a topic → From blank. Rename to **`Complete Care Diagnostic`**.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks why Complete Care, New Logo, or uplift points are or aren't showing for a
+   > specific deal (OPE).*
+3. **Trigger inputs (agent-filled):** under the trigger, **+ Add an input** → name **`ope`**, type
+   **String**, description *"The deal / OPE number the user mentioned, e.g. OPE-123456789."* The agent
+   fills this from the conversation.
+4. **Node — Add a condition** (get the OPE if the agent didn't): condition **`ope`** **is blank**.
+   - **Ask a question:** message *"Sure — what's the deal number? (looks like OPE-123456789)"*;
+     **save the response in `ope`**; identify as **User's entire response** (or Text).
+   - *(All other conditions: do nothing — carry on.)*
+5. **Node — Add a tool → Run Percy Diagnostic.** Map inputs:
+   - **`template`** = `CompleteCare`
+   - **`ope`** = **`Topic.ope`**
+   - **`who`** = **`Global.UserEmail`**
+6. **Node — Send a message** (let the agent explain the returned evidence in plain English). If you
+   want the wording locked, add a **Condition** on the returned fields and use these exact lines:
+   - `creditsToYou = No` and points > 0 → *"This deal IS scoring Complete Care points, but they're
+     crediting to the opportunity/pipeline owner, not you. If you should hold it, get the owner
+     updated on the deal."*  ← **this is the usual answer**
+   - `ccPointsTotal = 100` → *"Scoring the full 100 Complete Care New Logo points — and they credit to
+     you."*
+   - `inFunnelNotYetWon = Yes` → *"Qualifies on product and timing, but it hasn't been Won yet —
+     points land on win."*
+   - `activeCCContract = Yes` → *"The customer already has an active Complete Care contract, so it
+     fails New Logo; an uplift would score 75 — want me to re-check as uplift?"*
+   - `hasCCProductLine = No` → *"No Complete Care product lines on this opp, so it isn't picking up CC
+     points."*
+   - `found = No` → *"Can't find that deal in the scoring yet — check the number, or it may need a
+     refresh."*
+7. **Save & Test:** *"why no complete care points on OPE-123456789"*.
+
+---
+
+## Topic 5 — CAP Diagnostic  *(optional)*
+
+*Explains CAP engagement (20) and CAP-generated order (50) points for a deal.*
+
+1. **Create → rename** `CAP Diagnostic`.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks about CAP points for a deal — a CAP engagement/request or a CAP-generated
+   > order, including "my CAP request isn't showing", "Gemma", or "campaign code".*
+3. **Trigger input:** **`ope`** (String) — *"The deal / OPE number, e.g. OPE-123456789."*
+4. **Condition `ope` is blank → Ask a question** *"What's the deal number? (looks like OPE-123456789)"*
+   → save to **`ope`**.
+5. **Add a tool → Run Percy Diagnostic:** `template` = `CAP`, `ope` = `Topic.ope`, `who` =
+   `Global.UserEmail`.
+6. **Send a message** (agent explains; exact lines if you lock it — surface the FIRST failing gate):
+   - `inCapRequests = No` → *"No CAP request logged against this opp — log it in SFDC → Support
+     Requests → CAP Team Engagement/Support."*
+   - `capRequestCreatedQualifies = No` → *"Logged, but created before the 1 May 2026 cut-off."*
+   - `capRequestLoggedByMatchesCaller = No` → *"Logged under someone else's name, not yours — that's
+     why it isn't crediting to you."*
+   - request logged, approval blank → *"Logged and eligible — pending sign-off by Gemma/BD; 20 points
+     on approval."*
+   - order won + qualifies, approval blank → *"Won and eligible, but pending Gemma's validation — 50
+     points on approval. Also confirm the campaign code UKIMEA CSLV CAP Adoption."*
+   - `capWonCloseQualifies = No` → *"Close date is before 1 May 2026, the CAP-order cut-off."*
+7. **Save & Test:** *"my cap request isn't showing on OPE-123456789"*.
+
+---
+
+## Topic 6 — Customer Centricity Diagnostic  *(optional)*
+
+*Explains logged customer / channel / leadership meeting points for a deal.*
+
+1. **Create → rename** `Customer Centricity Diagnostic`.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks why a logged customer / channel / leadership meeting (or "event" /
+   > "activity") isn't scoring for a deal.*
+3. **Trigger input:** **`ope`** (String) — *"The deal / OPE number, e.g. OPE-123456789."*
+4. **Condition `ope` is blank → Ask a question** → save to **`ope`**.
+5. **Add a tool → Run Percy Diagnostic:** `template` = `CustomerCentricity`, `ope` = `Topic.ope`,
+   `who` = `Global.UserEmail`.
+6. **Send a message** (agent explains; exact lines if locked — it returns one row per meeting):
+   - `meetingCount = 0` → *"No logged events on this opp — add one via Opportunity → Activities → New
+     Event."*
+   - `meetingClassified = No` → *"Your meeting's subject doesn't START with CUSTOMER / CHANNEL /
+     LEADERSHIP, so it isn't classified — re-log with the keyword at the very start (watch for typos
+     like 'CUSTMER')."*
+   - `createdQualifies = No` → *"This meeting was logged before the 1 May 2026 cut-off, so it doesn't
+     count."*  *(Customer Centricity gates on **created date**.)*
+   - `loggedByMatchesCaller = No` → *"Logged under someone else, so it's crediting to them, not you."*
+   - classified, approval blank → *"I can see a {meetingType} — {points} points once your manager
+     approves (weekly)."*
+7. **Save & Test:** *"logged a customer meeting on OPE-123456789 but no points"*.
+
+---
+
+## Topic 7 — IB / Expand Diagnostic  *(optional)*
+
+*Explains IB Upsell / Expand pen-rate points (1 per 4% expand, ≤25) for a deal.*
+
+1. **Create → rename** `IB Expand Diagnostic`.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks about IB Upsell / Expand (pen-rate) points for a deal — "IB", "expand",
+   > "renewal + expand", "win-back", "naked box".*
+3. **Trigger input:** **`ope`** (String).
+4. **Condition `ope` is blank → Ask a question** → save to **`ope`**.
+5. **Add a tool → Run Percy Diagnostic:** `template` = `IBExpand`, `ope` = `Topic.ope`, `who` =
+   `Global.UserEmail`.
+6. **Send a message** (agent explains; exact lines if locked):
+   - `completeCarePointsPresent = Yes`, award 0 → *"This deal already scores Complete Care points, so
+     IB/Expand isn't paid on the same deal — it's counted under Complete Care."*
+   - one motion missing → *"IB/Expand needs BOTH a renewal/IB motion and an expand motion; I only see
+     one."*
+   - `creditsToYou = No`, points > 0 → *"It earns IB/Expand points, but they credit to the owner /
+     pipeline / OS-sales person, not you."*
+   - `inFunnelNotYetWon = Yes` → *"Qualifies but hasn't been Won yet — IB/Expand lands on win."*
+   - points > 0, `creditsToYou = Yes` → *"Scoring your IB/Expand points (renewal + expand, capped 25)."*
+7. **Save & Test:** *"why no expand points on OPE-123456789"*.
+
+---
+
+## Topic 8 — IP in GreenLake Diagnostic  *(optional — user-level, no OPE)*
+
+*Explains IP-in-GreenLake tier points (10–75) for the caller.*
+
+1. **Create → rename** `IP in GreenLake Diagnostic`.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks about IP-in-GreenLake points or their monthly IP % — this is per-user,
+   > not per-deal.*
+3. **No `ope` input.** (This scheme is per-person.)
+4. **Add a tool → Run Percy Diagnostic:** `template` = `IPGreenLake`, `who` = `Global.UserEmail`
+   *(leave `ope` blank)*.
+5. **Send a message** (agent explains; exact lines if locked):
+   - row present → *"Your IP-in-GreenLake for this month is in the {band} band — {points} points."*
+     (bands: 0–10→10, 10–25→20, 25–40→30, 40–50→50, 50%+→75)
+   - `hasIPGLRow = No` / 0% → *"No IP-in-GreenLake figure for you this month, so no points from that
+     scheme yet (it's recognised monthly from SFDC)."*
+6. **Save & Test:** *"how are my greenlake points"*.
+
+---
+
+## Topic 9 — Accreditation Diagnostic  *(optional — user-level, no OPE)*
+
+*Explains accreditation-race / CSM eligibility for the caller.*
+
+1. **Create → rename** `Accreditation Diagnostic`.
+2. **Trigger → The agent chooses:**
+   > *Use when the user asks about accreditation-race or CSM points, being "S-coded", "the race", or
+   > "completion" — person/team-level, not per-deal.*
+3. **No `ope` input.**
+4. **Add a tool → Run Percy Diagnostic:** `template` = `Accreditation`, `who` = `Global.UserEmail`.
+5. **Send a message** (agent explains; exact lines if locked):
+   - not S-coded → *"The race is for S-coded individuals; your record isn't flagged as S-coded."*
+   - not COMPLETE → *"Your accreditation isn't COMPLETE yet — the team race credits once the sponsor
+     group is complete."*
+   - excluded individual → *"This scheme excludes Adrian and Garren."*
+   - CSM L2+ → *"As a CSM (L2+) you're eligible for 30 points on completion."*
+   - eligible, points > 0 → *"You've got {n} accreditation points — the 100/50/20 is a team race
+     decided by completion standings."*
+6. **Save & Test:** *"am I in the accreditation race"*.
+
+---
+
+## Topic 10 — Fallback  **(build this — customise the built-in one)**
+
+*Handles greetings, nonsense, off-topic. Don't create a new topic — edit the existing **Fallback**
+system topic.*
+
+1. **Open:** Topics → **System** → **Fallback**.
+2. **Node — Send a message** (replace the default text):
+   > I'm Percy — I help with 1% Club points. I can explain how points are earned, check why a
+   > specific deal is or isn't scoring (just send the OPE), or refresh the dashboard for you. What
+   > would you like?
+3. Keep it to **one friendly line of intent** — never loop, never dump the full category list.
+4. **Save.**
+
+> **Not a topic — conversation parsing.** The agent reads the transcript and finds the latest user
+> turn + any OPE from the **Overview → Instructions**. Don't build a topic for it.
+
+---
+
+## Settings (confirm)
+- **Generative orchestration: ON** (this is why triggers are "The agent chooses").
+- **General knowledge / web search: OFF** (keeps Percy on the programme rules).
 - **Authentication:** as your tenant requires; the agent runs server-side from the orchestrator flow.
 
-## Minimum viable set
-If you build nothing else: the **two actions** + **General FAQ** + **Clarify & Guide** + the
-**Fallback** topic already give a complete Percy — the action + instructions cover every diagnostic.
-Add the per-scheme **[Optional]** topics later only where you want the wording locked.
+## Minimum viable Percy
+Build just **Topics 1, 2, 3, and 10** (FAQ · Refresh · Clarify & Guide · Fallback) plus the **two
+actions** — that's a complete assistant, because `Run Percy Diagnostic` + the instructions already
+cover every per-scheme diagnostic. Add **Topics 4–9** later only where you want the wording locked.
