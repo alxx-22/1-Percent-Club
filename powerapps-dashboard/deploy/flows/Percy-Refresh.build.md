@@ -21,22 +21,43 @@ Add **Power BI → Refresh a dataset**.
 > so Percy must not fire repeated refreshes — the instruction set already says "one per request".
 
 ## 3. (Recommended) handle "already running"
-A refresh fails if one is already in progress. Wrap step 2 so that case returns a friendly status
-instead of an error:
-- On the **Refresh a dataset** action → **⋯ → Configure run after** isn't enough alone; simplest is a
-  parallel branch:
-  - **Compose `Status` = "started"** (run after Refresh **is successful**).
-  - **Compose `Status` = "already_running"** (run after Refresh **has failed / timed out** — the
-    connector returns a conflict when a refresh is in progress).
-- Then a **Compose `StatusOut`** = `coalesce(outputs('Status_started'),outputs('Status_already'))`.
+A refresh **fails** if one is already in progress, so we turn success/failure into a friendly status.
 
-*(If you'd rather keep it minimal: skip the branch and just return "started"; Percy's copy still reads
-well, you just won't distinguish "already running".)*
+> **First, the thing that confuses everyone:** *Refresh a dataset* returns an **empty body — it has NO
+> dynamic outputs, ever.* That's normal. You will NOT pick dynamic content into these Composes; you
+> **type literal text** (`started` / `already_running`). The signal we're capturing is whether the
+> Refresh action **succeeded or failed**, and that's captured with **Configure run after** — not with
+> outputs.
+
+Build it like this:
+
+1. **Two parallel Composes under the Refresh.** Click the **+** directly under **Refresh a dataset**
+   → **Add a parallel branch** (not "Add an action").
+   - Branch A: **Compose**, rename it exactly **`Status_started`**, **Inputs:** type the plain text
+     `started` (the dynamic-content pane is empty — ignore it).
+   - Branch B: **Compose**, rename it exactly **`Status_already`**, **Inputs:** type `already_running`.
+2. **Make branch B the failure branch.** Select `Status_already` → **⋯ / Settings → Configure run
+   after** → under *Refresh a dataset* tick **has failed** + **has timed out**, untick **is
+   successful**. (`Status_started` keeps the default *is successful*.)
+3. **Compose `StatusOut`** — add a **Compose** after the branches rejoin (the **+** below both),
+   rename it **`StatusOut`**, and set **Inputs** via the **fx / Expression** tab (not plain text):
+   `coalesce(outputs('Status_started'), outputs('Status_already'))`
+4. **⚠️ Run-after on `StatusOut` — the trap.** It has TWO predecessors, and in any run exactly one
+   branch executes while the other is **Skipped**. Open **Configure run after** on `StatusOut` and for
+   **each** predecessor tick **is successful AND is skipped**. If you leave the default, `StatusOut`
+   is skipped whenever either branch is — i.e. every run — and the flow dies. With *is skipped*
+   ticked, the skipped Compose's `outputs()` is just null and `coalesce` returns the one that ran.
+
+> **Naming:** `outputs('…')` uses the **internal** name — spaces become underscores (`Status started`
+> → `outputs('Status_started')`). Name the Composes with underscores from the start.
+
+*(Minimal alternative: skip all of step 3 and return the literal `started` in step 4 — works fine, you
+just can't distinguish "already running".)*
 
 ## 4. Return to Copilot Studio
 Add **Microsoft Copilot Studio → Respond to Copilot Studio**.
-- **+ Add an output → Text**, name **`status`**, value `outputs('StatusOut')` (or the literal
-  `"started"` in the minimal version).
+- **+ Add an output → Text**, name **`status`**, value via **fx**: `outputs('StatusOut')` (or the
+  literal text `started` in the minimal version).
 
 Save, then add this flow to the Percy agent as the action **"Refresh Dashboard"**
 (see [`../copilot-studio/topics.md`](../copilot-studio/topics.md)).
@@ -46,11 +67,12 @@ Save, then add this flow to the Percy agent as the action **"Refresh Dashboard"*
 ## Flow at a glance
 ```
 When Copilot Studio calls the flow   (no inputs)
-├─ Power BI: Refresh a dataset  (1% Club model)
-│    ├─ success  → Compose Status = "started"
-│    └─ failed   → Compose Status = "already_running"
-├─ Compose StatusOut = coalesce(...)
-└─ Respond to Copilot Studio: status = StatusOut
+├─ Power BI: Refresh a dataset   (1% Club model — returns an EMPTY body, no dynamic outputs)
+│    ├─ Compose Status_started = "started"          (typed text · run after: is successful)
+│    └─ Compose Status_already = "already_running"  (typed text · run after: has failed/timed out)
+├─ Compose StatusOut = coalesce(outputs('Status_started'), outputs('Status_already'))
+│                                    (run after BOTH: is successful + IS SKIPPED)
+└─ Respond to Copilot Studio: status = outputs('StatusOut')
 ```
 
 ## What Percy says (from the returned status)
