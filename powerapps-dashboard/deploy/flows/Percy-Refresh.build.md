@@ -39,14 +39,26 @@ Build it like this:
 2. **Make branch B the failure branch.** Select `Status_already` → **⋯ / Settings → Configure run
    after** → under *Refresh a dataset* tick **has failed** + **has timed out**, untick **is
    successful**. (`Status_started` keeps the default *is successful*.)
-3. **Compose `StatusOut`** — add a **Compose** after the branches rejoin (the **+** below both),
-   rename it **`StatusOut`**, and set **Inputs** via the **fx / Expression** tab (not plain text):
-   `coalesce(outputs('Status_started'), outputs('Status_already'))`
-4. **⚠️ Run-after on `StatusOut` — the trap.** It has TWO predecessors, and in any run exactly one
-   branch executes while the other is **Skipped**. Open **Configure run after** on `StatusOut` and for
-   **each** predecessor tick **is successful AND is skipped**. If you leave the default, `StatusOut`
-   is skipped whenever either branch is — i.e. every run — and the flow dies. With *is skipped*
-   ticked, the skipped Compose's `outputs()` is just null and `coalesce` returns the one that ran.
+3. **Compose `StatusOut` — rejoining the branches.** There's no "merge" line to draw: **the join IS
+   the run-after dependencies** — an action "rejoins" branches by running after *both* of them.
+   Two ways to get there:
+   - **The converge +:** below the whole parallel block (where the two branch lines meet and the flow
+     returns to a single column) there's a centre **+** — an action added *there* depends on both
+     branches automatically. ⚠️ The + hanging under either Compose extends **that branch only**.
+   - **By hand (always works):** add the Compose anywhere after the branches (even inside one), then
+     open **Configure run after** on it and **add the other branch's Compose as a second predecessor**
+     ("+ select actions").
+
+   Either way: rename it **`StatusOut`** and set **Inputs** via the **fx / Expression** tab (not
+   plain text): `coalesce(outputs('Status_started'), outputs('Status_already'))`
+4. **⚠️ Run-after on `StatusOut` — the trap.** In any run exactly one branch executes while the other
+   is **Skipped**. Open **Configure run after** on `StatusOut` and for **each** predecessor tick
+   **is successful AND is skipped**. If you leave the default, `StatusOut` is skipped whenever either
+   branch is — i.e. every run — and the flow dies. With *is skipped* ticked, the skipped Compose's
+   `outputs()` is just null and `coalesce` returns the one that ran.
+   - **Verify the join here too:** this dialog must list **both** `Status_started` and
+     `Status_already` as predecessors, each with *successful + skipped* ticked. Only one listed =
+     the branches haven't rejoined — add the missing one.
 
 > **Naming:** `outputs('…')` uses the **internal** name — spaces become underscores (`Status started`
 > → `outputs('Status_started')`). Name the Composes with underscores from the start.
