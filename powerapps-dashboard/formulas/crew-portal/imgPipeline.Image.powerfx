@@ -28,7 +28,7 @@
                 "<text x='48' y='" & Text(y+17) & "' font-size='12.5' font-weight='600' fill='#292d3a'>" & ct & "</text>" &
                 "<text x='640' y='" & Text(y+17) & "' font-size='12.5' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text( Val, "#,##0" ) & " <tspan fill='#606a70' font-weight='400'>&#183; " & Text(Cnt) & "</tspan></text>" &
                 "<rect x='48' y='" & Text(y+22) & "' width='592' height='8' rx='4' fill='#f2f3f4'/>" &
-                "<rect x='48' y='" & Text(y+22) & "' width='" & Text( Round( Max( 6, 592 * Val / varPipeMax ), 0 ) ) & "' height='8' rx='4' fill='" & col & "' class='gx' style='animation-delay:" & Text( 300 + Idx*80 ) & "ms'/>" &
+                "<rect x='48' y='" & Text(y+22) & "' width='" & Text( Round( Max( 6, 592 * Val / Max( varPipeMax, 1 ) ), 0 ) ) & "' height='8' rx='4' fill='" & col & "' class='gx' style='animation-delay:" & Text( 300 + Idx*80 ) & "ms'/>" &
                 "</g>"
             )
         )
