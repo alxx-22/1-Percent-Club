@@ -6,7 +6,7 @@
 //  Member view highlights the viewer ("YOU"); sponsor view shows the crew only.
 // ============================================================================
 With(
-    { rows: RoundUp( CountRows( colMyCrew ) / 2, 0 ) },
+    { rows: Max( RoundUp( CountRows( colMyCrew ) / 2, 0 ), 1 ) },
     With(
         { th: Int( (244 - 26 - (rows-1)*8) / rows ) },
         "data:image/svg+xml;utf8," & EncodeUrl(
