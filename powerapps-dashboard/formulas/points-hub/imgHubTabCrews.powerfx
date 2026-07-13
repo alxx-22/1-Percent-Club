@@ -1,0 +1,26 @@
+// ============================================================================
+//  VIEW TOGGLE, LEFT SEGMENT — "All crews".  Control: Image "imgHubTabCrews"
+//  Geometry: X=16  Y=68  Width=150  Height=34   ImagePosition=Fit
+//
+//  ---------------------------------------------------------------------------
+//  OnSelect:
+//      Set( varHubView, "crews" )
+//  ---------------------------------------------------------------------------
+//  Image:  (below)
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 150 34' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { on: varHubView = "crews" },
+        "<g class='fu'>" &
+        "<path d='M18,1 h131 v32 h-131 a17,17 0 0 1 0,-32 z' fill='" & If( on, "#01a982", "#ffffff" ) & "' stroke='" & If( on, "#01a982", "#d4d8db" ) & "'/>" &
+        // 2x2 grid glyph = every crew
+        "<g fill='" & If( on, "#ffffff", "#606a70" ) & "'>" &
+        "<rect x='18' y='10' width='6' height='6' rx='1.5'/><rect x='26' y='10' width='6' height='6' rx='1.5'/>" &
+        "<rect x='18' y='18' width='6' height='6' rx='1.5'/><rect x='26' y='18' width='6' height='6' rx='1.5'/>" &
+        "</g>" &
+        "<text x='42' y='18' font-size='12.5' font-weight='700' fill='" & If( on, "#ffffff", "#3e4550" ) & "' dominant-baseline='central'>All crews</text>" &
+        "</g>" &
+        "</svg>"
+    )
+)

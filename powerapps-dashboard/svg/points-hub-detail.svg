@@ -1,0 +1,223 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 640' width='1136' height='640' font-family='Segoe UI, Arial, sans-serif' role='img' aria-label='Points HQ, crew detail view mock'>
+  <style>
+    .fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}
+    .fo{animation:fo .5s ease-out both}
+    .pp{animation:pp .5s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:center}
+    .gx{animation:gx .65s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}
+    .rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}
+    .brz{animation:brz 2.6s ease-in-out infinite}
+    @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    @keyframes fo{from{opacity:0}to{opacity:1}}
+    @keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+    @keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+    @keyframes brz{0%,100%{opacity:.9}50%{opacity:.45}}
+    @media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.brz{animation:none}}
+  </style>
+  <rect x='0' y='0' width='1136' height='640' fill='#f7f7f7'/>
+
+  <!-- ribbon -->
+  <g class='fu'>
+    <rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>
+    <line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>
+    <rect x='16' y='11' width='132' height='30' rx='15' fill='#f2f3f4' stroke='#d4d8db'/>
+    <path d='M41,19 l-6,7 l6,7' fill='none' stroke='#006750' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>
+    <text x='55' y='30' font-size='12.5' font-weight='600' fill='#006750'>Dashboard</text>
+    <rect x='164' y='13' width='26' height='26' rx='7' fill='#006750'/>
+    <rect x='170' y='26' width='3.5' height='7' rx='1.2' fill='#ffffff'/>
+    <rect x='175.5' y='22' width='3.5' height='11' rx='1.2' fill='#ffffff'/>
+    <rect x='181' y='18' width='3.5' height='15' rx='1.2' fill='#ffffff'/>
+    <text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Points HQ <tspan fill='#606a70' font-weight='400'>&#183; points by crew &amp; member</tspan></text>
+    <rect x='880' y='10' width='240' height='32' rx='16' fill='#f2f3f4'/>
+    <circle cx='900' cy='26' r='12' fill='#01a982'/>
+    <text x='900' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>AS</text>
+    <text x='920' y='30' font-size='13' fill='#3e4550'>Alex Smith &#183; Sponsor</text>
+  </g>
+
+  <!-- segmented toggle: detail active -->
+  <g class='fu' style='animation-delay:60ms'>
+    <path d='M34,69 h131 v32 h-131 a17,17 0 0 1 0,-32 z' fill='#ffffff' stroke='#d4d8db'/>
+    <g fill='#606a70'>
+      <rect x='34' y='78' width='6' height='6' rx='1.5'/><rect x='42' y='78' width='6' height='6' rx='1.5'/>
+      <rect x='34' y='86' width='6' height='6' rx='1.5'/><rect x='42' y='86' width='6' height='6' rx='1.5'/>
+    </g>
+    <text x='58' y='86' font-size='12.5' font-weight='700' fill='#3e4550' dominant-baseline='central'>All crews</text>
+    <path d='M167,69 h151 a17,17 0 0 1 0,32 h-151 z' fill='#01a982' stroke='#01a982'/>
+    <g fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round'>
+      <circle cx='184' cy='81' r='4'/><path d='M177,93 c0,-4 3,-6 7,-6 c4,0 7,2 7,6'/>
+    </g>
+    <text x='198' y='86' font-size='12.5' font-weight='700' fill='#ffffff' dominant-baseline='central'>Green Machine</text>
+  </g>
+
+  <!-- legend chips: Cust Cent active -->
+  <g>
+    <g class='pp' style='animation-delay:80ms'>
+      <rect x='353' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='368' cy='85' r='4' fill='#0070f8'/>
+      <text x='380' y='82' font-size='10' font-weight='700' fill='#292d3a'>CC Logo / IB</text>
+      <text x='380' y='94' font-size='9' fill='#606a70'>1,146 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:130ms'>
+      <rect x='479' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='494' cy='85' r='4' fill='#04909d'/>
+      <text x='506' y='82' font-size='10' font-weight='700' fill='#292d3a'>CAP Eng</text>
+      <text x='506' y='94' font-size='9' fill='#606a70'>402 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:180ms'>
+      <rect x='605' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='620' cy='85' r='4' fill='#009a71'/>
+      <text x='632' y='82' font-size='10' font-weight='700' fill='#292d3a'>CAP Orders</text>
+      <text x='632' y='94' font-size='9' fill='#606a70'>335 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:230ms'>
+      <rect x='731' y='69' width='118' height='32' rx='16' fill='#7764fc' stroke='#7764fc' stroke-width='2'/>
+      <circle cx='746' cy='85' r='4' fill='#ffffff'/>
+      <text x='758' y='82' font-size='10' font-weight='700' fill='#ffffff'>Cust Cent</text>
+      <text x='758' y='94' font-size='9' fill='#ffffff' opacity='.85'>287 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:280ms'>
+      <rect x='857' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='872' cy='85' r='4' fill='#cc54a4'/>
+      <text x='884' y='82' font-size='10' font-weight='700' fill='#292d3a'>Accred</text>
+      <text x='884' y='94' font-size='9' fill='#606a70'>221 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:330ms'>
+      <rect x='983' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='998' cy='85' r='4' fill='#d25f4b'/>
+      <text x='1010' y='82' font-size='10' font-weight='700' fill='#292d3a'>IP Push</text>
+      <text x='1010' y='94' font-size='9' fill='#606a70'>158 pts</text>
+    </g>
+  </g>
+
+  <!-- crew summary hero -->
+  <g class='fu' style='animation-delay:80ms'>
+    <rect x='16' y='110' width='1104' height='178' rx='14' fill='#ffffff' stroke='#d4d8db'/>
+    <clipPath id='hs'><rect x='16' y='110' width='1104' height='178' rx='14'/></clipPath>
+    <rect x='16' y='110' width='1104' height='5' fill='#01a982' clip-path='url(#hs)'/>
+    <text x='40' y='152' font-size='20' font-weight='700' fill='#292d3a'>Green Machine</text>
+    <text x='40' y='172' font-size='11' fill='#606a70'>9 members &#183; rank 1 of 10 by total points</text>
+    <text x='40' y='228' font-size='34' font-weight='700' fill='#006750'>412</text>
+    <text x='40' y='246' font-size='8.5' font-weight='600' letter-spacing='.6' fill='#606a70'>CREW TOTAL &#183; EXCL PENDING</text>
+    <g class='brz'>
+      <rect x='40' y='256' width='95' height='18' rx='9' fill='#FBEEDF'/>
+      <text x='87' y='265' font-size='10' font-weight='600' fill='#d36d00' text-anchor='middle' dominant-baseline='central'>+28 pending</text>
+    </g>
+    <line x1='332' y1='124' x2='332' y2='274' stroke='#d4d8db'/>
+    <!-- tiles: Cust Cent ringed (active filter) -->
+    <g class='fo' style='animation-delay:200ms'>
+      <rect x='348' y='124' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>
+      <rect x='348' y='124' width='5' height='68' rx='2.5' fill='#0070f8'/>
+      <circle cx='368' cy='143' r='3.5' fill='#0070f8'/>
+      <text x='378' y='146' font-size='10' font-weight='600' fill='#606a70'>New CC Logo / IB Upsell</text>
+      <text x='364' y='176' font-size='18' font-weight='700' fill='#292d3a'>140</text>
+      <text x='580' y='176' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>34% of crew</text>
+    </g>
+    <g class='fo' style='animation-delay:260ms'>
+      <rect x='608' y='124' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>
+      <rect x='608' y='124' width='5' height='68' rx='2.5' fill='#04909d'/>
+      <circle cx='628' cy='143' r='3.5' fill='#04909d'/>
+      <text x='638' y='146' font-size='10' font-weight='600' fill='#606a70'>CAP Engagement</text>
+      <text x='624' y='176' font-size='18' font-weight='700' fill='#292d3a'>67</text>
+      <text x='840' y='176' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>16% of crew</text>
+    </g>
+    <g class='fo' style='animation-delay:320ms'>
+      <rect x='868' y='124' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>
+      <rect x='868' y='124' width='5' height='68' rx='2.5' fill='#009a71'/>
+      <circle cx='888' cy='143' r='3.5' fill='#009a71'/>
+      <text x='898' y='146' font-size='10' font-weight='600' fill='#606a70'>CAP Orders Booked</text>
+      <text x='884' y='176' font-size='18' font-weight='700' fill='#292d3a'>62</text>
+      <text x='1100' y='176' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>15% of crew</text>
+    </g>
+    <g class='fo' style='animation-delay:380ms'>
+      <rect x='348' y='200' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#7764fc' stroke-width='2'/>
+      <rect x='348' y='200' width='5' height='68' rx='2.5' fill='#7764fc'/>
+      <circle cx='368' cy='219' r='3.5' fill='#7764fc'/>
+      <text x='378' y='222' font-size='10' font-weight='600' fill='#606a70'>Customer Centricity</text>
+      <text x='364' y='252' font-size='18' font-weight='700' fill='#292d3a'>58</text>
+      <text x='580' y='252' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>14% of crew</text>
+    </g>
+    <g class='fo' style='animation-delay:440ms'>
+      <rect x='608' y='200' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>
+      <rect x='608' y='200' width='5' height='68' rx='2.5' fill='#cc54a4'/>
+      <circle cx='628' cy='219' r='3.5' fill='#cc54a4'/>
+      <text x='638' y='222' font-size='10' font-weight='600' fill='#606a70'>Accreditation Race</text>
+      <text x='624' y='252' font-size='18' font-weight='700' fill='#292d3a'>49</text>
+      <text x='840' y='252' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>12% of crew</text>
+    </g>
+    <g class='fo' style='animation-delay:500ms'>
+      <rect x='868' y='200' width='248' height='68' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>
+      <rect x='868' y='200' width='5' height='68' rx='2.5' fill='#d25f4b'/>
+      <circle cx='888' cy='219' r='3.5' fill='#d25f4b'/>
+      <text x='898' y='222' font-size='10' font-weight='600' fill='#606a70'>IP Push</text>
+      <text x='884' y='252' font-size='18' font-weight='700' fill='#292d3a'>36</text>
+      <text x='1100' y='252' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>9% of crew</text>
+    </g>
+  </g>
+
+  <!-- member rows, isolated on Cust Cent (purple bars, live re-rank) -->
+  <g class='rw' style='animation-delay:60ms'>
+    <rect x='18' y='298' width='1100' height='46' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='321' r='12' fill='#E0A300'/>
+    <text x='42' y='322' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1</text>
+    <text x='64' y='317' font-size='13' font-weight='700' fill='#292d3a'>Priya Raman</text>
+    <text x='64' y='333' font-size='9.5' fill='#606a70'>Account Executive</text>
+    <rect x='346' y='315' width='560' height='12' rx='6' fill='#f2f3f4'/>
+    <rect x='346' y='315' width='560' height='12' rx='6' fill='#7764fc' class='gx' style='animation-delay:150ms'/>
+    <text x='1108' y='322' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>18</text>
+    <text x='1108' y='335' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <g class='rw' style='animation-delay:95ms'>
+    <rect x='18' y='348' width='1100' height='46' rx='10' fill='#d1ffee' stroke='#01a982' stroke-width='2'/>
+    <circle cx='42' cy='371' r='12' fill='#8C99A4'/>
+    <text x='42' y='372' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>2</text>
+    <text x='64' y='367' font-size='13' font-weight='700' fill='#292d3a'>Alex Smith <tspan fill='#006750' font-weight='600'>&#183; you</tspan></text>
+    <text x='64' y='383' font-size='9.5' fill='#606a70'>Sales Manager</text>
+    <rect x='346' y='365' width='560' height='12' rx='6' fill='#ffffff'/>
+    <rect x='346' y='365' width='435' height='12' rx='6' fill='#7764fc' class='gx' style='animation-delay:185ms'/>
+    <text x='1108' y='372' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>14</text>
+    <text x='1108' y='385' font-size='8.5' font-weight='600' fill='#d36d00' text-anchor='end'>+4 PENDING</text>
+  </g>
+  <g class='rw' style='animation-delay:130ms'>
+    <rect x='18' y='398' width='1100' height='46' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='421' r='12' fill='#B5742E'/>
+    <text x='42' y='422' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>3</text>
+    <text x='64' y='417' font-size='13' font-weight='700' fill='#292d3a'>Jordan Lee</text>
+    <text x='64' y='433' font-size='9.5' fill='#606a70'>Solution Architect</text>
+    <rect x='346' y='415' width='560' height='12' rx='6' fill='#f2f3f4'/>
+    <rect x='346' y='415' width='310' height='12' rx='6' fill='#7764fc' class='gx' style='animation-delay:220ms'/>
+    <text x='1108' y='422' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>10</text>
+    <text x='1108' y='435' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <g class='rw' style='animation-delay:165ms'>
+    <rect x='18' y='448' width='1100' height='46' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='471' r='12' fill='#f2f3f4'/>
+    <text x='42' y='472' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>4</text>
+    <text x='64' y='467' font-size='13' font-weight='700' fill='#292d3a'>Sam Okafor</text>
+    <text x='64' y='483' font-size='9.5' fill='#606a70'>Customer Success</text>
+    <rect x='346' y='465' width='560' height='12' rx='6' fill='#f2f3f4'/>
+    <rect x='346' y='465' width='186' height='12' rx='6' fill='#7764fc' class='gx' style='animation-delay:255ms'/>
+    <text x='1108' y='472' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>6</text>
+    <text x='1108' y='485' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <g class='rw' style='animation-delay:200ms'>
+    <rect x='18' y='498' width='1100' height='46' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='521' r='12' fill='#f2f3f4'/>
+    <text x='42' y='522' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>5</text>
+    <text x='64' y='517' font-size='13' font-weight='700' fill='#292d3a'>Mia Torres</text>
+    <text x='64' y='533' font-size='9.5' fill='#606a70'>Inside Sales</text>
+    <rect x='346' y='515' width='560' height='12' rx='6' fill='#f2f3f4'/>
+    <rect x='346' y='515' width='124' height='12' rx='6' fill='#7764fc' class='gx' style='animation-delay:290ms'/>
+    <text x='1108' y='522' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>4</text>
+    <text x='1108' y='535' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <g class='rw' style='animation-delay:235ms'>
+    <rect x='18' y='548' width='1100' height='46' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='571' r='12' fill='#f2f3f4'/>
+    <text x='42' y='572' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>6</text>
+    <text x='64' y='567' font-size='13' font-weight='700' fill='#292d3a'>Chris Novak</text>
+    <text x='64' y='583' font-size='9.5' fill='#606a70'>Presales Consultant</text>
+    <rect x='346' y='565' width='560' height='12' rx='6' fill='#f2f3f4'/>
+    <text x='1108' y='572' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>0</text>
+    <text x='1108' y='585' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+</svg>

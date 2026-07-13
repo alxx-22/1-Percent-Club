@@ -1,0 +1,89 @@
+// ============================================================================
+//  scrPoints.OnVisible  —  builds the POINTS HQ page data.
+//
+//  DEPENDS ON the dashboard build (colMembers / colCrew / colCrewBreak /
+//  varSvgCss / varRibbonChip / varMyInitials) — always reached via the
+//  dashboard's Points HQ button, so those already exist.
+//
+//  State (all Text-typed so comparisons never go Blank):
+//    varHubView  "crews" (all-crews bars)  |  "detail" (one crew's members)
+//    varHubCrew  the drilled-into crew name ("" = none picked yet)
+//    varHubCat   category isolate key ("" = stacked view, all categories)
+//
+//  Collections:
+//    colHubCrews   one row per crew: the 6 category sums + Total/Pending/size
+//    colHubMembers one row per person: same 6 categories (all crews, filtered
+//                  by varHubCrew in galHubMembers.Items — no rebuild on drill)
+//    colHubCats    the 6 categories: key, labels, colour, programme-wide total
+//
+//  Category keys (fixed order + colours — SAME entities as imgMyPoints):
+//    newcc #0070f8 · capeng #04909d · capord #009a71
+//    cc #7764fc · accred #cc54a4 · ip #d25f4b
+//
+//  Environment quirks honoured: no GroupBy/SortByColumns string args; ForAll
+//  with As alias; every divisor on the page is wrapped in Max(...,1).
+// ============================================================================
+
+// 0) reset page state --------------------------------------------------------
+Set( varHubView, "crews" );
+Set( varHubCrew, "" );
+Set( varHubCat,  "" );
+
+// 1) per-member category rows (all crews; detail view filters by varHubCrew) -
+//    Idx is a stable unique 0-based id — the member rows use it for their SVG
+//    clipPath ids, and ranks can tie (two 0-point members) so rank can't be it.
+ClearCollect(
+    colHubMembers,
+    ForAll(
+        Sequence( CountRows( colMembers ) ),
+        With(
+            { m: Last( FirstN( colMembers, Value ) ) },
+            { Idx:     Value - 1,
+              Name:    m.Name,
+              Crew:    m.Crew,
+              Role:    m.Role,
+              Email:   m.Email,
+              NewCC:   m.IBNS + m.NewCCLogo,
+              CapEng:  m.CapReq,
+              CapOrd:  m.CapWon,
+              CC:      m.CustCent,
+              Accred:  m.MgrPts,
+              IP:      m.IPgl,
+              Total:   m.MemberTotal,
+              Pending: m.MemberPending }
+        )
+    )
+);
+
+// 2) per-crew category rows (colCrewBreak already aggregates the categories) -
+ClearCollect(
+    colHubCrews,
+    ForAll(
+        colCrewBreak As b,
+        { Idx:      b.Rank - 1,
+          Rank:     b.Rank,
+          Crew:     b.Crew,
+          CrewSize: LookUp( colCrew, Crew = b.Crew, CrewSize ),
+          Total:    b.Total,
+          Pending:  b.Pending,
+          NewCC:    b.NewCC,
+          CapEng:   b.CapEng,
+          CapOrd:   b.CapOrd,
+          CC:       b.CC,
+          Accred:   b.Accred,
+          IP:       b.IP }
+    )
+);
+
+// 3) the six categories — legend chips + programme totals --------------------
+ClearCollect(
+    colHubCats,
+    Table(
+        { Idx:0, Key:"newcc",  Lbl:"New CC Logo / IB Upsell", SLbl:"CC Logo / IB", Col:"#0070f8", Tot: Sum( colHubMembers, NewCC ) },
+        { Idx:1, Key:"capeng", Lbl:"CAP Engagement",          SLbl:"CAP Eng",      Col:"#04909d", Tot: Sum( colHubMembers, CapEng ) },
+        { Idx:2, Key:"capord", Lbl:"CAP Orders Booked",       SLbl:"CAP Orders",   Col:"#009a71", Tot: Sum( colHubMembers, CapOrd ) },
+        { Idx:3, Key:"cc",     Lbl:"Customer Centricity",     SLbl:"Cust Cent",    Col:"#7764fc", Tot: Sum( colHubMembers, CC ) },
+        { Idx:4, Key:"accred", Lbl:"Accreditation Race",      SLbl:"Accred",       Col:"#cc54a4", Tot: Sum( colHubMembers, Accred ) },
+        { Idx:5, Key:"ip",     Lbl:"IP Push",                 SLbl:"IP Push",      Col:"#d25f4b", Tot: Sum( colHubMembers, IP ) }
+    )
+)

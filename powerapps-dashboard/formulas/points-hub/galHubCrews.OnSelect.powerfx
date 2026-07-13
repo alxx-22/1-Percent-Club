@@ -1,0 +1,16 @@
+// ============================================================================
+//  galHubCrews.OnSelect  —  tapping a crew bar drills into that crew.
+//
+//  GALLERY SETUP (blank vertical gallery "galHubCrews"):
+//    X=16 Y=140 Width=1104 Height=484  TemplateSize=48  TemplatePadding=0
+//    ShowScrollbar=false   Visible = varHubView = "crews"
+//    Template contains one Image "imgHubCrewRow" (imgHubCrewRow.Image.powerfx).
+//
+//  Items  (LIVE sort — re-orders by the active legend category, no rebuilds):
+//    Sort( colHubCrews,
+//        Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd,
+//                "cc", CC, "accred", Accred, "ip", IP, Total ),
+//        SortOrder.Descending )
+// ============================================================================
+Set( varHubCrew, ThisItem.Crew );
+Set( varHubView, "detail" )

@@ -1,0 +1,63 @@
+// ============================================================================
+//  CREW BAR ROW (GALLERY template).  Control: Image "imgHubCrewRow"
+//  Gallery "galHubCrews":  Items = (see galHubCrews.OnSelect.powerfx header)
+//        X=16 Y=140 Width=1104 Height=484  TemplateSize=48  TemplatePadding=0
+//        ShowScrollbar=false   Visible = varHubView = "crews"
+//  Inside the template, Image "imgHubCrewRow": X=0 Y=0 W=Parent.TemplateWidth
+//        H=Parent.TemplateHeight  ImagePosition=Fit
+//
+//  One stacked bar per crew — the 6 categories in FIXED order (same colours as
+//  imgMyPoints), 2px white gaps between segments, rounded bar ends via a
+//  per-row clipPath. When a legend chip is active (varHubCat <> "") the bar
+//  isolates that single category and the medal badge re-ranks LIVE to match.
+//  Top 3 badges wear the brand metals (gold/silver/bronze).
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 48' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { mine: Switch( varHubCat, "newcc", ThisItem.NewCC, "capeng", ThisItem.CapEng, "capord", ThisItem.CapOrd, "cc", ThisItem.CC, "accred", ThisItem.Accred, "ip", ThisItem.IP, ThisItem.Total ),
+          catCol: Switch( varHubCat, "newcc","#0070f8", "capeng","#04909d", "capord","#009a71", "cc","#7764fc", "accred","#cc54a4", "ip","#d25f4b", "#01a982" ),
+          nm: Substitute(Substitute(Substitute( Left( ThisItem.Crew, 26 ), "&","&amp;"),"<","&lt;"),">","&gt;") },
+    With(
+        { r: CountRows( Filter( colHubCrews,
+                 Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd, "cc", CC, "accred", Accred, "ip", IP, Total ) > mine ) ) + 1,
+          k: 640 / Max( 1, Max( colHubCrews,
+                 Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd, "cc", CC, "accred", Accred, "ip", IP, Total ) ) ) },
+        "<g class='rw' style='animation-delay:" & Text( 60 + (r-1)*40 ) & "ms'>" &
+        "<rect x='2' y='2' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>" &
+        // live rank badge — metals for the podium
+        "<circle cx='26' cy='24' r='12' fill='" & Switch( r, 1,"#E0A300", 2,"#8C99A4", 3,"#B5742E", "#f2f3f4" ) & "'/>" &
+        "<text x='26' y='25' font-size='11' font-weight='700' fill='" & If( r <= 3, "#ffffff", "#3e4550" ) & "' text-anchor='middle' dominant-baseline='central'>" & Text(r) & "</text>" &
+        // crew identity
+        "<text x='48' y='21' font-size='13' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+        "<text x='48' y='36' font-size='9.5' fill='#606a70'>" & Text( ThisItem.CrewSize ) & " members</text>" &
+        // bar track
+        "<rect x='300' y='17' width='640' height='14' rx='7' fill='#f2f3f4'/>" &
+        If( varHubCat = "",
+            // STACKED: 6 fixed-order segments, 2px white gaps, clipped to a pill
+            With(
+                { w1: ThisItem.NewCC*k, w2: ThisItem.CapEng*k, w3: ThisItem.CapOrd*k, w4: ThisItem.CC*k, w5: ThisItem.Accred*k, w6: ThisItem.IP*k },
+                With(
+                    { s2: 300+w1, s3: 300+w1+w2, s4: 300+w1+w2+w3, s5: 300+w1+w2+w3+w4, s6: 300+w1+w2+w3+w4+w5 },
+                    "<clipPath id='hb" & Text( ThisItem.Idx ) & "'><rect x='300' y='17' width='" & Text( Round( Max( w1+w2+w3+w4+w5+w6, 0.1 ), 1 ) ) & "' height='14' rx='7'/></clipPath>" &
+                    "<g clip-path='url(#hb" & Text( ThisItem.Idx ) & ")' class='gx' style='animation-delay:" & Text( 150 + (r-1)*40 ) & "ms'>" &
+                    If( ThisItem.NewCC  > 0, "<rect x='300' y='17' width='" & Text(Round(w1,1)) & "' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CapEng > 0, "<rect x='" & Text(Round(s2,1)) & "' y='17' width='" & Text(Round(w2,1)) & "' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CapOrd > 0, "<rect x='" & Text(Round(s3,1)) & "' y='17' width='" & Text(Round(w3,1)) & "' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CC     > 0, "<rect x='" & Text(Round(s4,1)) & "' y='17' width='" & Text(Round(w4,1)) & "' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    If( ThisItem.Accred > 0, "<rect x='" & Text(Round(s5,1)) & "' y='17' width='" & Text(Round(w5,1)) & "' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    If( ThisItem.IP     > 0, "<rect x='" & Text(Round(s6,1)) & "' y='17' width='" & Text(Round(w6,1)) & "' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>", "" ) &
+                    "</g>"
+                )
+            ),
+            // ISOLATED: one category, one colour
+            "<rect x='300' y='17' width='" & Text( Round( Max( If( mine > 0, mine*k, 0 ), 0 ), 1 ) ) & "' height='14' rx='7' fill='" & catCol & "' class='gx' style='animation-delay:" & Text( 150 + (r-1)*40 ) & "ms'/>"
+        ) &
+        // right: the number being ranked on + pending note
+        "<text x='1092' y='25' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>" & Text( mine, "#,##0" ) & "</text>" &
+        "<text x='1092' y='38' font-size='8.5' font-weight='600' fill='" & If( ThisItem.Pending > 0, "#d36d00", "#606a70" ) & "' text-anchor='end'>" &
+            If( ThisItem.Pending > 0, "+" & Text( ThisItem.Pending ) & " PENDING", "POINTS" ) & "</text>" &
+        "</g>"
+    ) ) &
+    "</svg>"
+)

@@ -1,0 +1,11 @@
+// ============================================================================
+//  imgPointsHubBtn.OnSelect  —  the "Points HQ" button on the dashboard ribbon.
+//
+//  PLACEMENT (dashboard ribbon, left of the Crew Portal button):
+//    X=570  Y=11  Width=140  Height=30   ImagePosition=Fit
+//  Image controls are tappable — the navigation lives on this control's
+//  OnSelect. Same leaf-wipe flourish as the Crew Portal.
+// ============================================================================
+Set( varLeafKey, varLeafKey + 1 );
+Set( varLeafBusy, true );
+Navigate( scrPoints, ScreenTransition.Cover )

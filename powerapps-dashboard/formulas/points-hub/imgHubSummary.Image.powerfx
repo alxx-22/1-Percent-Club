@@ -1,0 +1,70 @@
+// ============================================================================
+//  CREW DETAIL SUMMARY (NON-gallery).  Control: Image "imgHubSummary"
+//  Geometry: X=16  Y=110  Width=1104  Height=178   ImagePosition=Fit
+//  Visible:  varHubView = "detail"
+//
+//  Left: crew name, size, LIVE rank by total, crew total + pending chip.
+//  Right: the 6 category tiles (value + share of crew total). The tile of the
+//  active legend category (varHubCat) wears its colour as a 2px ring.
+//  If somehow shown with no crew picked, renders a friendly prompt instead.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 178' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    If( varHubCrew = "",
+        // ---- no crew picked yet -------------------------------------------
+        "<g class='fu'>" &
+        "<rect x='0' y='0' width='1104' height='178' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+        "<circle cx='530' cy='70' r='26' fill='#d1ffee'/>" &
+        "<path d='M522,70 l6,6 l12,-13' fill='none' stroke='#006750' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/>" &
+        "<text x='552' y='118' font-size='14' font-weight='700' fill='#292d3a' text-anchor='middle'>No crew selected yet</text>" &
+        "<text x='552' y='138' font-size='11' fill='#606a70' text-anchor='middle'>Switch to All crews and tap any crew bar to open its breakdown</text>" &
+        "</g>",
+        // ---- crew hero + category tiles -----------------------------------
+        With(
+            { rw: LookUp( colHubCrews, Crew = varHubCrew ) },
+            With(
+                { r:  CountRows( Filter( colHubCrews, Total > rw.Total ) ) + 1,
+                  n:  CountRows( colHubCrews ),
+                  nm: Substitute(Substitute(Substitute( Left( varHubCrew, 24 ), "&","&amp;"),"<","&lt;"),">","&gt;") },
+                "<g class='fu'>" &
+                "<rect x='0' y='0' width='1104' height='178' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                "<clipPath id='hs'><rect x='0' y='0' width='1104' height='178' rx='14'/></clipPath>" &
+                "<rect x='0' y='0' width='1104' height='5' fill='#01a982' clip-path='url(#hs)'/>" &
+                // left block
+                "<text x='24' y='42' font-size='20' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+                "<text x='24' y='62' font-size='11' fill='#606a70'>" & Text( rw.CrewSize ) & " members &#183; rank " & Text(r) & " of " & Text(n) & " by total points</text>" &
+                "<text x='24' y='118' font-size='34' font-weight='700' fill='#006750'>" & Text( rw.Total, "#,##0" ) & "</text>" &
+                "<text x='24' y='136' font-size='8.5' font-weight='600' letter-spacing='.6' fill='#606a70'>CREW TOTAL &#183; EXCL PENDING</text>" &
+                If( rw.Pending > 0,
+                    "<g class='brz'><rect x='24' y='146' width='" & Text( 7*Len(Text(rw.Pending)) + 74 ) & "' height='18' rx='9' fill='#FBEEDF'/>" &
+                    "<text x='" & Text( 24 + (7*Len(Text(rw.Pending)) + 74)/2 ) & "' y='155' font-size='10' font-weight='600' fill='#d36d00' text-anchor='middle' dominant-baseline='central'>+" & Text(rw.Pending) & " pending</text></g>",
+                    "" ) &
+                "<line x1='316' y1='14' x2='316' y2='164' stroke='#d4d8db'/>" &
+                // 6 category tiles (3 x 2)
+                Concat(
+                    Table(
+                        { i:0, key:"newcc",  lbl:"New CC Logo / IB Upsell", val: rw.NewCC,  col:"#0070f8" },
+                        { i:1, key:"capeng", lbl:"CAP Engagement",          val: rw.CapEng, col:"#04909d" },
+                        { i:2, key:"capord", lbl:"CAP Orders Booked",       val: rw.CapOrd, col:"#009a71" },
+                        { i:3, key:"cc",     lbl:"Customer Centricity",     val: rw.CC,     col:"#7764fc" },
+                        { i:4, key:"accred", lbl:"Accreditation Race",      val: rw.Accred, col:"#cc54a4" },
+                        { i:5, key:"ip",     lbl:"IP Push",                 val: rw.IP,     col:"#d25f4b" }
+                    ),
+                    With(
+                        { x: 332 + Mod(i,3)*260, y: 14 + Int(i/3)*76, on: varHubCat = key },
+                        "<g class='fo' style='animation-delay:" & Text( 200 + i*60 ) & "ms'>" &
+                        "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='248' height='68' rx='10' fill='#fbfcfc' stroke='" & If( on, col, "#d4d8db" ) & "' stroke-width='" & If( on, "2", "1" ) & "'/>" &
+                        "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='5' height='68' rx='2.5' fill='" & col & "'/>" &
+                        "<circle cx='" & Text(x+20) & "' cy='" & Text(y+19) & "' r='3.5' fill='" & col & "'/>" &
+                        "<text x='" & Text(x+30) & "' y='" & Text(y+22) & "' font-size='10' font-weight='600' fill='#606a70'>" & lbl & "</text>" &
+                        "<text x='" & Text(x+16) & "' y='" & Text(y+52) & "' font-size='18' font-weight='700' fill='#292d3a'>" & Text( val, "#,##0" ) & "</text>" &
+                        "<text x='" & Text(x+232) & "' y='" & Text(y+52) & "' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>" & Text( Round( 100 * val / Max( rw.Total, 1 ), 0 ) ) & "% of crew</text>" &
+                        "</g>"
+                    )
+                ) &
+                "</g>"
+            )
+        )
+    ) &
+    "</svg>"
+)
