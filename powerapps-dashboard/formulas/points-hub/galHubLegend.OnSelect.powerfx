@@ -1,0 +1,7 @@
+// ============================================================================
+//  galHubLegend.OnSelect  —  toggle a category isolate on/off.
+//  (Put this on the GALLERY's OnSelect; the chip Image inside inherits the tap.)
+//  "" = stacked view. No collection rebuilds — the galleries' Items and every
+//  row template read varHubCat live, so bars, ranks and numbers all follow.
+// ============================================================================
+Set( varHubCat, If( varHubCat = ThisItem.Key, "", ThisItem.Key ) )

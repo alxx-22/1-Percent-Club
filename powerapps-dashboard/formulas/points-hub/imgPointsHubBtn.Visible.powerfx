@@ -1,0 +1,24 @@
+// ============================================================================
+//  imgPointsHubBtn.Visible  —  WHO CAN SEE THE POINTS HQ BUTTON.
+//
+//  Two doors in:
+//   1) THE ADMIN LIST — put the exact emails in the table below (lowercase).
+//      <<< EDIT THE EMAILS HERE — nothing else on the page gates access >>>
+//   2) MANAGER SPONSORS — anyone whose email appears in the data's
+//      'Manager Sponsor Email' column. Checked directly against colMembers
+//      (NOT via varRole: a sponsor who is ALSO a member gets varRole="member",
+//      and would wrongly lose access if we tested the role).
+//
+//  Uses the real signed-in email on purpose — the varTestCrew diagnostic
+//  impersonation never unlocks the hub for someone who shouldn't see it.
+// ============================================================================
+With(
+    { adminEmails: [
+        "first.admin@hpe.com",
+        "second.admin@hpe.com",
+        "third.admin@hpe.com"
+      ]
+    },
+    Lower( User().Email ) in adminEmails
+    || !IsBlank( LookUp( colMembers, SponsorEmail = Lower( User().Email ) ) )
+)

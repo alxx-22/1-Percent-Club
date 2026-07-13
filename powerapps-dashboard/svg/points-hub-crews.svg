@@ -1,0 +1,217 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 640' width='1136' height='640' font-family='Segoe UI, Arial, sans-serif' role='img' aria-label='Points HQ, all-crews view mock'>
+  <style>
+    .fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}
+    .fo{animation:fo .5s ease-out both}
+    .pp{animation:pp .5s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:center}
+    .gx{animation:gx .65s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}
+    .rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}
+    @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    @keyframes fo{from{opacity:0}to{opacity:1}}
+    @keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+    @keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+    @media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw{animation:none}}
+  </style>
+  <rect x='0' y='0' width='1136' height='640' fill='#f7f7f7'/>
+
+  <!-- ribbon -->
+  <g class='fu'>
+    <rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>
+    <line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>
+    <rect x='16' y='11' width='132' height='30' rx='15' fill='#f2f3f4' stroke='#d4d8db'/>
+    <path d='M41,19 l-6,7 l6,7' fill='none' stroke='#006750' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>
+    <text x='55' y='30' font-size='12.5' font-weight='600' fill='#006750'>Dashboard</text>
+    <rect x='164' y='13' width='26' height='26' rx='7' fill='#006750'/>
+    <rect x='170' y='26' width='3.5' height='7' rx='1.2' fill='#ffffff'/>
+    <rect x='175.5' y='22' width='3.5' height='11' rx='1.2' fill='#ffffff'/>
+    <rect x='181' y='18' width='3.5' height='15' rx='1.2' fill='#ffffff'/>
+    <text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Points HQ <tspan fill='#606a70' font-weight='400'>&#183; points by crew &amp; member</tspan></text>
+    <rect x='880' y='10' width='240' height='32' rx='16' fill='#f2f3f4'/>
+    <circle cx='900' cy='26' r='12' fill='#01a982'/>
+    <text x='900' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>AS</text>
+    <text x='920' y='30' font-size='13' fill='#3e4550'>Alex Smith &#183; Sponsor</text>
+  </g>
+
+  <!-- segmented toggle -->
+  <g class='fu' style='animation-delay:60ms'>
+    <path d='M34,69 h131 v32 h-131 a17,17 0 0 1 0,-32 z' fill='#01a982' stroke='#01a982'/>
+    <g fill='#ffffff'>
+      <rect x='34' y='78' width='6' height='6' rx='1.5'/><rect x='42' y='78' width='6' height='6' rx='1.5'/>
+      <rect x='34' y='86' width='6' height='6' rx='1.5'/><rect x='42' y='86' width='6' height='6' rx='1.5'/>
+    </g>
+    <text x='58' y='86' font-size='12.5' font-weight='700' fill='#ffffff' dominant-baseline='central'>All crews</text>
+    <path d='M167,69 h151 a17,17 0 0 1 0,32 h-151 z' fill='#ffffff' stroke='#d4d8db' opacity='.45'/>
+    <g fill='none' stroke='#606a70' stroke-width='2' stroke-linecap='round' opacity='.45'>
+      <circle cx='184' cy='81' r='4'/><path d='M177,93 c0,-4 3,-6 7,-6 c4,0 7,2 7,6'/>
+    </g>
+    <text x='198' y='86' font-size='12.5' font-weight='700' fill='#3e4550' dominant-baseline='central' opacity='.45'>Pick a crew</text>
+  </g>
+
+  <!-- legend chips -->
+  <g>
+    <g class='pp' style='animation-delay:80ms'>
+      <rect x='353' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='368' cy='85' r='4' fill='#0070f8'/>
+      <text x='380' y='82' font-size='10' font-weight='700' fill='#292d3a'>CC Logo / IB</text>
+      <text x='380' y='94' font-size='9' fill='#606a70'>1,146 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:130ms'>
+      <rect x='479' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='494' cy='85' r='4' fill='#04909d'/>
+      <text x='506' y='82' font-size='10' font-weight='700' fill='#292d3a'>CAP Eng</text>
+      <text x='506' y='94' font-size='9' fill='#606a70'>402 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:180ms'>
+      <rect x='605' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='620' cy='85' r='4' fill='#009a71'/>
+      <text x='632' y='82' font-size='10' font-weight='700' fill='#292d3a'>CAP Orders</text>
+      <text x='632' y='94' font-size='9' fill='#606a70'>335 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:230ms'>
+      <rect x='731' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='746' cy='85' r='4' fill='#7764fc'/>
+      <text x='758' y='82' font-size='10' font-weight='700' fill='#292d3a'>Cust Cent</text>
+      <text x='758' y='94' font-size='9' fill='#606a70'>287 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:280ms'>
+      <rect x='857' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='872' cy='85' r='4' fill='#cc54a4'/>
+      <text x='884' y='82' font-size='10' font-weight='700' fill='#292d3a'>Accred</text>
+      <text x='884' y='94' font-size='9' fill='#606a70'>221 pts</text>
+    </g>
+    <g class='pp' style='animation-delay:330ms'>
+      <rect x='983' y='69' width='118' height='32' rx='16' fill='#ffffff' stroke='#d4d8db'/>
+      <circle cx='998' cy='85' r='4' fill='#d25f4b'/>
+      <text x='1010' y='82' font-size='10' font-weight='700' fill='#292d3a'>IP Push</text>
+      <text x='1010' y='94' font-size='9' fill='#606a70'>158 pts</text>
+    </g>
+  </g>
+
+  <!-- list head -->
+  <g class='fo' style='animation-delay:120ms'>
+    <text x='20' y='127' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>ALL CREWS &#183; POINTS BREAKDOWN</text>
+    <text x='1120' y='127' font-size='11' fill='#606a70' text-anchor='end'>stacked by category &#183; tap a crew to drill in</text>
+  </g>
+
+  <!-- crew rows (sample: max 412 -> k = 640/412) -->
+  <!-- row 1: Green Machine 412 -->
+  <g class='rw' style='animation-delay:60ms'>
+    <rect x='18' y='142' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='164' r='12' fill='#E0A300'/>
+    <text x='42' y='165' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>1</text>
+    <text x='64' y='161' font-size='13' font-weight='700' fill='#292d3a'>Green Machine</text>
+    <text x='64' y='176' font-size='9.5' fill='#606a70'>9 members</text>
+    <rect x='316' y='157' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r1'><rect x='316' y='157' width='640' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r1)' class='gx' style='animation-delay:150ms'>
+      <rect x='316' y='157' width='218' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='534' y='157' width='104' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='638' y='157' width='96' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='734' y='157' width='90' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='824' y='157' width='76' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='900' y='157' width='56' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='165' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>412</text>
+    <text x='1108' y='178' font-size='8.5' font-weight='600' fill='#d36d00' text-anchor='end'>+28 PENDING</text>
+  </g>
+  <!-- row 2: The Closers 386 -->
+  <g class='rw' style='animation-delay:100ms'>
+    <rect x='18' y='190' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='212' r='12' fill='#8C99A4'/>
+    <text x='42' y='213' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>2</text>
+    <text x='64' y='209' font-size='13' font-weight='700' fill='#292d3a'>The Closers</text>
+    <text x='64' y='224' font-size='9.5' fill='#606a70'>8 members</text>
+    <rect x='316' y='205' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r2'><rect x='316' y='205' width='600' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r2)' class='gx' style='animation-delay:190ms'>
+      <rect x='316' y='205' width='160' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='476' y='205' width='128' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='604' y='205' width='120' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='724' y='205' width='72' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='796' y='205' width='68' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='864' y='205' width='52' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='213' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>386</text>
+    <text x='1108' y='226' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <!-- row 3: Pipeline Pirates 341 -->
+  <g class='rw' style='animation-delay:140ms'>
+    <rect x='18' y='238' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='260' r='12' fill='#B5742E'/>
+    <text x='42' y='261' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>3</text>
+    <text x='64' y='257' font-size='13' font-weight='700' fill='#292d3a'>Pipeline Pirates</text>
+    <text x='64' y='272' font-size='9.5' fill='#606a70'>10 members</text>
+    <rect x='316' y='253' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r3'><rect x='316' y='253' width='530' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r3)' class='gx' style='animation-delay:230ms'>
+      <rect x='316' y='253' width='190' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='506' y='253' width='60' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='566' y='253' width='90' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='656' y='253' width='84' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='740' y='253' width='58' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='798' y='253' width='48' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='261' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>341</text>
+    <text x='1108' y='274' font-size='8.5' font-weight='600' fill='#d36d00' text-anchor='end'>+12 PENDING</text>
+  </g>
+  <!-- row 4: Cloud Nine 298 -->
+  <g class='rw' style='animation-delay:180ms'>
+    <rect x='18' y='286' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='308' r='12' fill='#f2f3f4'/>
+    <text x='42' y='309' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>4</text>
+    <text x='64' y='305' font-size='13' font-weight='700' fill='#292d3a'>Cloud Nine</text>
+    <text x='64' y='320' font-size='9.5' fill='#606a70'>7 members</text>
+    <rect x='316' y='301' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r4'><rect x='316' y='301' width='463' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r4)' class='gx' style='animation-delay:270ms'>
+      <rect x='316' y='301' width='120' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='436' y='301' width='96' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='532' y='301' width='60' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='592' y='301' width='84' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='676' y='301' width='55' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='731' y='301' width='48' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='309' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>298</text>
+    <text x='1108' y='322' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <!-- row 5: Deal Hunters 226 -->
+  <g class='rw' style='animation-delay:220ms'>
+    <rect x='18' y='334' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='356' r='12' fill='#f2f3f4'/>
+    <text x='42' y='357' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>5</text>
+    <text x='64' y='353' font-size='13' font-weight='700' fill='#292d3a'>Deal Hunters</text>
+    <text x='64' y='368' font-size='9.5' fill='#606a70'>9 members</text>
+    <rect x='316' y='349' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r5'><rect x='316' y='349' width='351' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r5)' class='gx' style='animation-delay:310ms'>
+      <rect x='316' y='349' width='96' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='412' y='349' width='58' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='470' y='349' width='70' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='540' y='349' width='48' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='588' y='349' width='44' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='632' y='349' width='35' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='357' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>226</text>
+    <text x='1108' y='370' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+  <!-- row 6: Momentum 174 -->
+  <g class='rw' style='animation-delay:260ms'>
+    <rect x='18' y='382' width='1100' height='44' rx='10' fill='#ffffff' stroke='#d4d8db'/>
+    <circle cx='42' cy='404' r='12' fill='#f2f3f4'/>
+    <text x='42' y='405' font-size='11' font-weight='700' fill='#3e4550' text-anchor='middle' dominant-baseline='central'>6</text>
+    <text x='64' y='401' font-size='13' font-weight='700' fill='#292d3a'>Momentum</text>
+    <text x='64' y='416' font-size='9.5' fill='#606a70'>8 members</text>
+    <rect x='316' y='397' width='640' height='14' rx='7' fill='#f2f3f4'/>
+    <clipPath id='r6'><rect x='316' y='397' width='270' height='14' rx='7'/></clipPath>
+    <g clip-path='url(#r6)' class='gx' style='animation-delay:350ms'>
+      <rect x='316' y='397' width='70' height='14' fill='#0070f8' stroke='#ffffff' stroke-width='2'/>
+      <rect x='386' y='397' width='40' height='14' fill='#04909d' stroke='#ffffff' stroke-width='2'/>
+      <rect x='426' y='397' width='55' height='14' fill='#009a71' stroke='#ffffff' stroke-width='2'/>
+      <rect x='481' y='397' width='42' height='14' fill='#7764fc' stroke='#ffffff' stroke-width='2'/>
+      <rect x='523' y='397' width='36' height='14' fill='#cc54a4' stroke='#ffffff' stroke-width='2'/>
+      <rect x='559' y='397' width='27' height='14' fill='#d25f4b' stroke='#ffffff' stroke-width='2'/>
+    </g>
+    <text x='1108' y='405' font-size='16' font-weight='700' fill='#006750' text-anchor='end'>174</text>
+    <text x='1108' y='418' font-size='8.5' font-weight='600' fill='#606a70' text-anchor='end'>POINTS</text>
+  </g>
+</svg>

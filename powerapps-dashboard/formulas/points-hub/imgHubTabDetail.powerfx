@@ -1,0 +1,32 @@
+// ============================================================================
+//  VIEW TOGGLE, RIGHT SEGMENT — "Crew detail".  Control: Image "imgHubTabDetail"
+//  Geometry: X=166  Y=68  Width=170  Height=34   ImagePosition=Fit
+//  (Butts up against imgHubTabCrews so the two read as one segmented pill.)
+//
+//  Shows the drilled-into crew's name once one is picked; before that it sits
+//  disabled (faded, "Pick a crew") — tapping it then does nothing.
+//  ---------------------------------------------------------------------------
+//  OnSelect:
+//      If( varHubCrew <> "", Set( varHubView, "detail" ) )
+//  ---------------------------------------------------------------------------
+//  Image:  (below)
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 170 34' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { on:  varHubView = "detail",
+          has: varHubCrew <> "",
+          lbl: If( varHubCrew = "", "Pick a crew",
+                   Substitute(Substitute(Substitute( Left( varHubCrew, 15 ), "&","&amp;"),"<","&lt;"),">","&gt;") ) },
+        "<g class='fu'" & If( has, "", " opacity='.45'" ) & ">" &
+        "<path d='M1,1 h151 a17,17 0 0 1 0,32 h-151 z' fill='" & If( on, "#01a982", "#ffffff" ) & "' stroke='" & If( on, "#01a982", "#d4d8db" ) & "'/>" &
+        // single-person glyph = one crew, up close
+        "<g fill='none' stroke='" & If( on, "#ffffff", "#606a70" ) & "' stroke-width='2' stroke-linecap='round'>" &
+        "<circle cx='18' cy='13' r='4'/>" &
+        "<path d='M11,25 c0,-4 3,-6 7,-6 c4,0 7,2 7,6'/>" &
+        "</g>" &
+        "<text x='32' y='18' font-size='12.5' font-weight='700' fill='" & If( on, "#ffffff", "#3e4550" ) & "' dominant-baseline='central'>" & lbl & "</text>" &
+        "</g>" &
+        "</svg>"
+    )
+)

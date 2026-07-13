@@ -1,0 +1,63 @@
+// ============================================================================
+//  MEMBER BAR ROW (GALLERY template).  Control: Image "imgHubMemberRow"
+//  Gallery "galHubMembers":  X=16 Y=296 Width=1104 Height=328  TemplateSize=50
+//        TemplatePadding=0  ShowScrollbar=false   Visible = varHubView = "detail"
+//        (no OnSelect — rows are read-only)
+//  Inside the template, Image "imgHubMemberRow": X=0 Y=0 W=Parent.TemplateWidth
+//        H=Parent.TemplateHeight  ImagePosition=Fit
+//
+//  Items  (LIVE sort by the active legend category, scoped to the open crew):
+//    Sort( Filter( colHubMembers, Crew = varHubCrew ),
+//        Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd,
+//                "cc", CC, "accred", Accred, "ip", IP, Total ),
+//        SortOrder.Descending )
+//
+//  Same stacked-bar language as the crew rows, scaled to the crew's own top
+//  member. The signed-in viewer's row tints green with a "· you" tag. Members
+//  on 0 points still list (that visibility is the point for sponsors).
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 50' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { mine: Switch( varHubCat, "newcc", ThisItem.NewCC, "capeng", ThisItem.CapEng, "capord", ThisItem.CapOrd, "cc", ThisItem.CC, "accred", ThisItem.Accred, "ip", ThisItem.IP, ThisItem.Total ),
+          catCol: Switch( varHubCat, "newcc","#0070f8", "capeng","#04909d", "capord","#009a71", "cc","#7764fc", "accred","#cc54a4", "ip","#d25f4b", "#01a982" ),
+          me: ThisItem.Email = varUserEmail,
+          nm: Substitute(Substitute(Substitute( Left( ThisItem.Name, 24 ), "&","&amp;"),"<","&lt;"),">","&gt;"),
+          rl: Substitute(Substitute(Substitute( If( Len( ThisItem.Role ) = 0, "&#8212;", Left( ThisItem.Role, 30 ) ), "&","&amp;"),"<","&lt;"),">","&gt;") },
+    With(
+        { r: CountRows( Filter( colHubMembers, Crew = varHubCrew &&
+                 Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd, "cc", CC, "accred", Accred, "ip", IP, Total ) > mine ) ) + 1,
+          k: 560 / Max( 1, Max( Filter( colHubMembers, Crew = varHubCrew ),
+                 Switch( varHubCat, "newcc", NewCC, "capeng", CapEng, "capord", CapOrd, "cc", CC, "accred", Accred, "ip", IP, Total ) ) ) },
+        "<g class='rw' style='animation-delay:" & Text( 60 + (r-1)*35 ) & "ms'>" &
+        "<rect x='2' y='2' width='1100' height='46' rx='10' fill='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke='" & If( me, "#01a982", "#d4d8db" ) & "' stroke-width='" & If( me, "2", "1" ) & "'/>" &
+        "<circle cx='26' cy='25' r='12' fill='" & Switch( r, 1,"#E0A300", 2,"#8C99A4", 3,"#B5742E", "#f2f3f4" ) & "'/>" &
+        "<text x='26' y='26' font-size='11' font-weight='700' fill='" & If( r <= 3, "#ffffff", "#3e4550" ) & "' text-anchor='middle' dominant-baseline='central'>" & Text(r) & "</text>" &
+        "<text x='48' y='21' font-size='13' font-weight='700' fill='#292d3a'>" & nm & If( me, " <tspan fill='#006750' font-weight='600'>&#183; you</tspan>", "" ) & "</text>" &
+        "<text x='48' y='37' font-size='9.5' fill='#606a70'>" & rl & "</text>" &
+        "<rect x='330' y='19' width='560' height='12' rx='6' fill='" & If( me, "#ffffff", "#f2f3f4" ) & "'/>" &
+        If( varHubCat = "",
+            With(
+                { w1: ThisItem.NewCC*k, w2: ThisItem.CapEng*k, w3: ThisItem.CapOrd*k, w4: ThisItem.CC*k, w5: ThisItem.Accred*k, w6: ThisItem.IP*k },
+                With(
+                    { s2: 330+w1, s3: 330+w1+w2, s4: 330+w1+w2+w3, s5: 330+w1+w2+w3+w4, s6: 330+w1+w2+w3+w4+w5 },
+                    "<clipPath id='mb" & Text( ThisItem.Idx ) & "'><rect x='330' y='19' width='" & Text( Round( Max( w1+w2+w3+w4+w5+w6, 0.1 ), 1 ) ) & "' height='12' rx='6'/></clipPath>" &
+                    "<g clip-path='url(#mb" & Text( ThisItem.Idx ) & ")' class='gx' style='animation-delay:" & Text( 150 + (r-1)*35 ) & "ms'>" &
+                    If( ThisItem.NewCC  > 0, "<rect x='330' y='19' width='" & Text(Round(w1,1)) & "' height='12' fill='#0070f8' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CapEng > 0, "<rect x='" & Text(Round(s2,1)) & "' y='19' width='" & Text(Round(w2,1)) & "' height='12' fill='#04909d' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CapOrd > 0, "<rect x='" & Text(Round(s3,1)) & "' y='19' width='" & Text(Round(w3,1)) & "' height='12' fill='#009a71' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    If( ThisItem.CC     > 0, "<rect x='" & Text(Round(s4,1)) & "' y='19' width='" & Text(Round(w4,1)) & "' height='12' fill='#7764fc' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    If( ThisItem.Accred > 0, "<rect x='" & Text(Round(s5,1)) & "' y='19' width='" & Text(Round(w5,1)) & "' height='12' fill='#cc54a4' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    If( ThisItem.IP     > 0, "<rect x='" & Text(Round(s6,1)) & "' y='19' width='" & Text(Round(w6,1)) & "' height='12' fill='#d25f4b' stroke='" & If( me, "#d1ffee", "#ffffff" ) & "' stroke-width='2'/>", "" ) &
+                    "</g>"
+                )
+            ),
+            "<rect x='330' y='19' width='" & Text( Round( Max( If( mine > 0, mine*k, 0 ), 0 ), 1 ) ) & "' height='12' rx='6' fill='" & catCol & "' class='gx' style='animation-delay:" & Text( 150 + (r-1)*35 ) & "ms'/>"
+        ) &
+        "<text x='1092' y='26' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>" & Text( mine, "#,##0" ) & "</text>" &
+        "<text x='1092' y='39' font-size='8.5' font-weight='600' fill='" & If( ThisItem.Pending > 0, "#d36d00", "#606a70" ) & "' text-anchor='end'>" &
+            If( ThisItem.Pending > 0, "+" & Text( ThisItem.Pending ) & " PENDING", "POINTS" ) & "</text>" &
+        "</g>"
+    ) ) &
+    "</svg>"
+)

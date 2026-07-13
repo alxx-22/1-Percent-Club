@@ -1,0 +1,24 @@
+// ============================================================================
+//  BACK BUTTON (SVG).  Control: Image "imgHubBack"
+//  Geometry on the Points HQ ribbon:  X=16  Y=11  Width=132  Height=30
+//        ImagePosition = Fit
+//  Ghost pill twin of the Crew Portal's imgBackBtn.
+//
+//  ---------------------------------------------------------------------------
+//  OnSelect:
+//      Set( varLeafKey, varLeafKey + 1 );
+//      Set( varLeafBusy, true );
+//      Navigate( scrDashboard, ScreenTransition.UnCover )
+//  ---------------------------------------------------------------------------
+//  Image:  (below)
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    "<style>.nudgeL{animation:nudgeL 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nudgeL{0%,100%{transform:translateX(0)}50%{transform:translateX(-3px)}}@media(prefers-reduced-motion:reduce){.nudgeL{animation:none}}</style>" &
+    "<g class='fu'>" &
+    "<rect x='1' y='1' width='130' height='28' rx='14' fill='#f2f3f4' stroke='#d4d8db'/>" &
+    "<path d='M26,9 l-6,6 l6,6' fill='none' stroke='#006750' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudgeL'/>" &
+    "<text x='40' y='16' font-size='12.5' font-weight='600' fill='#006750' dominant-baseline='central'>Dashboard</text>" &
+    "</g>" &
+    "</svg>"
+)

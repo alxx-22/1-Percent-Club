@@ -1,0 +1,22 @@
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 30' width='280' height='60' font-family='Segoe UI, Arial, sans-serif' role='img' aria-label='Points HQ button'>
+  <style>
+    .fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}
+    .gx{animation:gx .65s .25s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}
+    .nudge{animation:nudge 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+    @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    @keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+    @keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}
+    @media(prefers-reduced-motion:reduce){.fu,.gx,.nudge{animation:none}}
+  </style>
+  <g class='fu'>
+    <rect x='1' y='1' width='138' height='28' rx='14' fill='#006750'/>
+    <rect x='1' y='1' width='138' height='14' rx='13' fill='#ffffff' opacity='.12'/>
+    <g class='gx'>
+      <rect x='14' y='16' width='4' height='6' rx='1.5' fill='#ffffff' opacity='.95'/>
+      <rect x='20' y='12' width='4' height='10' rx='1.5' fill='#ffffff' opacity='.95'/>
+      <rect x='26' y='8' width='4' height='14' rx='1.5' fill='#ffffff' opacity='.95'/>
+    </g>
+    <text x='38' y='16' font-size='13' font-weight='600' fill='#ffffff' dominant-baseline='central'>Points HQ</text>
+    <path d='M122,11 l5,4 l-5,4' fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudge'/>
+  </g>
+</svg>

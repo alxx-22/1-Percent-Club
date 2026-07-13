@@ -1,0 +1,27 @@
+// ============================================================================
+//  CATEGORY LEGEND CHIP (GALLERY template).  Control: Image "imgHubChip"
+//  Gallery "galHubLegend" (HORIZONTAL):  Items = colHubCats
+//        X=352 Y=68 Width=768 Height=34  TemplateSize=126  TemplatePadding=0
+//        ShowScrollbar=false
+//  Inside the template, Image "imgHubChip": X=0 Y=0 W=Parent.TemplateWidth-6
+//        H=Parent.TemplateHeight  ImagePosition=Fit
+//  OnSelect (on the GALLERY) = galHubLegend.OnSelect.powerfx
+//
+//  Legend + filter in one: each chip is a category (dot in its fixed colour,
+//  short label, programme-wide total). Tap = isolate that category everywhere
+//  (bars, ranks, numbers, summary tiles). Tap again = back to stacked. The
+//  active chip fills with its own colour.
+// ============================================================================
+"data:image/svg+xml;utf8," & EncodeUrl(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 34' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+    With(
+        { on: varHubCat = ThisItem.Key },
+        "<g class='pp' style='animation-delay:" & Text( 80 + ThisItem.Idx*50 ) & "ms'>" &
+        "<rect x='1' y='1' width='118' height='32' rx='16' fill='" & If( on, ThisItem.Col, "#ffffff" ) & "' stroke='" & If( on, ThisItem.Col, "#d4d8db" ) & "' stroke-width='" & If( on, "2", "1" ) & "'/>" &
+        "<circle cx='16' cy='17' r='4' fill='" & If( on, "#ffffff", ThisItem.Col ) & "'/>" &
+        "<text x='28' y='14' font-size='10' font-weight='700' fill='" & If( on, "#ffffff", "#292d3a" ) & "'>" & ThisItem.SLbl & "</text>" &
+        "<text x='28' y='26' font-size='9' fill='" & If( on, "#ffffff", "#606a70" ) & "' opacity='" & If( on, ".85", "1" ) & "'>" & Text( ThisItem.Tot, "#,##0" ) & " pts</text>" &
+        "</g>" &
+        "</svg>"
+    )
+)
