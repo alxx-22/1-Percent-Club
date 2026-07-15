@@ -165,11 +165,23 @@ locked wording. Keep the static message where determinism matters more.
    > *Use when the user asks a vague question about their points with no specific deal and no clear
    > category — e.g. "why aren't my points showing", "where are my points", "I should have more",
    > "nothing's showing up".*
-3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**. Map inputs:
-   - **`template`** = `Summary`  *(type it as a literal value)*
-   - **`ope`** = *(leave blank)*
-   - **`who`** = **"Fill with AI"** (the agent supplies CallerEmail — see setup B)
+3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**.
+   > ⚠️ **Pick the TOOL ("Run Percy Diagnostic"), not the raw flow ("Percy-Query") from the Power
+   > Automate section.** Adding the raw flow gives an **"Action"** node that hard-requires every
+   > input (red *"Input variable 'ope' is required"*) and has **no AI-fill option**. If your node's
+   > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
+
+   Map inputs (each input's **⋯ menu** offers value / variable / formula / AI):
+   - **`template`** → set as a **value** → `Summary`
+   - **`who`** → **"Dynamically fill with AI"** (the agent supplies CallerEmail — see setup B)
+   - **`ope`** → it's required by the flow, so pass an **empty string**: ⋯ → **fx / Formula** → `""`
+     *(safe — the Summary template never reads Ope; the DAX tolerates it empty by design)*
    - Note the output variable (e.g. **`evidence`**).
+
+   > **No "Dynamically fill with AI" option in your tenant?** Then delete this whole topic instead —
+   > the Instructions' TWO MESSAGES playbook A already makes orchestration do exactly this (Summary,
+   > who = CallerEmail, total + pending, offer the OPE), personalised. The topic is optional
+   > determinism, not functionality.
 4. **Ending — let the agent compose the reply (recommended, setup D):** end the topic after the Tool
    node (no Send-a-message). Orchestration writes the answer from `evidence` + the Instructions —
    personalised and specific, e.g. *"Here's where you stand, Sarah: 120 points, with 40 pending
