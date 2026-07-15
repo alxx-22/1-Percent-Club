@@ -179,9 +179,21 @@ locked wording. Keep the static message where determinism matters more.
       variable** named `templateKey` (String) → **To value:** type `Summary`.
    2. On the Tool node: **+ Set value** → pick **`templateKey`** → map it to the **`template`** input.
    - **`who`** → leave AI-filled (the agent supplies CallerEmail — see setup B).
-   - **`ope`** → leave AI-filled. *(Only if a test fails with "ope wasn't provided": same trick with
-     an empty-string variable — safe, the Summary template never reads Ope.)*
+   - **`ope`** → **pin it empty** (don't leave it AI-filled): while `ope` is *required* on the flow,
+     AI-fill can't pass blank and falls back to **prompting the user** ("Please enter your input for
+     ope") — exactly what this act-first topic must never do. Same trick as `templateKey`: a
+     `Set a variable value` node → variable `opeEmpty` = **fx `""`** → map it to `ope`. *(Better
+     still: make `ope`/`who` **optional on the flow trigger** — see `Percy-Query.build.md` step 2 —
+     then no pin is needed anywhere.)*
    - Note the output variable (e.g. **`evidence`**).
+
+   > **Testing in the Test pane:** the pane sends only your raw message — there's **no
+   > `CallerEmail:` wrapper** (the orchestrator adds it in production), so a *"Please provide the
+   > input for 'who'"* prompt in the pane is **expected**, not a bug. Either answer it, or simulate
+   > production by pasting one message shaped like the orchestrator's
+   > (`CallerEmail: you@hpe.com` ⏎ `Conversation: [{"Seq":1,"Role":"user","Body":"why aren't my
+   > points showing"}]` ⏎ `CallerName: Your Name`). Making `who` optional on the flow trigger also
+   > stops the pane prompt.
    - *Can't get `template` mapped at all? Leave **Inputs (0)** — the trigger description + the
      instructions playbook steer the agent to Summary anyway; you only lose the hard guarantee.*
    - *If the picker shows stale `text` / `text_1` / `text_2` variables from earlier deleted nodes,

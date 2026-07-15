@@ -21,9 +21,16 @@ evidence. One flow covers every diagnostic.
 
 ## 2. Trigger inputs (three Text inputs)
 On the trigger, **+ Add an input → Text** three times:
-- **`template`** — the diagnostic key (Locate, CompleteCare, CAP, IBExpand, CustomerCentricity, IPGreenLake, Accreditation, Summary).
-- **`ope`** — the OPE number (blank for the user-level templates).
-- **`who`** — the user's email (blank for ope-only templates).
+- **`template`** — the diagnostic key (Locate, CompleteCare, CAP, IBExpand, CustomerCentricity, IPGreenLake, Accreditation, Summary). **Required.**
+- **`ope`** — the OPE number (blank for the user-level templates). **Make it optional** (⋯ on the input row → *Make the field optional*).
+- **`who`** — the user's email (blank for ope-only templates). **Make it optional** too.
+
+> ⚠️ **Why `ope`/`who` must be optional:** if they're required, the agent's AI-fill can't pass blank —
+> when a template doesn't need the value (`Summary` needs no ope; `Locate` needs no who) the agent
+> falls back to **prompting the user** ("Please enter your input for ope"), wrecking the act-first
+> flow. Optional + the DAX's blank-tolerant flags (name-match/credit return "No"/"Unknown" on empty)
+> is the designed behaviour. If you change required→optional later, the tool schema changes —
+> re-add/rebind the tool in Copilot Studio (agent Tools page + any topic Tool nodes).
 
 ## 3. (validation lives in Copilot Studio)
 > The strict OPE regex (`^OPE-?\d{6,12}$`) and "email = caller/admin" run in **Copilot Studio**
