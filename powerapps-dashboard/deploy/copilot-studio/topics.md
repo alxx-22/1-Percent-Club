@@ -22,10 +22,12 @@ Build them top to bottom; you don't need to read anything else.
   > showing yet / was just closed. Returns a short status. One refresh per request."*
 
 **B. The caller's email (`who`) — where it actually comes from.** A variable does **not** fill
-itself: the **`Percy-Orchestrator` flow embeds the verified email in the message** it sends the agent
-(`CallerEmail: …` on the first line — see
-[`../flows/Percy-Orchestrator.build.md`](../flows/Percy-Orchestrator.build.md) step 3), and the
-pasted Instructions tell the agent to use **CallerEmail** as `who` on every tool call.
+itself: the **`Percy-Orchestrator` flow embeds the caller's details in the message** it sends the
+agent — three labelled lines (see
+[`../flows/Percy-Orchestrator.build.md`](../flows/Percy-Orchestrator.build.md) step 3):
+`CallerEmail:` (the verified login → used as **`who`** on every tool call), `Conversation:` (the JSON
+transcript), and `CallerName:` (the display name → **personalisation only**, never for
+credit/name-match checks — the Instructions tell Percy to greet by first name occasionally).
 - **In a topic's Tool node, set the `who` input to "Fill with AI" / dynamic** — the agent supplies
   CallerEmail from the message. This is the default and needs no variable plumbing.
 - *Structured alternative:* create a **Global variable** (Variables → + New → Global) with
@@ -36,6 +38,14 @@ pasted Instructions tell the agent to use **CallerEmail** as `who` on every tool
 
 **C. Every "The agent chooses" trigger** is set the same way: click the **Trigger** node → **Change
 trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's description into the box.
+
+**D. Where the first-name touch happens.** A **Send a message** node is static text — topics have no
+CallerName variable, so a scripted message **can't** say "Hi Sarah". The personalisation lives in
+**agent-composed replies** (FAQ answers, diagnostic explanations, anything orchestration writes), per
+the Instructions' USING THEIR NAME section. If you want a topic's final reply personalised too:
+**delete its closing Send-a-message and end the topic after the Tool node** — orchestration then
+composes the reply from the tool result + the Instructions (name, tone, wording), at the cost of the
+locked wording. Keep the static message where determinism matters more.
 
 ---
 
@@ -138,6 +148,9 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    - **All other conditions (else):**
      - **Send a message:** *"I've kicked off a refresh — it takes a few minutes. Check back shortly
        and your points should be up to date."*
+   - *Personalised variant (setup D): skip this Condition + messages entirely and end the topic after
+     the Tool node — the agent composes the reply from `status` + the Instructions ("Good news,
+     Sarah — refresh is running…"), at the cost of locked wording.*
 5. **Save.** **Test:** type *"my points aren't showing, refresh it"* → expect the "kicked off"
    message. **One refresh per request** — don't add a loop.
 
@@ -157,12 +170,12 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    - **`ope`** = *(leave blank)*
    - **`who`** = **"Fill with AI"** (the agent supplies CallerEmail — see setup B)
    - Note the output variable (e.g. **`evidence`**).
-4. **Node — Send a message:** paste:
-   > Here's where you stand: {your total and what's pending}. Waiting on approval is the most common
-   > reason points look missing. Chasing a particular deal? Send me the OPE and I'll check it.
-
-   *(Let the agent fill the `{…}` from the `evidence` — leave that sentence as guidance, or insert the
-   `evidence` variable. Do **not** ask them to pick a category.)*
+4. **Ending — let the agent compose the reply (recommended, setup D):** end the topic after the Tool
+   node (no Send-a-message). Orchestration writes the answer from `evidence` + the Instructions —
+   personalised and specific, e.g. *"Here's where you stand, Sarah: 120 points, with 40 pending
+   approval — that's the usual reason points look missing. Chasing a particular deal? Send me the OPE
+   and I'll check it."* *(A static Send-a-message can't do the name or the numbers; only add one if
+   you must lock the wording, and then keep it generic. Never ask them to pick a category.)*
 5. **Save.** **Test:** type *"why aren't my points showing"* → expect a total + pending + an offer to
    check a specific OPE.
 

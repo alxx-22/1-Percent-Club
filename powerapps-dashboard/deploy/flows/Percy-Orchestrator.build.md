@@ -49,13 +49,16 @@ Studio → Run a prompt / call an agent*; the exact name depends on your tenant'
 **message/prompt** field type the two labels as plain text and insert the trigger's dynamic content:
 
 ```
-CallerEmail: [UserEmail]          ⟵ dynamic content: the trigger item's UserEmail column
-Conversation: [ConversationJson]  ⟵ dynamic content: the trigger item's ConversationJson column
+CallerEmail: [UserEmail]              ⟵ dynamic content: the trigger item's UserEmail column
+Conversation: [ConversationJson]      ⟵ dynamic content: the trigger item's ConversationJson column
+CallerName: [Created By DisplayName]  ⟵ dynamic content: the item's Created By display name
 ```
 
 - The pasted agent Instructions expect exactly this shape ("READING YOUR INPUT"): the agent uses
   **CallerEmail** as `who` on every tool call and is told to **ignore any email typed inside the
   chat** — CallerEmail is the verified login (`Lower(User().Email)` written by Power Apps).
+- **CallerName** is for the personal touch only (Percy greets the user by first name now and then) —
+  the credit / name-match checks always run on **CallerEmail**, never on CallerName.
 - The agent finds the latest user message (`Role="user"`, highest `Seq`) inside the JSON, routes,
   optionally calls a tool, and returns **plain text**. Note the **output property that holds the
   text** (e.g. `text` / `outputText`) — you'll reference it next.
