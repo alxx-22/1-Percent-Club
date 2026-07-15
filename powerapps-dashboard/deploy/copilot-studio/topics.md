@@ -27,19 +27,23 @@ Build them top to bottom; you don't need to read anything else.
   with AI"** (do NOT pin `template` here — this page is global; orchestration must be free to pick
   other templates), and use **Customize** (the pencil) to give each input a description — this is
   the per-input steering that replaces any topic-level override:
-  - `template`: *"Exactly one of: Locate, CompleteCare, CAP, IBExpand, CustomerCentricity,
-    IPGreenLake, Accreditation, Summary. For a vague points question with no deal, use Summary."*
-  - `ope`: *"The OPE deal id (like OPE-123456789) if one appears anywhere in the conversation;
-    otherwise leave empty. This is never an email address. Never ask for it when the template is
-    Summary, IPGreenLake or Accreditation."*
+  - `template`: *"Exactly one of these eight keys: Locate, CompleteCare, CAP, IBExpand,
+    CustomerCentricity, IPGreenLake, Accreditation, Summary. For a vague points question with no
+    deal number, use Summary. Never pass the user's question text — only one of the eight keys."*
+  - `ope`: *"The OPE deal id (like OPE-123456789) only if one appears in the conversation. If there
+    is none, pass it empty WITHOUT asking — never ask the user for this value. This is never an
+    email address."*
   - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
     deal id, and never an email typed inside the chat."*
 
-  > ⚠️ **If these Customize descriptions are missing, AI-fill mis-maps** — observed failure: the
-  > email dropped into `ope` (first in fill order) and `who` left empty, prompting the user. The
-  > negative cues ("never an email address" / "never a deal id") guard that swap. Tip: drag the
-  > inputs into the order `template`, `ope`, `who` (inputs fill in the order shown). Verify a fix in
-  > the test pane's **tool run panel** — it shows exactly what landed in each input.
+  > ⚠️ **If a Customize description is missing, AI-fill mis-maps that input** — observed failures:
+  > the email dropped into `ope` and `who` left empty (descriptions absent); the raw user question
+  > dumped into `template` (its description wiped during edits). The negative cues ("never an email
+  > address" / "never the user's question text") guard those. Phrase optional inputs as directives —
+  > "pass it empty WITHOUT asking" — or the model reads "leave it empty" as a question to ask the
+  > user. Tip: drag the inputs into the order `template`, `ope`, `who` (inputs fill in the order
+  > shown). Verify every change in the test pane's **tool run panel** — it shows exactly what landed
+  > in each input; pass = `ope` empty · `who` = caller's email · `template` = a key like `Summary`.
 - **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
