@@ -81,11 +81,19 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 
 ---
 
-## Topic 2 — Refresh Dashboard  **(build this)**
+## Topic 2 — Dashboard Refresh  **(build this)**
 
 *Kicks a data refresh when someone's numbers aren't showing yet.*
 
-1. **Create:** + Add a topic → From blank. Rename to **`Refresh Dashboard`**.
+> ⚠️ **Name the topic `Dashboard Refresh` — NOT `Refresh Dashboard`.** Topics and tools share one
+> identifier namespace, and identifiers are generated from display names (spaces → hyphens). A topic
+> named the same as the "Refresh Dashboard" **tool** collides and testing throws
+> **`ToolIdentifierConflict` — "Two or more actions and/or topics have the same identifier
+> 'Refresh-Dashboard'"**. If you hit this: rename the **topic** (keep the tool's name — the pasted
+> Instructions refer to the action as "Refresh Dashboard"). The Tool node inside stays bound; nothing
+> else changes. Same rule for any future topic: never give a topic a tool's exact name.
+
+1. **Create:** + Add a topic → From blank. Rename to **`Dashboard Refresh`**.
 2. **Trigger → The agent chooses:**
    > *Use when the user asks to refresh or update the dashboard, or says their points/deal aren't
    > showing yet, they just closed a deal today, or the data isn't updating.*
