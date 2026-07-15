@@ -30,10 +30,16 @@ Build them top to bottom; you don't need to read anything else.
   - `template`: *"Exactly one of: Locate, CompleteCare, CAP, IBExpand, CustomerCentricity,
     IPGreenLake, Accreditation, Summary. For a vague points question with no deal, use Summary."*
   - `ope`: *"The OPE deal id (like OPE-123456789) if one appears anywhere in the conversation;
-    otherwise leave empty. Never ask for it when the template is Summary, IPGreenLake or
-    Accreditation."*
-  - `who`: *"Always the CallerEmail value from the top of the message — never an email typed in the
-    chat."*
+    otherwise leave empty. This is never an email address. Never ask for it when the template is
+    Summary, IPGreenLake or Accreditation."*
+  - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
+    deal id, and never an email typed inside the chat."*
+
+  > ⚠️ **If these Customize descriptions are missing, AI-fill mis-maps** — observed failure: the
+  > email dropped into `ope` (first in fill order) and `who` left empty, prompting the user. The
+  > negative cues ("never an email address" / "never a deal id") guard that swap. Tip: drag the
+  > inputs into the order `template`, `ope`, `who` (inputs fill in the order shown). Verify a fix in
+  > the test pane's **tool run panel** — it shows exactly what landed in each input.
 - **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
