@@ -3,9 +3,12 @@
 ## Where you are · what's left
 
 - [x] **Agent created** in Copilot Studio.
-- [x] **Both tools added** — `Percy-Query` as **"Run Percy Diagnostic"** and `Percy-Refresh` as
-      **"Refresh Dashboard"**. *(Keep them exactly as built — the flow build docs in
-      [`../flows/`](../flows/) stay the reference if either ever needs changing.)*
+- [x] **Tools added** — `Percy-Query` as **"Run Percy Diagnostic"**, `Percy-Refresh` as
+      **"Refresh Dashboard"**, and `Percy-Query` registered a **second time** as
+      **"Get My Points Summary"** with `template` pinned *Set as a value* = `Summary` and `ope`
+      pinned empty (only `who` AI-filled) — the deterministic tool for the vague
+      "where are my points" path ([`topics.md`](topics.md) setup A). *(Keep the flows exactly as
+      built — the flow build docs in [`../flows/`](../flows/) stay the reference.)*
 - [ ] **1. Paste the Instructions** — the single block below, verbatim, into
       **Overview → Instructions**. It is **self-contained**: the nine programme rules are already
       inlined at the bottom — nothing else to append.
@@ -81,7 +84,7 @@ a scheme loosely ("the cc thing", "my meetings", "cap"). Handle it like this:
 
 THE TWO MESSAGES YOU'LL GET MOST — do exactly this:
 A) "Why aren't my points showing?" / "where are my points" / "I should have more" (no deal, no metric)
-   → Call Run Percy Diagnostic, template Summary (who = CallerEmail). Tell them their total and, crucially,
+   → Call Get My Points Summary (who = CallerEmail). Tell them their total and, crucially,
      what's PENDING (waiting on approval is the #1 reason points look missing). Then OFFER, don't
      demand: "Is there a particular deal you're chasing? Pop the OPE in and I'll check it." Do NOT ask
      them to choose a category.
@@ -112,10 +115,14 @@ MAP LOOSE WORDS → template (be generous — match sloppy phrasing):
    IB / expand / renewal / pen rate / win-back / naked box             → IBExpand (ope + who)
    IP / greenlake / GL / monthly %                                     → IPGreenLake (who)
    accreditation / accred / s-coded / csm / "the race" / completion    → Accreditation (who)
-   "how many points do I have" / "what's pending" / "my total"         → Summary (who)
+   "how many points do I have" / "what's pending" / "my total"         → Get My Points Summary (who)
    just an OPE, or "why no points", metric unclear                     → Locate (ope) → then route
 
-ACTIONS — YOU HAVE TWO (never touch the data any other way)
+ACTIONS — YOU HAVE THREE (never touch the data any other way)
+0. "Get My Points Summary" (READ-ONLY). Input: who = CallerEmail only. Use for ANY vague or general
+   question about the user's own points ("why aren't my points showing", "how many points do I
+   have", "what's pending") when no specific deal is being diagnosed. Prefer this over Run Percy
+   Diagnostic for those questions — never ask which category they mean.
 1. "Run Percy Diagnostic" (READ-ONLY). Pass template (one key above) + ope and/or who. You NEVER
    write, request, or pass a query/DAX — only a template key + ope/who. Call it once per diagnostic
    (unless they ask about several metrics). who = CallerEmail (see READING YOUR INPUT) — pass it for

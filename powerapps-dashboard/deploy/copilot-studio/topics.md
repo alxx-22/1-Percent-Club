@@ -54,9 +54,22 @@ Build them top to bottom; you don't need to read anything else.
   > user. Tip: drag the inputs into the order `template`, `ope`, `who` (inputs fill in the order
   > shown). Verify every change in the test pane's **tool run panel** — it shows exactly what landed
   > in each input; pass = `ope` empty · `who` = caller's email · `template` = a key like `Summary`.
+- **`Get My Points Summary`** = the **same `Percy-Query` flow registered a second time** (a tool is
+  just a wrapper — one flow can back several tools). This is the **deterministic tool for the vague
+  path**: "Dynamically fill with AI" is non-deterministic, and for a *required* input its fallback is
+  to ask the user — unacceptable on the highest-traffic question. Pinning removes the dice-roll:
+  - **Inputs:** `template` → **Fill using = "Set as a value"** → `Summary` (pinned, no AI) · `ope` →
+    **Set as a value** → empty · `who` → *Dynamically fill with AI* (CallerEmail description as
+    above).
+  - **Description:** *"Get the caller's full 1% Club points summary: totals per category and what's
+    pending approval. Use for any vague or general question about the user's own points — 'why
+    aren't my points showing', 'where are my points', 'how many points do I have', 'what's pending'
+    — whenever no specific deal is being diagnosed."*
 - **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
+
+**Completion on ALL tools:** *Don't respond (default)* · Advanced → outputs available = All.
 
 **Completion setting (both tools):** on each tool's page, **Completion → After running =
 "Don't respond (default)"**, and Advanced → outputs available = **All**. "Don't respond" hands the
@@ -209,11 +222,12 @@ locked wording. Keep the static message where determinism matters more.
    > *Use when the user asks a vague question about their points with no specific deal and no clear
    > category — e.g. "why aren't my points showing", "where are my points", "I should have more",
    > "nothing's showing up".*
-3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**.
-   > ⚠️ **Pick the TOOL ("Run Percy Diagnostic"), not the raw flow ("Percy-Query") from the Power
-   > Automate section.** Adding the raw flow gives an **"Action"** node that hard-requires every
-   > input (red *"Input variable 'ope' is required"*) and has **no AI-fill option**. If your node's
-   > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
+3. **Node — Add a tool:** **+ → Add a tool → Get My Points Summary** (the pinned-template tool from
+   setup A — `template` is fixed to `Summary` at tool level, so nothing is left to AI except `who`).
+   > ⚠️ **Pick a TOOL, not the raw flow ("Percy-Query") from the Power Automate section.** Adding the
+   > raw flow gives an **"Action"** node that hard-requires every input (red *"Input variable 'ope'
+   > is required"*) and has **no AI-fill option**. If your node's header says "Action" / "Power
+   > Automate inputs", delete it and re-add via the tool.
 
    **Leave the node at "Inputs (0)" — no overrides. This is the FINAL state of the node.** Tool
    inputs are **AI-filled by default** and "(0)" counts *overrides*, of which you need none. The
