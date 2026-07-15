@@ -9,8 +9,7 @@
 - [ ] **1. Paste the Instructions** — the single block below, verbatim, into
       **Overview → Instructions**. It is **self-contained**: the nine programme rules are already
       inlined at the bottom — nothing else to append.
-- [ ] **2. Build the topics** — only **three**: **Dashboard Refresh** (⚠️ not "Refresh Dashboard" —
-      a topic named exactly like the tool throws `ToolIdentifierConflict`), Clarify & Guide, Fallback
+- [ ] **2. Build the topics** — only **three**: Refresh Dashboard, Clarify & Guide, Fallback
       ([`topics.md`](topics.md) Topics 2, 3, 10). **Do not build an FAQ topic** — the rules below +
       generative orchestration answer FAQs scoped to the question asked.
 - [ ] **3. Settings:** generative orchestration **ON** · general knowledge / web search **OFF**.
