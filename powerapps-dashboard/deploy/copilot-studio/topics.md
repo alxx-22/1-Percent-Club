@@ -33,16 +33,32 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 
 ---
 
-## Topic 1 — General 1% Club FAQ  **(build this)**
+## Topic 1 — General 1% Club FAQ  **(recommended: DON'T build it — instructions answer better)**
 
-*Answers rules/how-to questions with exact values. No action call.*
+*Rules/how-to questions with exact values. No action call.*
 
-1. **Create:** Topics → **+ Add a topic → From blank**. Rename (top-left) to **`General 1% Club FAQ`**.
-2. **Trigger:** Trigger node → Change trigger → **The agent chooses** → paste:
+> **A `Send a message` node is static** — it sends its exact text verbatim, every time. Someone asking
+> "do I need a code for uplift?" would get the whole nine-way list. **The tailored alternative needs
+> no topic at all:** the programme rules are already pasted **verbatim** into the agent's
+> **Instructions** (the §9 block), with the routing line *"FAQ → answer from the Programme Rules
+> below. No tool. Give the exact number."* With no topic intercepting, the agent answers each FAQ
+> **generatively, scoped to what was asked** — "campaign code for uplift?" gets just the no-code /
+> 75-points answer. The verbatim rules + the hard rule "NEVER invent programme rules or point values"
+> keep the numbers exact.
+>
+> **So: skip this topic.** If you already built it, **delete or disable it** — its trigger swallows
+> FAQ questions and forces the static wall of text. Just confirm the §9 rules are in the pasted
+> instructions, then test with a narrow question ("how many points for a leadership meeting?") and
+> expect a short, specific answer — not the list.
+
+<details><summary><b>Static fallback</b> (only if you must guarantee identical wording every time)</summary>
+
+1. **Create:** Topics → **+ Add a topic → From blank**. Rename to **`General 1% Club FAQ`**.
+2. **Trigger → The agent chooses:**
    > *Use when the user asks how 1% Club points are earned, how many points a category is worth,
    > whether a campaign/code is needed, or where to log an activity — general programme-rules
    > questions that don't need a specific deal (OPE).*
-3. **Node — Send a message:** click **+ → Send a message**, paste exactly:
+3. **Node — Send a message**, paste exactly:
    > Here's how you earn 1% Club points:
    > • **Complete Care – New Logo: 100** — a new Complete Care deal (customer has no active CC
    >   contract), created from 1 May 2026. Auto-calculated, no code needed.
@@ -60,7 +76,8 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    >   CUSTOMER / CHANNEL / LEADERSHIP; your manager approves weekly).
    >
    > Want me to check a specific deal? Send me the OPE and I'll take a look.
-4. **Save** (top-right). **Test:** type *"how do I get points?"* → expect the list above.
+4. **Save**, test with *"how do I get points?"*.
+</details>
 
 ---
 
@@ -329,6 +346,7 @@ system topic.*
 - **Authentication:** as your tenant requires; the agent runs server-side from the orchestrator flow.
 
 ## Minimum viable Percy
-Build just **Topics 1, 2, 3, and 10** (FAQ · Refresh · Clarify & Guide · Fallback) plus the **two
-actions** — that's a complete assistant, because `Run Percy Diagnostic` + the instructions already
-cover every per-scheme diagnostic. Add **Topics 4–9** later only where you want the wording locked.
+Build just **Topics 2, 3, and 10** (Refresh · Clarify & Guide · Fallback) plus the **two actions** —
+that's a complete assistant: the instructions (with the §9 rules) answer every FAQ **tailored to the
+question** (Topic 1 stays unbuilt), and `Run Percy Diagnostic` + the instructions cover every
+per-scheme diagnostic. Add **Topics 4–9** later only where you want the wording locked.
