@@ -172,17 +172,20 @@ locked wording. Keep the static message where determinism matters more.
    > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
 
    **How the Tool node fills inputs:** it shows **"Inputs (0)"** — that's correct, not empty-broken.
-   Tool inputs are **AI-filled by default**; "(0)" counts *overrides*. **+ Set value** pins an input
-   to a fixed value instead of AI:
-   - **`template`** → **+ Set value** → select **template** → literal `Summary` (if the box wants a
-     variable, use **fx** → `"Summary"` with quotes). The one input worth pinning.
+   Tool inputs are **AI-filled by default**; "(0)" counts *overrides*. **+ Set value** pins an input —
+   but the picker offers **existing variables as the override source** (no raw literals), so to pin
+   `template`:
+   1. **+ above the Tool node → Variable management → Set a variable value** → **Create a new
+      variable** named `templateKey` (String) → **To value:** type `Summary`.
+   2. On the Tool node: **+ Set value** → pick **`templateKey`** → map it to the **`template`** input.
    - **`who`** → leave AI-filled (the agent supplies CallerEmail — see setup B).
-   - **`ope`** → leave AI-filled. *(Only if a test fails with "ope wasn't provided": + Set value →
-     ope → fx → `""` — safe, the Summary template never reads Ope.)*
+   - **`ope`** → leave AI-filled. *(Only if a test fails with "ope wasn't provided": same trick with
+     an empty-string variable — safe, the Summary template never reads Ope.)*
    - Note the output variable (e.g. **`evidence`**).
-   - *If the override picker offers `text` / `text_1` / `text_2`: those are stale topic variables from
-     earlier deleted nodes, not tool inputs — ignore them, and delete them via the **{x} Variables**
-     panel to keep pickers clean.*
+   - *Can't get `template` mapped at all? Leave **Inputs (0)** — the trigger description + the
+     instructions playbook steer the agent to Summary anyway; you only lose the hard guarantee.*
+   - *If the picker shows stale `text` / `text_1` / `text_2` variables from earlier deleted nodes,
+     delete them via the **{x} Variables** panel to keep it clean.*
 
    > **No "Dynamically fill with AI" option in your tenant?** Then delete this whole topic instead —
    > the Instructions' TWO MESSAGES playbook A already makes orchestration do exactly this (Summary,
