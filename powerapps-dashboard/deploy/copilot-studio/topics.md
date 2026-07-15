@@ -18,11 +18,15 @@ Build them top to bottom; you don't need to read anything else.
 > model-free input mechanisms are per-tool "Set as a value" pins. Two architectures:
 
 **Option B — 3 tools (recommended start, minutes to build):**
-1. On the `Percy-Query` trigger's `template` input: **⋯ → Add a drop-down list of options** → the
-   eight keys exactly (`Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentricity`,
-   `IPGreenLake`, `Accreditation`, `Summary`). The input becomes a **schema enum** — the fill model
-   now *selects from a closed list* (its reliable operation); garbage values become impossible.
-   *(Schema change → re-register/rebind the tool, the usual drill.)*
+1. Make `template` an enum — **in the Power Automate flow editor** (Copilot Studio → Tools → the
+   tool → Details → the blue *Agent flow* link): click the **"When an agent calls the flow"**
+   trigger card → in its panel find the **`template` input row** → **⋯ → Add a drop-down list of
+   options** → add the eight keys exactly as the Switch spells them (`Locate`, `CompleteCare`,
+   `CAP`, `IBExpand`, `CustomerCentricity`, `IPGreenLake`, `Accreditation`, `Summary`) → **Save**.
+   The input becomes a **schema enum** — the fill model now *selects from a closed list* (its
+   reliable operation); garbage values become impossible.
+   *(Schema change → re-register/rebind the tool and re-paste its Description + Customize texts,
+   the usual drill.)*
 2. Keep the pinned **Get My Points Summary** tool (below) for the vague path — the one case with no
    scheme word to anchor the enum choice (the observed failure mode).
 3. Keep the generic diagnostic tool (enum-hardened) for named-scheme questions — "cap", "complete
