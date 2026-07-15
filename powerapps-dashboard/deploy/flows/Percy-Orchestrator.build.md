@@ -44,11 +44,26 @@ trigger; a create-only trigger never sees that modify, so the guard is gone.)*
 Add the **Copilot Studio** action that runs your published Percy agent (e.g. *Microsoft Copilot
 Studio → Run a prompt / call an agent*; the exact name depends on your tenant's connector version).
 
-- **Input `ConversationJson`** = `ConversationJson` (trigger dynamic content) — the whole transcript.
-- **Input `UserEmail`** = `UserEmail` (trigger dynamic content).
+**The message input — this is how the caller's email reaches the agent.** The agent's `who`
+(credits-to-you checks, Summary, etc.) comes from here; nothing else supplies it. In the action's
+**message/prompt** field type the two labels as plain text and insert the trigger's dynamic content:
+
+```
+CallerEmail: [UserEmail]          ⟵ dynamic content: the trigger item's UserEmail column
+Conversation: [ConversationJson]  ⟵ dynamic content: the trigger item's ConversationJson column
+```
+
+- The pasted agent Instructions expect exactly this shape ("READING YOUR INPUT"): the agent uses
+  **CallerEmail** as `who` on every tool call and is told to **ignore any email typed inside the
+  chat** — CallerEmail is the verified login (`Lower(User().Email)` written by Power Apps).
 - The agent finds the latest user message (`Role="user"`, highest `Seq`) inside the JSON, routes,
   optionally calls a tool, and returns **plain text**. Note the **output property that holds the
   text** (e.g. `text` / `outputText`) — you'll reference it next.
+
+> **Structured alternative** (only if your agent action exposes input parameters/variables): define a
+> Copilot Studio **Global variable** with **"External sources can set values"** ticked and map
+> `UserEmail` to it instead. The message-embed above works on every connector version, so it's the
+> default.
 
 > **No Copilot Studio agent connector?** Substitute **AI Builder → Create text with GPT**:
 > *Instructions* = the Percy overview instructions (`../copilot-studio/percy-instructions.md`) +

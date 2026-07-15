@@ -21,12 +21,18 @@ Build them top to bottom; you don't need to read anything else.
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
 
-**B. The caller's email (`who`).** Diagnostics need the **caller's** email, which the orchestrator
-passes into the agent. Create one **Global variable** to hold it:
-- **Variables → + New variable → Global**, name **`Global.UserEmail`**, type **String**.
-- Set it from the value the orchestrator passes in (the SharePoint row's `UserEmail`).
-- ⚠️ **Do NOT use `System.User.Email`** — the agent runs under the shared service account, so that
-  would be the wrong person. Always use `Global.UserEmail` for `who`.
+**B. The caller's email (`who`) — where it actually comes from.** A variable does **not** fill
+itself: the **`Percy-Orchestrator` flow embeds the verified email in the message** it sends the agent
+(`CallerEmail: …` on the first line — see
+[`../flows/Percy-Orchestrator.build.md`](../flows/Percy-Orchestrator.build.md) step 3), and the
+pasted Instructions tell the agent to use **CallerEmail** as `who` on every tool call.
+- **In a topic's Tool node, set the `who` input to "Fill with AI" / dynamic** — the agent supplies
+  CallerEmail from the message. This is the default and needs no variable plumbing.
+- *Structured alternative:* create a **Global variable** (Variables → + New → Global) with
+  **"External sources can set values"** ticked, have the calling flow map `UserEmail` into it (only
+  possible if your agent action exposes variable inputs), and map `who` = that variable.
+- ⚠️ **Never use `System.User.Email`** — the agent runs under the shared service account, so that
+  would be the service account, not the salesperson.
 
 **C. Every "The agent chooses" trigger** is set the same way: click the **Trigger** node → **Change
 trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's description into the box.
@@ -149,7 +155,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**. Map inputs:
    - **`template`** = `Summary`  *(type it as a literal value)*
    - **`ope`** = *(leave blank)*
-   - **`who`** = **`Global.UserEmail`**
+   - **`who`** = **"Fill with AI"** (the agent supplies CallerEmail — see setup B)
    - Note the output variable (e.g. **`evidence`**).
 4. **Node — Send a message:** paste:
    > Here's where you stand: {your total and what's pending}. Waiting on approval is the most common
@@ -180,7 +186,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 5. **Node — Add a tool → Run Percy Diagnostic.** Map inputs:
    - **`template`** = `CompleteCare`
    - **`ope`** = **`Topic.ope`**
-   - **`who`** = **`Global.UserEmail`**
+   - **`who`** = **"Fill with AI"** (the agent supplies CallerEmail — see setup B)
 6. **Node — Send a message** (let the agent explain the returned evidence in plain English). If you
    want the wording locked, add a **Condition** on the returned fields and use these exact lines:
    - `creditsToYou = No` and points > 0 → *"This deal IS scoring Complete Care points, but they're
@@ -212,7 +218,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 4. **Condition `ope` is blank → Ask a question** *"What's the deal number? (looks like OPE-123456789)"*
    → save to **`ope`**.
 5. **Add a tool → Run Percy Diagnostic:** `template` = `CAP`, `ope` = `Topic.ope`, `who` =
-   `Global.UserEmail`.
+   "Fill with AI" (CallerEmail).
 6. **Send a message** (agent explains; exact lines if you lock it — surface the FIRST failing gate):
    - `inCapRequests = No` → *"No CAP request logged against this opp — log it in SFDC → Support
      Requests → CAP Team Engagement/Support."*
@@ -239,7 +245,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 3. **Trigger input:** **`ope`** (String) — *"The deal / OPE number, e.g. OPE-123456789."*
 4. **Condition `ope` is blank → Ask a question** → save to **`ope`**.
 5. **Add a tool → Run Percy Diagnostic:** `template` = `CustomerCentricity`, `ope` = `Topic.ope`,
-   `who` = `Global.UserEmail`.
+   `who` = "Fill with AI" (CallerEmail).
 6. **Send a message** (agent explains; exact lines if locked — it returns one row per meeting):
    - `meetingCount = 0` → *"No logged events on this opp — add one via Opportunity → Activities → New
      Event."*
@@ -266,7 +272,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
 3. **Trigger input:** **`ope`** (String).
 4. **Condition `ope` is blank → Ask a question** → save to **`ope`**.
 5. **Add a tool → Run Percy Diagnostic:** `template` = `IBExpand`, `ope` = `Topic.ope`, `who` =
-   `Global.UserEmail`.
+   "Fill with AI" (CallerEmail).
 6. **Send a message** (agent explains; exact lines if locked):
    - `completeCarePointsPresent = Yes`, award 0 → *"This deal already scores Complete Care points, so
      IB/Expand isn't paid on the same deal — it's counted under Complete Care."*
@@ -289,7 +295,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    > *Use when the user asks about IP-in-GreenLake points or their monthly IP % — this is per-user,
    > not per-deal.*
 3. **No `ope` input.** (This scheme is per-person.)
-4. **Add a tool → Run Percy Diagnostic:** `template` = `IPGreenLake`, `who` = `Global.UserEmail`
+4. **Add a tool → Run Percy Diagnostic:** `template` = `IPGreenLake`, `who` = "Fill with AI" (CallerEmail)
    *(leave `ope` blank)*.
 5. **Send a message** (agent explains; exact lines if locked):
    - row present → *"Your IP-in-GreenLake for this month is in the {band} band — {points} points."*
@@ -309,7 +315,7 @@ trigger** (the ⇄ icon) → **The agent chooses** → paste the topic's descrip
    > *Use when the user asks about accreditation-race or CSM points, being "S-coded", "the race", or
    > "completion" — person/team-level, not per-deal.*
 3. **No `ope` input.**
-4. **Add a tool → Run Percy Diagnostic:** `template` = `Accreditation`, `who` = `Global.UserEmail`.
+4. **Add a tool → Run Percy Diagnostic:** `template` = `Accreditation`, `who` = "Fill with AI" (CallerEmail).
 5. **Send a message** (agent explains; exact lines if locked):
    - not S-coded → *"The race is for S-coded individuals; your record isn't flagged as S-coded."*
    - not COMPLETE → *"Your accreditation isn't COMPLETE yet — the team race credits once the sponsor
