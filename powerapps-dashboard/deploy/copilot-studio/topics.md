@@ -38,6 +38,13 @@ Build them top to bottom; you don't need to read anything else.
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
 
+**Completion setting (both tools):** on each tool's page, **Completion → After running =
+"Don't respond (default)"**, and Advanced → outputs available = **All**. "Don't respond" hands the
+tool's output back to the orchestrator, which interprets it and composes the reply per the
+Instructions — essential because the evidence is JSON (never shown raw) and because the agent chains
+calls (`Locate` → the right scheme's diagnostic) in one turn. The respond-style options would send
+output straight to the user, skipping interpretation — wrong for both tools.
+
 **B. The caller's email (`who`) — where it actually comes from.** A variable does **not** fill
 itself: the **`Percy-Orchestrator` flow embeds the caller's details in the message** it sends the
 agent — three labelled lines (see
@@ -188,12 +195,15 @@ locked wording. Keep the static message where determinism matters more.
    > input (red *"Input variable 'ope' is required"*) and has **no AI-fill option**. If your node's
    > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
 
-   **Leave the node at "Inputs (0)" — no overrides.** That's correct, not empty-broken: tool inputs
-   are **AI-filled by default** and "(0)" counts *overrides*, of which you need none. Don't fight the
-   "+ Set value" panel (it's a variable picker, not an input list) — the steering lives at the
-   **tool level** instead: the tool's **Description** + per-input **Customize** descriptions (setup A)
-   make the agent pick `Summary`, fill `who` = CallerEmail, and leave `ope` empty. Two prerequisites
-   make this prompt-free:
+   **Leave the node at "Inputs (0)" — no overrides. This is the FINAL state of the node.** Tool
+   inputs are **AI-filled by default** and "(0)" counts *overrides*, of which you need none. The
+   "+ Set value" panel is a **variable picker** (note its Custom/System/Environment tabs — variable
+   namespaces): it lists the topic's variables as potential override values and will **never** show
+   `template`/`ope`/`who` — that's the UI, not a fault. Don't open it again. The steering lives at
+   the **tool level**: the tool's **Description** + per-input **Customize** descriptions (setup A)
+   make the agent pick `Summary`, fill `who` = CallerEmail, and leave `ope` empty. Proof it works =
+   testing, not the panel: a vague question answered with the Summary, no input prompts. Two
+   prerequisites make this prompt-free:
    1. **`ope`/`who` are optional on the `Percy-Query` trigger** (see `Percy-Query.build.md` step 2) —
       while they're *required*, AI-fill can't pass blank and falls back to **prompting the user**
       ("Please enter your input for ope"), which this act-first topic must never do.
