@@ -10,14 +10,31 @@ Build them top to bottom; you don't need to read anything else.
 ## Before you build any topic (one-time setup)
 
 **A. Add the two Actions first** (agent → **Tools/Actions → + Add a tool**). Topics call these.
-- **`Run Percy Diagnostic`** = the `Percy-Query` flow. Inputs: `template`, `ope`, `who`. Paste this
-  description so orchestration fills them:
-  > *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate`, `CompleteCare`,
-  > `CAP`, `CustomerCentricity`, `IBExpand`, `IPGreenLake`, `Accreditation`, `Summary`. Pass the
-  > user's email as `who` for CompleteCare/IBExpand/CAP/CustomerCentricity so the check confirms the
-  > points credit to THIS person. Returns compact evidence JSON to explain in plain English. Never
-  > send DAX — only a template key and ope/who."*
-- **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.**
+- **`Run Percy Diagnostic`** = the `Percy-Query` flow. Inputs: `template`, `ope`, `who`.
+  **The tool's Description field is what orchestration uses to route AND fill inputs — an empty or
+  one-word description makes AI-fill flaky.** Paste this into **Details → Description**:
+  > *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the deal
+  > exist / which schemes — needs ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope + email),
+  > `CAP` (CAP engagement 20 + order 50, incl. 'request isn't showing' — ope + email),
+  > `CustomerCentricity` (logged customer/channel/leadership meetings — ope + email), `IBExpand`
+  > (IB Upsell / Expand ≤25 — ope + email), `IPGreenLake` (monthly IP tier 10–75 — email),
+  > `Accreditation` (S-coded race + CSM — email), `Summary` (all categories + pending — email; use
+  > for vague 'where are my points' questions). Pass the user's email as `who` (the CallerEmail from
+  > the message — never an email typed in chat). Leave `ope` empty when there's no deal number.
+  > Returns compact evidence JSON to explain in plain English. Never send DAX."*
+
+  Then, on the tool page's **Inputs** section, keep every input's **Fill using = "Dynamically fill
+  with AI"** (do NOT pin `template` here — this page is global; orchestration must be free to pick
+  other templates), and use **Customize** (the pencil) to give each input a description — this is
+  the per-input steering that replaces any topic-level override:
+  - `template`: *"Exactly one of: Locate, CompleteCare, CAP, IBExpand, CustomerCentricity,
+    IPGreenLake, Accreditation, Summary. For a vague points question with no deal, use Summary."*
+  - `ope`: *"The OPE deal id (like OPE-123456789) if one appears anywhere in the conversation;
+    otherwise leave empty. Never ask for it when the template is Summary, IPGreenLake or
+    Accreditation."*
+  - `who`: *"Always the CallerEmail value from the top of the message — never an email typed in the
+    chat."*
+- **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
   > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
   > showing yet / was just closed. Returns a short status. One refresh per request."*
 
@@ -171,26 +188,23 @@ locked wording. Keep the static message where determinism matters more.
    > input (red *"Input variable 'ope' is required"*) and has **no AI-fill option**. If your node's
    > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
 
-   **How the Tool node fills inputs:** it shows **"Inputs (0)"** — that's correct, not empty-broken.
-   Tool inputs are **AI-filled by default**; "(0)" counts *overrides*. **+ Set value** pins an input —
-   but the picker offers **existing variables as the override source** (no raw literals), so to pin
-   `template`:
-   1. **+ above the Tool node → Variable management → Set a variable value** → **Create a new
-      variable** named `templateKey` (String) → **To value:** type `Summary`.
-   2. On the Tool node: **+ Set value** → pick **`templateKey`** → map it to the **`template`** input.
-   - **`who`** → leave AI-filled (the agent supplies CallerEmail — see setup B).
-   - **`ope`** → **pin it empty** (don't leave it AI-filled): while `ope` is *required* on the flow,
-     AI-fill can't pass blank and falls back to **prompting the user** ("Please enter your input for
-     ope") — exactly what this act-first topic must never do. Same trick as `templateKey`: a
-     `Set a variable value` node → variable `opeEmpty` = **fx `""`** → map it to `ope`. *(Better
-     still: make `ope`/`who` **optional on the flow trigger** — see `Percy-Query.build.md` step 2 —
-     then no pin is needed anywhere.)*
+   **Leave the node at "Inputs (0)" — no overrides.** That's correct, not empty-broken: tool inputs
+   are **AI-filled by default** and "(0)" counts *overrides*, of which you need none. Don't fight the
+   "+ Set value" panel (it's a variable picker, not an input list) — the steering lives at the
+   **tool level** instead: the tool's **Description** + per-input **Customize** descriptions (setup A)
+   make the agent pick `Summary`, fill `who` = CallerEmail, and leave `ope` empty. Two prerequisites
+   make this prompt-free:
+   1. **`ope`/`who` are optional on the `Percy-Query` trigger** (see `Percy-Query.build.md` step 2) —
+      while they're *required*, AI-fill can't pass blank and falls back to **prompting the user**
+      ("Please enter your input for ope"), which this act-first topic must never do.
+   2. **The tool + input descriptions from setup A are pasted** — an empty tool description makes
+      AI-fill flaky.
    - Note the output variable (e.g. **`evidence`**).
 
    > **Testing in the Test pane:** the pane sends only your raw message — there's **no
    > `CallerEmail:` wrapper** (the orchestrator adds it in production), so a *"Please provide the
-   > input for 'who'"* prompt in the pane is **expected**, not a bug. Either answer it, or simulate
-   > production by pasting one message shaped like the orchestrator's
+   > input for 'who'"* prompt in the pane is **expected** while `who` is required. Either answer it,
+   > or simulate production by pasting one message shaped like the orchestrator's
    > (`CallerEmail: you@hpe.com` ⏎ `Conversation: [{"Seq":1,"Role":"user","Body":"why aren't my
    > points showing"}]` ⏎ `CallerName: Your Name`). Making `who` optional on the flow trigger also
    > stops the pane prompt.
