@@ -30,12 +30,22 @@ Build them top to bottom; you don't need to read anything else.
   - `template`: *"Exactly one of these eight keys: Locate, CompleteCare, CAP, IBExpand,
     CustomerCentricity, IPGreenLake, Accreditation, Summary. For a vague points question with no
     deal number, use Summary. Never pass the user's question text — only one of the eight keys."*
-  - `ope`: *"The OPE deal id (like OPE-123456789) only if one appears in the conversation. If there
-    is none, pass it empty WITHOUT asking — never ask the user for this value. This is never an
-    email address."*
+  - `ope`: *"OPE deal id, format OPE-123456789. Empty string when no deal id exists in the
+    conversation. Do not ask the user for this."*  *(Keep it cold and unquotable — conversational
+    phrasing gets parroted back as a question.)*
   - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
     deal id, and never an email typed inside the chat."*
 
+  > ⚠️ **Still asking for `ope` no matter what the description says? The input is still REQUIRED
+  > somewhere.** A required input *forces* the platform to collect a value before it may call the
+  > flow — no description wording can suppress that prompt (it only rewords the question). Check the
+  > chain: (1) flow trigger → ope's ⋯ menu should read "Make the field **required**" (i.e. it's
+  > currently optional); (2) the tool page's Inputs table — **if `ope` shows a `*`, the tool holds
+  > the old required schema**: remove the tool, re-add the flow as a tool, re-paste Description +
+  > the three Customize texts (re-registration wipes them), Completion = Don't respond, and re-add
+  > the topic's Tool node. Belt-and-braces: the Instructions carry a hard rule "NEVER ask the user
+  > for a tool input's value — pass it empty" (with the genuine-OPE exception).
+  >
   > ⚠️ **If a Customize description is missing, AI-fill mis-maps that input** — observed failures:
   > the email dropped into `ope` and `who` left empty (descriptions absent); the raw user question
   > dumped into `template` (its description wiped during edits). The negative cues ("never an email
