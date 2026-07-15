@@ -9,15 +9,36 @@ Build them top to bottom; you don't need to read anything else.
 
 ## Before you build any topic (one-time setup)
 
-**A. Register the tools — ONE PINNED TOOL PER SCHEME (the core reliability decision).**
+**A. Register the tools — pick your reliability level.**
 
-> **Why:** the orchestrator is reliable at the *discrete choice* of which named tool to call, but
-> **unreliable at generating an exact key** into a `template` input ("Dynamically fill with AI"
-> produced, on identical input: the right key, the raw question text, and a user prompt). So the
-> template key is never AI-filled: the **same `Percy-Query` flow is registered eight times** (a tool
-> is just a wrapper), each registration pinning `template` via **Fill using = "Set as a value"**.
-> The flow itself is untouched — the server-side key guardrail stands. This also makes the
-> per-scheme topics unnecessary: tool descriptions ARE the routing.
+> **The problem:** the orchestrator is reliable at the *discrete choice* of which named tool to
+> call, but **unreliable at generating an exact key** into a free-text `template` input
+> ("Dynamically fill with AI" produced, on identical input: the right key, the raw question text,
+> and a user prompt). There is **no setting that makes free-text AI-fill deterministic** — the only
+> model-free input mechanisms are per-tool "Set as a value" pins. Two architectures:
+
+**Option B — 3 tools (recommended start, minutes to build):**
+1. On the `Percy-Query` trigger's `template` input: **⋯ → Add a drop-down list of options** → the
+   eight keys exactly (`Locate`, `CompleteCare`, `CAP`, `IBExpand`, `CustomerCentricity`,
+   `IPGreenLake`, `Accreditation`, `Summary`). The input becomes a **schema enum** — the fill model
+   now *selects from a closed list* (its reliable operation); garbage values become impossible.
+   *(Schema change → re-register/rebind the tool, the usual drill.)*
+2. Keep the pinned **Get My Points Summary** tool (below) for the vague path — the one case with no
+   scheme word to anchor the enum choice (the observed failure mode).
+3. Keep the generic diagnostic tool (enum-hardened) for named-scheme questions — "cap", "complete
+   care", "greenlake" carry their own anchor, so the choice is high-confidence there.
+   Residual risk: rare mis-picks/asks on odd phrasings. **Escalate a scheme to its own pinned tool
+   (Option A) only if testing shows a mis-pick on it.**
+
+**Option A — one pinned tool per scheme (maximum determinism, ~30 min more):** the **same
+`Percy-Query` flow registered eight times** (a tool is just a wrapper), each registration pinning
+`template` via **Fill using = "Set as a value"** — nothing is left for AI except ope/who. The flow
+is untouched either way — the server-side key guardrail stands. Both options make the per-scheme
+topics unnecessary: tool descriptions ARE the routing.
+
+*The registry below is Option A in full; for Option B build only Get My Points Summary + the
+enum-hardened generic tool + Refresh Dashboard, and reuse the ope/who Customize texts and the
+per-scheme description lines inside the generic tool's description.*
 
 For each row: agent → **Tools → + Add a tool → Flow →** the `Percy-Query` flow → set the Name, paste
 the Description, pin the inputs as shown. **Every tool:** Completion = *Don't respond (default)*,
