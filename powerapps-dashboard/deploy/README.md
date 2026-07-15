@@ -44,9 +44,9 @@ account** the flow will use has workspace read + dataset **Build**.
 - 📄 [`PERCY_BUILD_PACK.md` §7](../formulas/percy/backend/PERCY_BUILD_PACK.md#7-the-single-diagnostic-action--percy-query) — action specs (Query §7.1–7.4, Refresh §7.5).
 
 ### Phase 4 — Create the Percy agent *(Copilot Studio)*  — do these **in this sub-order**
-1. **Paste the Overview → Instructions**, then append the programme rules.
-   - 📄 [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md) — the instructions to paste.
-   - 📄 [`PERCY_BUILD_PACK.md` §9](../formulas/percy/backend/PERCY_BUILD_PACK.md#9-programme-rules-canonical) — the nine rules to append (verbatim).
+1. **Paste the Overview → Instructions** — one self-contained block, nine rules already inlined.
+   - 📄 [`copilot-studio/percy-instructions.md`](copilot-studio/percy-instructions.md) — the FINAL paste block (+ "what's left" checklist).
+   - 📄 [`PERCY_BUILD_PACK.md` §9](../formulas/percy/backend/PERCY_BUILD_PACK.md#9-programme-rules-canonical) — canonical rules copy (update both together if rules change).
 2. **Add the two actions:** "Run Percy Diagnostic" = `Percy-Query` (inputs `template`/`ope`/`who`) and
    "Refresh Dashboard" = `Percy-Refresh` (no inputs).
    - 📄 [`PERCY_BUILD_PACK.md` §15.2](../formulas/percy/backend/PERCY_BUILD_PACK.md#152-the-two-actions--their-descriptions-for-copilot-studio-orchestration) — the action descriptions to give them.
