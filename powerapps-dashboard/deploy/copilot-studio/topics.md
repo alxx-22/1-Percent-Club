@@ -171,12 +171,18 @@ locked wording. Keep the static message where determinism matters more.
    > input (red *"Input variable 'ope' is required"*) and has **no AI-fill option**. If your node's
    > header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
 
-   Map inputs (each input's **⋯ menu** offers value / variable / formula / AI):
-   - **`template`** → set as a **value** → `Summary`
-   - **`who`** → **"Dynamically fill with AI"** (the agent supplies CallerEmail — see setup B)
-   - **`ope`** → it's required by the flow, so pass an **empty string**: ⋯ → **fx / Formula** → `""`
-     *(safe — the Summary template never reads Ope; the DAX tolerates it empty by design)*
+   **How the Tool node fills inputs:** it shows **"Inputs (0)"** — that's correct, not empty-broken.
+   Tool inputs are **AI-filled by default**; "(0)" counts *overrides*. **+ Set value** pins an input
+   to a fixed value instead of AI:
+   - **`template`** → **+ Set value** → select **template** → literal `Summary` (if the box wants a
+     variable, use **fx** → `"Summary"` with quotes). The one input worth pinning.
+   - **`who`** → leave AI-filled (the agent supplies CallerEmail — see setup B).
+   - **`ope`** → leave AI-filled. *(Only if a test fails with "ope wasn't provided": + Set value →
+     ope → fx → `""` — safe, the Summary template never reads Ope.)*
    - Note the output variable (e.g. **`evidence`**).
+   - *If the override picker offers `text` / `text_1` / `text_2`: those are stale topic variables from
+     earlier deleted nodes, not tool inputs — ignore them, and delete them via the **{x} Variables**
+     panel to keep pickers clean.*
 
    > **No "Dynamically fill with AI" option in your tenant?** Then delete this whole topic instead —
    > the Instructions' TWO MESSAGES playbook A already makes orchestration do exactly this (Summary,
