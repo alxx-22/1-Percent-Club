@@ -12,21 +12,29 @@ Power Apps chat (imgSend creates a NEW SharePoint row per send; whole transcript
   → Percy-Orchestrator flow (trigger: "When an item is created" — create-only, NO loop guard)
       message to agent =  CallerEmail: <UserEmail> ⏎ Conversation: <ConversationJson> ⏎ CallerName: <Created By>
   → Percy agent (Copilot Studio, generative orchestration ON, web knowledge OFF)
-      tools → Percy-Query flow (Switch on template key → approved DAX → Power BI executeQueries)
+      tools → 8 diagnostic flows, ONE PER CHECK, each embedding its own fixed DAX (no template
+              input, no Switch): Percy-Summary, Percy-Locate, Percy-CompleteCare, Percy-CAP,
+              Percy-Meetings, Percy-IBExpand, Percy-IPGreenLake, Percy-Accreditation
             → Percy-Refresh flow (Power BI dataset refresh)
   → flow writes AnswerText + Status=Answered (error branch writes friendly text — MUST stay wired)
   → app polls by row ID (varPollMax × 2s, default 120s)
 ```
 
-**Current tool set (Option B, 3 tools):**
-1. **Get My Points Summary** = Percy-Query registered with `template` pinned *Set as a value* =
-   `Summary`, `ope` pinned empty, `who` AI-filled. Deterministic vague-path tool.
-2. **Run Percy Diagnostic** = Percy-Query, `template` is a **drop-down enum** on the flow trigger
-   (8 keys: Locate, CompleteCare, CAP, IBExpand, CustomerCentricity, IPGreenLake, Accreditation,
-   Summary), `ope`/`who` **optional** with cold Customize descriptions.
-3. **Refresh Dashboard** = Percy-Refresh (no inputs).
-Escalation path if a scheme mis-picks: one pinned tool per scheme (Option A in
-`powerapps-dashboard/deploy/copilot-studio/topics.md`).
+**Tool set (9 tools = 9 flows, registry in `deploy/copilot-studio/topics.md`):** Get My Points
+Summary · Locate Deal · Check Complete Care · Check CAP Points · Check Customer Meetings ·
+Check IB Expand · Check IP GreenLake · Check Accreditation · Refresh Dashboard. Inputs are only
+`ope`/`who`, **ALL optional on every trigger**; per-deal flows guard blank ope by returning
+`{"error":"missing_ope"}` and the agent asks for the deal number in normal chat. The old
+template-key Switch method is retired.
+
+**Model (TMDL 2026-07) scoring facts the DAX depends on:** CC New Logo 100 (9X + New Solution S +
+Won + close ≥ 1 May + no CC contract started before 1 Apr 2026); Uplift 75 (9X + New Solution S OR
+Day 1 product, only when New Logo = 0); IB Expand is PRO-RATA (expand share × 25) and suppressed by
+any CC points; CAP orders credit by EMAIL, CAP requests by NAME (created-date gate); meetings
+classify by `Meeting Type` (Customer/Channel Partner ×10, Leadership ×20, name credit, no date
+gate); IP in GL = per-month tiers summed (May + June); `Manager Sponsor Points` = race share +
+CSM 30 + crew/individual bonus points. Canonical queries:
+`powerapps-dashboard/deploy/flows/dax-templates.md`.
 
 ## Hard-won operational truths (violate these and you repeat a day of debugging)
 
@@ -36,12 +44,13 @@ Escalation path if a scheme mis-picks: one pinned tool per scheme (Option A in
   **Maker-provided credentials** · Completion = *Don't respond*. Otherwise server-side runs die with
   `Run_an_agent` BadRequest: "The agent requested human input… specify HITL users" — a flow-invoked
   agent has no human to ask (consent cards and input prompts both trigger it).
-- **Required tool inputs force prompts.** No description can suppress it. `ope`/`who` are optional
-  on the Percy-Query trigger; `template` stays required but is pinned/enum. Never make an input
-  required unless it is always AI-resolvable.
+- **Required tool inputs force prompts — so NO flow input is ever required.** No description can
+  suppress a required-input prompt. Every trigger input is optional; per-deal flows return
+  `{"error":"missing_ope"}` on blank ope and the agent asks conversationally (final-text questions
+  are safe; mid-run input requests are what kill flow-invoked agents).
 - **AI-fill of free-text inputs is non-deterministic** (same input gave: right key / raw question /
-  a prompt). Determinism = *Set as a value* pins per tool registration, or trigger drop-down enums.
-  LLMs are reliable at discrete choices (which tool / which enum), unreliable at generating strings.
+  a prompt). That's why there is no `template` input at all — one tool per check; LLMs are reliable
+  at discrete choices (which named tool), unreliable at generating exact strings.
 - **Schema changes go stale silently.** Renaming/re-typing trigger inputs, adding enums, or editing
   Respond outputs → the agent-level tool AND any topic Tool node hold the old schema. Fix = remove
   & re-add the tool (re-paste Description + input Customize texts — they get wiped), re-add topic
@@ -66,9 +75,10 @@ Escalation path if a scheme mis-picks: one pinned tool per scheme (Option A in
 |---|---|
 | Agent instructions (paste block — must match the tools that actually exist) | `powerapps-dashboard/deploy/copilot-studio/percy-instructions.md` |
 | Tool registry, input descriptions, topics | `powerapps-dashboard/deploy/copilot-studio/topics.md` |
-| Flow builds (Query / Refresh / Orchestrator) | `powerapps-dashboard/deploy/flows/*.build.md` |
+| Flow builds (8 diagnostics / Refresh / Orchestrator) | `powerapps-dashboard/deploy/flows/*.build.md` |
+| **Canonical DAX** (one query per flow, grounded in the 2026-07 TMDL) | `powerapps-dashboard/deploy/flows/dax-templates.md` |
 | Deploy order + failure tracing | `powerapps-dashboard/deploy/DEPLOY.md` · `deploy/README.md` |
-| Full design, DAX templates (§10), programme rules (§9), tests (§13) | `powerapps-dashboard/formulas/percy/backend/PERCY_BUILD_PACK.md` |
+| Full design, programme rules (§9), tests (§13) — §10 DAX superseded by dax-templates.md | `powerapps-dashboard/formulas/percy/backend/PERCY_BUILD_PACK.md` |
 
 ## Working agreements
 

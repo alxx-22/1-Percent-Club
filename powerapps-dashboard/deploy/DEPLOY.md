@@ -47,10 +47,11 @@ flows are **built by hand from the instructions**, and the rest is paste-ready.
    the OPE with or without the `OPE-` prefix (sets the normalisation in the tool flows).
 
 3. **Agent-action flows** — build by hand:
-   - **`Percy-Query`** ([`flows/Percy-Query.build.md`](flows/Percy-Query.build.md)): Copilot trigger
-     (`template`,`ope`,`who`) → **`Switch(template)`** pastes the matching DAX from
+   - **8 diagnostic flows, one per check** ([`flows/Percy-Query.build.md`](flows/Percy-Query.build.md)
+     has the pattern + registry): agent trigger with **optional** `ope`/`who` → blank-ope guard
+     returns `{"error":"missing_ope"}` → the flow's own fixed DAX from
      [`flows/dax-templates.md`](flows/dax-templates.md) → Power BI "Run a query against a dataset" →
-     return `firstTableRows`. The agent passes a **template key, never DAX**.
+     return `firstTableRows`. **No template input; no required inputs anywhere.**
    - **`Percy-Refresh`** ([`flows/Percy-Refresh.build.md`](flows/Percy-Refresh.build.md)): no inputs →
      Power BI "Refresh a dataset" → status back. One refresh per request.
 

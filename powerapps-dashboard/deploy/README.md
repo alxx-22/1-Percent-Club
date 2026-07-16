@@ -34,14 +34,15 @@ Note the **workspace id** + **semantic model (dataset) id**, and confirm the **s
 account** the flow will use has workspace read + dataset **Build**.
 - 📄 [`PERCY_BUILD_PACK.md` §1.1](../formulas/percy/backend/PERCY_BUILD_PACK.md#1-recommended-architecture), [§10](../formulas/percy/backend/PERCY_BUILD_PACK.md#10-dax-templates) — connection model + DAX library.
 
-### Phase 3 — Build the two agent-action flows *(build these FIRST, so they exist to attach)*
-- **`Percy-Query`** — Copilot trigger (`template`,`ope`,`who`) → `Switch(template)` pastes the
-  approved DAX → Power BI "Run a query against a dataset" → return `firstTableRows`. **Template key,
-  never DAX.**
-- **`Percy-Refresh`** — Copilot trigger (no inputs) → Power BI "Refresh a dataset" → status back.
-- 📄 [`flows/Percy-Query.build.md`](flows/Percy-Query.build.md) · [`flows/Percy-Refresh.build.md`](flows/Percy-Refresh.build.md) — **the click-by-click builds**.
-- 📄 [`flows/dax-templates.md`](flows/dax-templates.md) — which template key → which DAX → what to insert.
-- 📄 [`PERCY_BUILD_PACK.md` §7](../formulas/percy/backend/PERCY_BUILD_PACK.md#7-the-single-diagnostic-action--percy-query) — action specs (Query §7.1–7.4, Refresh §7.5).
+### Phase 3 — Build the agent-action flows *(build these FIRST, so they exist to attach)*
+- **8 diagnostic flows, one per check** (`Percy-Summary`, `Percy-Locate`, `Percy-CompleteCare`,
+  `Percy-CAP`, `Percy-Meetings`, `Percy-IBExpand`, `Percy-IPGreenLake`, `Percy-Accreditation`) —
+  each: agent trigger with **optional** `ope`/`who` → blank-ope guard (`{"error":"missing_ope"}`) →
+  its own fixed DAX → Power BI "Run a query against a dataset" → return `firstTableRows`.
+- **`Percy-Refresh`** — agent trigger (no inputs) → Power BI "Refresh a dataset" → status back.
+- 📄 [`flows/Percy-Query.build.md`](flows/Percy-Query.build.md) — **the click-by-click build pattern
+  + flow registry** · [`flows/Percy-Refresh.build.md`](flows/Percy-Refresh.build.md).
+- 📄 [`flows/dax-templates.md`](flows/dax-templates.md) — **the canonical DAX, one query per flow**.
 
 ### Phase 4 — Create the Percy agent *(Copilot Studio)*  — do these **in this sub-order**
 1. **Paste the Overview → Instructions** — one self-contained block, nine rules already inlined.

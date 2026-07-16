@@ -831,6 +831,14 @@ be CUSTOMER / CHANNEL / LEADERSHIP; manager approves weekly.
 
 ## 10. DAX templates
 
+> ⛔ **SUPERSEDED (2026-07).** The live model was rebuilt (pro-rata IB Expand, Uplift via Day 1,
+> CAP orders crediting by email, `Meeting Type` classification, IP May+June, bonus points inside
+> `Manager Sponsor Points`) and the architecture moved to **one flow per diagnostic with its own
+> embedded query** — no template keys. The canonical, current queries live in
+> [`deploy/flows/dax-templates.md`](../../../deploy/flows/dax-templates.md); flow builds in
+> [`deploy/flows/Percy-Query.build.md`](../../../deploy/flows/Percy-Query.build.md). The templates
+> below are kept for historical reference only — do not paste them into flows.
+
 Read against the live TMDL. Rules followed: **no invented tables/columns**; narrow queries (one
 row per OPE, or a tiny array); comments explain each query; assumptions are stated. Each template
 is an **`executeQueries`** body for the Power BI connector. The flow substitutes the **validated**

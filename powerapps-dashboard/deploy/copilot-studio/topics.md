@@ -9,59 +9,35 @@ Build them top to bottom; you don't need to read anything else.
 
 ## Before you build any topic (one-time setup)
 
-**A. Register the tools — pick your reliability level.**
+**A. Register the tools — one tool per flow, nine total.**
 
-> **The problem:** the orchestrator is reliable at the *discrete choice* of which named tool to
-> call, but **unreliable at generating an exact key** into a free-text `template` input
-> ("Dynamically fill with AI" produced, on identical input: the right key, the raw question text,
-> and a user prompt). There is **no setting that makes free-text AI-fill deterministic** — the only
-> model-free input mechanisms are per-tool "Set as a value" pins. Two architectures:
+Each diagnostic is its own flow with its own embedded DAX
+([`../flows/Percy-Query.build.md`](../flows/Percy-Query.build.md) ·
+[`../flows/dax-templates.md`](../flows/dax-templates.md)) — there is no `template` input anywhere.
+The only inputs any tool has are `ope` and/or `who`, **all optional on the flow trigger**, so the
+platform can never demand a value from the user (a required input on a flow-invoked agent dies with
+the HITL BadRequest). A per-deal flow called with a blank `ope` returns `{"error":"missing_ope"}`
+and the agent asks for the deal number in normal chat.
 
-**Option B — 3 tools (recommended start, minutes to build):**
-1. Make `template` an enum — **in the Power Automate flow editor** (Copilot Studio → Tools → the
-   tool → Details → the blue *Agent flow* link): click the **"When an agent calls the flow"**
-   trigger card → in its panel find the **`template` input row** → **⋯ → Add a drop-down list of
-   options** → add the eight keys exactly as the Switch spells them (`Locate`, `CompleteCare`,
-   `CAP`, `IBExpand`, `CustomerCentricity`, `IPGreenLake`, `Accreditation`, `Summary`) → **Save**.
-   The input becomes a **schema enum** — the fill model now *selects from a closed list* (its
-   reliable operation); garbage values become impossible.
-   *(Schema change → re-register/rebind the tool and re-paste its Description + Customize texts,
-   the usual drill.)*
-2. Keep the pinned **Get My Points Summary** tool (below) for the vague path — the one case with no
-   scheme word to anchor the enum choice (the observed failure mode).
-3. Keep the generic diagnostic tool (enum-hardened) for named-scheme questions — "cap", "complete
-   care", "greenlake" carry their own anchor, so the choice is high-confidence there.
-   Residual risk: rare mis-picks/asks on odd phrasings. **Escalate a scheme to its own pinned tool
-   (Option A) only if testing shows a mis-pick on it.**
+For each row: agent → **Tools → + Add a tool → Flow →** the flow → set the Name and Description.
+**Every tool, no exceptions:** *Ask the end user before running* = **No** · *Credentials to use* =
+**Maker-provided credentials** · Completion = *Don't respond (default)* · Advanced → outputs
+available = *All*.
 
-**Option A — one pinned tool per scheme (maximum determinism, ~30 min more):** the **same
-`Percy-Query` flow registered eight times** (a tool is just a wrapper), each registration pinning
-`template` via **Fill using = "Set as a value"** — nothing is left for AI except ope/who. The flow
-is untouched either way — the server-side key guardrail stands. Both options make the per-scheme
-topics unnecessary: tool descriptions ARE the routing.
+| Tool name | Flow | Inputs (AI-fill) |
+|---|---|---|
+| **Get My Points Summary** | `Percy-Summary` | `who` |
+| **Locate Deal** | `Percy-Locate` | `ope` |
+| **Check Complete Care** | `Percy-CompleteCare` | `ope`, `who` |
+| **Check CAP Points** | `Percy-CAP` | `ope`, `who` |
+| **Check Customer Meetings** | `Percy-Meetings` | `ope`, `who` |
+| **Check IB Expand** | `Percy-IBExpand` | `ope`, `who` |
+| **Check IP GreenLake** | `Percy-IPGreenLake` | `who` |
+| **Check Accreditation** | `Percy-Accreditation` | `who` |
+| **Refresh Dashboard** | `Percy-Refresh` | — |
 
-*The registry below is Option A in full; for Option B build only Get My Points Summary + the
-enum-hardened generic tool + Refresh Dashboard, and reuse the ope/who Customize texts and the
-per-scheme description lines inside the generic tool's description.*
-
-For each row: agent → **Tools → + Add a tool → Flow →** the `Percy-Query` flow → set the Name, paste
-the Description, pin the inputs as shown. **Every tool:** Completion = *Don't respond (default)*,
-Advanced → outputs available = *All*. (Don't-respond hands the JSON evidence back to the agent to
-interpret and lets it chain Locate → a Check tool; a respond-style option would dump raw output.)
-
-| Tool name | `template` (Set as a value) | `ope` | `who` |
-|---|---|---|---|
-| **Get My Points Summary** | `Summary` | pinned empty | AI-fill |
-| **Locate Deal** | `Locate` | AI-fill | pinned empty |
-| **Check Complete Care** | `CompleteCare` | AI-fill | AI-fill |
-| **Check CAP Points** | `CAP` | AI-fill | AI-fill |
-| **Check Customer Meetings** | `CustomerCentricity` | AI-fill | AI-fill |
-| **Check IB Expand** | `IBExpand` | AI-fill | AI-fill |
-| **Check IP GreenLake** | `IPGreenLake` | pinned empty | AI-fill |
-| **Check Accreditation** | `Accreditation` | pinned empty | AI-fill |
-
-**AI-filled inputs get these Customize descriptions** (pencil icon; cold and unquotable —
-conversational phrasing gets parroted back as a question):
+**Input Customize descriptions** (pencil icon on each input; cold and unquotable — conversational
+phrasing gets parroted back as a question):
 - `ope`: *"OPE deal id, format OPE-123456789. Empty string when no deal id exists in the
   conversation. Do not ask the user for this."*
 - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
@@ -76,33 +52,31 @@ conversational phrasing gets parroted back as a question):
   won, CAP requests, logged meetings. Use when the user gives a deal id but the metric is unclear,
   then run the matching Check tool."
 - *Check Complete Care:* "Why Complete Care / New Logo / uplift points are or aren't showing for a
-  specific deal (OPE). Covers product lines, won status, close date, active-contract, and whether
-  the points credit to the caller."
+  specific deal (OPE). Covers 9X product lines, New Solution / Day 1 motions, won status, close
+  date, the existing-contract New Logo blocker, and whether the points credit to the caller."
 - *Check CAP Points:* "CAP points for a specific deal: the 20-point engagement/request (incl. 'my
-  CAP request isn't showing', pending Gemma/BD sign-off) and the 50-point CAP-generated order
-  (campaign code, close date, validation)."
-- *Check Customer Meetings:* "Logged customer / channel / leadership meetings on a specific deal —
-  classification (subject must start CUSTOMER/CHANNEL/LEADERSHIP), created-date cut-off, name match,
-  weekly manager approval."
-- *Check IB Expand:* "IB Upsell / Expand pen-rate points for a specific deal — renewal+expand
-  motions, won status, the Complete-Care-suppression rule, and whether points credit to the caller."
-- *Check IP GreenLake:* "The caller's IP-in-GreenLake monthly percentage and tier points (10–75).
-  Per-user — no deal needed."
-- *Check Accreditation:* "The caller's accreditation-race eligibility and status (S-coded team race
-  100/50/20, CSM 30). Per-user — no deal needed."
-- **`Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
-  > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
-  > showing yet / was just closed. Returns a short status. One refresh per request."*
-
-Once the pinned set exists, **remove or disable the generic "Run Percy Diagnostic" registration** —
-a tool with an AI-filled `template` is exactly the failure mode this design removes.
+  CAP request isn't showing', pending Gemma/BD sign-off, logged-by name match) and the 50-point
+  CAP-generated order (won, close date, approval, owner-email credit)."
+- *Check Customer Meetings:* "Logged meetings on a specific deal — Meeting Type classification
+  (Customer / Channel Partner / Leadership), logged-by name match, weekly manager approval. One row
+  per meeting."
+- *Check IB Expand:* "IB Upsell / Expand points for a specific deal — renewal + expand motions, won
+  status, close date, pro-rata award (expand share × 25), and the Complete-Care-suppression rule."
+- *Check IP GreenLake:* "The caller's IP-in-GreenLake percentage and tier points per month (10–75,
+  summed across months). Per-user — no deal needed."
+- *Check Accreditation:* "The caller's accreditation eligibility and status (S-coded team race
+  100/50/20 split per group, CSM 30) plus crew and individual bonus points. Per-user — no deal
+  needed."
+- *Refresh Dashboard:* "Refresh the 1% Club dashboard data. Use when the user asks to
+  refresh/update, or a deal isn't showing yet / was just closed. Returns a short status. One refresh
+  per request."
 
 > ⚠️ **Prompts like "please provide X" mean an input is REQUIRED somewhere.** A required input
 > *forces* the platform to collect a value — no description can suppress it (it only rewords the
-> question). `ope`/`who` must be **optional on the flow trigger** (⋯ → Make the field optional;
-> `template` stays required — it's pinned everywhere anyway). If a tool still shows `*` on an input
-> after the trigger change, it holds the old schema: re-register it. Verify every change in the test
-> pane's **tool run panel** — it shows exactly what landed in each input.
+> question). Every input on every flow trigger must be **optional** (⋯ → Make the field optional).
+> If a tool still shows `*` on an input after a trigger change, it holds the old schema:
+> re-register it (Description + Customize texts get wiped — re-paste). Verify every change in the
+> test pane's **tool run panel** — it shows exactly what landed in each input.
 
 **B. The caller's email (`who`) — where it actually comes from.** A variable does **not** fill
 itself: the **`Percy-Orchestrator` flow embeds the caller's details in the message** it sends the
