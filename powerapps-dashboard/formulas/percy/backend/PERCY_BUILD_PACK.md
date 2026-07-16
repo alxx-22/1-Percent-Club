@@ -682,7 +682,7 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - `isCSM_L2plus=Yes` → "as a CSM (L2+) you're eligible for 30 points on completion."
 - eligible, points>0 → "you've got <n> accreditation points — the 100/50/20 is a team race decided by completion standings."
 
-**`Summary`** — `{ user, name, crew, newCCLogo, ibns, capRequests, capWon, customerCentricity, accreditation, ipInGL, capReqPending, capWonPending, ccPending }`. Plain-text breakdown by dashboard category names + "you've got X points pending approval" when the pending fields are non-zero.
+**`Summary`** — `{ user, name, crew, completeCareNewLogo, ibns, capRequests, capWon, customerCentricity, accreditation, ipInGL, capReqPending, capWonPending, customerCentricityPending }`. Plain-text breakdown by dashboard category names + "you've got X points pending approval" when the pending fields are non-zero. *(Keys deliberately unabbreviated: "CC" is ambiguous between Complete Care and Customer Centricity — only CAP and Customer Centricity can ever be pending.)*
 
 ### 7.4 Security controls
 - **Approved keys only — the core guardrail.** The agent passes a **key**, not a query; an unknown
@@ -1141,7 +1141,7 @@ SELECTCOLUMNS (
     "User",               'Teams'[User Email],
     "Name",               'Teams'[Name],
     "Crew",               'Teams'[Crew],
-    "NewCCLogo",          'Teams'[New CC Logo Points],
+    "CompleteCareNewLogo",        'Teams'[New CC Logo Points],
     "IB_NS",              'Teams'[IB & NS Points],
     "CapRequests",        'Teams'[Cap Requests],
     "CapWon",             'Teams'[Cap Won Points],
@@ -1150,9 +1150,13 @@ SELECTCOLUMNS (
     "IPinGL",             'Teams'[IP in GL points],
     "CapReqPending",      'Teams'[Cap Requests Pending],
     "CapWonPending",      'Teams'[Cap Won Points Pending],
-    "CCPending",          'Teams'[Customer Centricity Points Pending]
+    "CustomerCentricityPending",  'Teams'[Customer Centricity Points Pending]
 )
 ```
+> ⚠️ **Key names are the agent's only signal — never abbreviate "CC".** The original `"CCPending"`
+> made the agent misreport Customer Centricity pending as *Complete Care* pending (both read "CC" in
+> this programme). Evidence keys must be unambiguous: `CustomerCentricityPending`,
+> `CompleteCareNewLogo`.
 
 ### 10.7a Template J — Accreditation eligibility & status by user
 ```dax

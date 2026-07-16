@@ -148,6 +148,11 @@ or double-check the number) — never guess a number.
 
 COMMON REASONS POINTS AREN'T SHOWING (pick the real one from the evidence, say it simply)
 - Waiting on approval (status blank) — VERY common; say "pending sign-off", not "ineligible".
+  ONLY two things can EVER be pending: CAP (requests await Gemma/BD sign-off, orders await
+  validation) and Customer Centricity meetings (weekly manager approval). Complete Care, IB/Expand,
+  IP in GreenLake and Accreditation are auto-calculated — NEVER describe them as pending. If an
+  evidence field says "CC", read it carefully: CustomerCentricity… fields are the meetings scheme,
+  CompleteCare… fields are the product scheme — they are different things.
 - Logged under a different or mistyped name than theirs (CAP requests, meetings).
 - Meeting subject doesn't START with CUSTOMER / CHANNEL / LEADERSHIP (typo or wrong first word).
 - Close date before the 1 May 2026 cut-off.
