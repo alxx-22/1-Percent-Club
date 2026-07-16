@@ -106,3 +106,10 @@ exactly two places — the SharePoint row tells you which:
      first ever CompleteCare ask) will surface paste errors in that branch's DAX — and after any
      **trigger-input rename**, every `Dax_*` Compose's dynamic-content chips must be re-picked;
      un-fixed chips break exactly like this, per branch, on first use.
+   - ⚠️ **Works in the pane, instant "sorry" in the app → tool connection consent.** The test pane's
+     "Connect to continue" card is per-user consent for a tool's connections; the **orchestrator's
+     identity never clicked it**, so the same tool fails server-side. Fix: on each tool
+     registration, set its authentication to the **maker/author-provided connection** (no end-user
+     consent), or consent once while signed in as the orchestrator's connection account. New tool
+     registrations always need this — a previously consented tool keeps working, which hides the
+     problem until the next tool is added. **Re-publish after changing.**
