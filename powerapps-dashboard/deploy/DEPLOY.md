@@ -112,10 +112,15 @@ exactly two places — the SharePoint row tells you which:
      first ever CompleteCare ask) will surface paste errors in that branch's DAX — and after any
      **trigger-input rename**, every `Dax_*` Compose's dynamic-content chips must be re-picked;
      un-fixed chips break exactly like this, per branch, on first use.
-   - ⚠️ **Works in the pane, instant "sorry" in the app → tool connection consent.** The test pane's
-     "Connect to continue" card is per-user consent for a tool's connections; the **orchestrator's
-     identity never clicked it**, so the same tool fails server-side. Fix: on each tool
-     registration, set its authentication to the **maker/author-provided connection** (no end-user
-     consent), or consent once while signed in as the orchestrator's connection account. New tool
-     registrations always need this — a previously consented tool keeps working, which hides the
-     problem until the next tool is added. **Re-publish after changing.**
+   - ⚠️ **`Run_an_agent` fails with BadRequest: "The agent requested human input, but no users were
+     configured to handle the request. Please specify HITL users when invoking the agent."** The
+     agent tried to stop and ask a human something mid-run — for a flow-invoked agent there is no
+     human, so the whole run fails (and the row strands as Pending if the error branch misses it).
+     The usual "human input" is the **"Connect to continue" tool-consent card**: per-user consent
+     that you clicked in the test pane but the orchestrator's identity never has. Fix: on **each
+     tool's page → Additional details**, set the tool's authentication to the
+     **agent-author / maker-provided** option (no end-user consent) — every registration, then
+     **Publish**. Fallback: consent once while signed in as the orchestrator's connection account.
+     Keep "Allow human escalation" = No on the Run-an-agent action — the goal is an agent with
+     nothing left to ask, not a human in the loop. (Mid-run input prompts for required tool inputs
+     produce the same error — that's what optional inputs + pinned templates already removed.)
