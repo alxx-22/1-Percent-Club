@@ -25,14 +25,26 @@ with workspace read + dataset **Build**).
 
 ## Non-negotiable input rules
 
-- **Every trigger input is OPTIONAL.** On each input: **⋯ → Make the field optional**. A required
-  input forces the platform to collect a value; when the agent is invoked from a flow there is no
-  human to ask, and the run dies with `Run_an_agent` BadRequest ("The agent requested human input…
-  specify HITL users"). Optional inputs make that failure impossible.
-- **Blank `ope` never reaches Power BI.** Per-deal flows start with a guard Condition that returns
-  `{"error":"missing_ope"}` instead — the agent turns that into a plain-chat question for the deal
-  number, which is safe (only mid-run input requests break; a question as the agent's final text
-  reply is normal conversation).
+The `Run_an_agent` BadRequest ("The agent requested human input… specify HITL users") fires when
+the agent **suspends mid-run waiting for input** — a flow-invoked agent has nobody to wait on.
+Exactly three things can suspend it, and this design eliminates all three:
+
+1. **A required input the fill-model didn't confidently fill** — the platform *forces* a collection
+   step; no description or instruction can override it. This is why the old design kept failing:
+   `ope`/`who` were optional, but the `template` key **had to stay required**, and it was the input
+   the model fumbled. Fix here is structural: **the template input no longer exists**, and **every
+   remaining input (`ope`/`who`) is optional** on every trigger (**⋯ → Make the field optional**).
+   There is no field left anywhere that the platform is ever obliged to collect.
+2. **A connection consent card** ("Connect to continue") — fixed per tool registration:
+   *Credentials to use* = **Maker-provided credentials** (set it on every registration; it does not
+   carry over).
+3. **Question/input nodes inside topics** — keep none in the diagnostic path.
+
+A question as the agent's **final text reply is NOT a suspension** — it flows through the
+orchestrator into `AnswerText` like any answer, and the user replies on the next send. That is why
+the blank-`ope` guard works: per-deal flows return `{"error":"missing_ope"}` instead of querying,
+and the agent asks for the deal number **as its reply** (post-call, final-text — the safe kind),
+never as a pre-call input request.
 
 ## Build pattern — per-deal flows (CompleteCare, IBExpand, CAP, Meetings, Locate)
 
