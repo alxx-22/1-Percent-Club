@@ -94,9 +94,15 @@ exactly two places — the SharePoint row tells you which:
 1. **Open `PercyConversations`, find the row** for the failing message.
    - `AnswerText` **contains the sorry text** → the **orchestrator's error branch** wrote it: the
      agent call (or a tool under it) FAILED. Go to step 2.
-   - `AnswerText` **has a real answer** (arrived late) or the row is **still `Pending`** → the app's
-     **poll timed out** (`varPollMax × 2s`, default 120s) before the answer landed. Diagnostics can
-     exceed it on a cold run — raise `varPollMax` in `App.OnStart`.
+   - `AnswerText` **has a real answer** (arrived late) → the app's **poll timed out**
+     (`varPollMax × 2s`, default 120s) before the answer landed. Diagnostics can exceed it on a cold
+     run — raise `varPollMax` in `App.OnStart`.
+   - **Still `Pending` with EMPTY `AnswerText`** → the flow **failed (or hung) without reaching the
+     error branch** — the bubble was the app's local timeout text. Two things to check: the failed
+     run in the run history (step 2), AND the error branch itself — its **Configure run after** must
+     cover the agent-call action (+ Compose + happy-path Update item) with *has failed / has timed
+     out*; if it's attached to the wrong action it never fires and rows strand as Pending. Cleanest:
+     wrap the happy path in a **Scope** and run the error Update item after the Scope fails.
 2. **`Percy-Orchestrator` → run history** → open the failed run → see which action failed. If it's
    the agent call, go deeper:
 3. **Copilot Studio → Activity tab** shows the agent's tool calls for that conversation;
