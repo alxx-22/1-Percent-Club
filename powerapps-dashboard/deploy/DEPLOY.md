@@ -81,3 +81,28 @@ flows are **built by hand from the instructions**, and the rest is paste-ready.
 4. Confirm **no** JSON/DAX/IDs ever appear in `AnswerText`.
 
 Full test matrix: build pack §13. Build checklist: build pack §14.
+
+## Tracing a failed ask (end-to-end debugging)
+
+> **The app runs the PUBLISHED agent; the Copilot Studio test pane runs the DRAFT.** Any agent
+> change (instructions, tools, topics) reaches the app **only after Publish**. Old behaviour in the
+> app + correct behaviour in the pane = you haven't re-published.
+
+When the app shows **"Sorry, I couldn't reach the assistant just now"**, that string comes from
+exactly two places — the SharePoint row tells you which:
+
+1. **Open `PercyConversations`, find the row** for the failing message.
+   - `AnswerText` **contains the sorry text** → the **orchestrator's error branch** wrote it: the
+     agent call (or a tool under it) FAILED. Go to step 2.
+   - `AnswerText` **has a real answer** (arrived late) or the row is **still `Pending`** → the app's
+     **poll timed out** (`varPollMax × 2s`, default 120s) before the answer landed. Diagnostics can
+     exceed it on a cold run — raise `varPollMax` in `App.OnStart`.
+2. **`Percy-Orchestrator` → run history** → open the failed run → see which action failed. If it's
+   the agent call, go deeper:
+3. **Copilot Studio → Activity tab** shows the agent's tool calls for that conversation;
+   **`Percy-Query` → run history** shows the flow run — which Switch branch ran and whether the
+   Power BI action errored.
+   - ⚠️ **First-use branch failures are common:** a Switch branch that has never executed (e.g. the
+     first ever CompleteCare ask) will surface paste errors in that branch's DAX — and after any
+     **trigger-input rename**, every `Dax_*` Compose's dynamic-content chips must be re-picked;
+     un-fixed chips break exactly like this, per branch, on first use.
