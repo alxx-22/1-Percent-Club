@@ -10,7 +10,7 @@
 //    Visible  = false
 //
 //  ⏱ TIMEOUT lives HERE: total wait = tmrPercyPoll.Duration x varPollMax.
-//     varPollMax is set in App.OnStart (default 60 -> 60 x 2000ms = 120s).
+//     varPollMax is set in App.OnStart (default 120 -> 120 x 2000ms = 240s).
 //     SharePoint's "when an item is created" trigger can take 30-60s+ to FIRE,
 //     so keep this generous. To wait longer: raise varPollMax (App.OnStart)
 //     and/or the timer's Duration. To wait shorter: lower them.
