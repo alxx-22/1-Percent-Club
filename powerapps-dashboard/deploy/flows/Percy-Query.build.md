@@ -1,95 +1,93 @@
-# Percy diagnostic flows — build by hand (8 small flows, one per check)
+# Build `Percy-Query` by hand (Power Automate) — the single diagnostic flow
 
-Each diagnostic is its own Power Automate flow with its own embedded DAX — no template key, no
-Switch. The Percy agent calls each flow as a separate tool. DAX per flow:
-[`dax-templates.md`](dax-templates.md). Registering the flows as tools:
-[`../copilot-studio/topics.md`](../copilot-studio/topics.md).
+One flow serves every diagnostic. The Percy agent calls it with a **template key** + `ope`/`who`
+(never DAX); the flow `Switch`es to that key's fixed query
+([`dax-templates.md`](dax-templates.md)), runs it via Power BI, and returns the evidence.
 
 **Connections:** Microsoft Copilot Studio (trigger/response), Power BI (signed-in shared account
 with workspace read + dataset **Build**).
 
-## The flow registry
+## 1. Trigger
 
-| Flow | Inputs (ALL optional) | DAX | Returns |
-|---|---|---|---|
-| `Percy-Summary` | `who` | dax-templates §1 | totals + pending per category (1 row) |
-| `Percy-Locate` | `ope` | §2 | which schemes the deal appears in (1 row) |
-| `Percy-CompleteCare` | `ope`, `who` | §3 | New Logo / Uplift evidence + credits-to-you (1 row) |
-| `Percy-IBExpand` | `ope`, `who` | §4 | pro-rata expand evidence + CC suppression (1 row) |
-| `Percy-CAP` | `ope`, `who` | §5 | order (email credit) + request (name credit) evidence (1 row) |
-| `Percy-Meetings` | `ope`, `who` | §6 | one row per meeting on the deal |
-| `Percy-IPGreenLake` | `who` | §7 | monthly % + tier points (1 row) |
-| `Percy-Accreditation` | `who` | §8 | eligibility + status + points (1 row) |
+**Microsoft Copilot Studio → When an agent calls the flow.** Three Text inputs, named exactly:
+- **`template`** — the diagnostic key. **Required** (the tool's input description tells the agent
+  which key; see `../copilot-studio/topics.md`).
+- **`ope`** — the OPE deal id. **Optional** (⋯ → *Make the field optional*).
+- **`who`** — the caller's email. **Optional.**
 
-*(`Percy-Refresh` is separate and unchanged — [`Percy-Refresh.build.md`](Percy-Refresh.build.md).)*
+## 2. Input rules (these are what keep production alive)
 
-## Non-negotiable input rules
+The `Run_an_agent` BadRequest ("The agent requested human input… specify HITL users") fires when the
+agent **suspends mid-run waiting for input**. Three causes, all handled:
 
-The `Run_an_agent` BadRequest ("The agent requested human input… specify HITL users") fires when
-the agent **suspends mid-run waiting for input** — a flow-invoked agent has nobody to wait on.
-Exactly three things can suspend it, and this design eliminates all three:
+1. **Forced collection on a required input the fill-model didn't fill.** `ope`/`who` are optional,
+   so only `template` can force collection — and its input description (topics.md) tells the agent
+   exactly which key to choose, including the vague-question → `Summary` and bare-OPE → `Locate`
+   defaults. **The `ope` no-deal case uses the sentinel `NONE`** — the agent is instructed to pass
+   the literal text `NONE` when no deal id exists. "Leave it blank" is unreliable (and unsatisfiable
+   on required schemas); a concrete value is an instruction the fill-model can always follow.
+   *(Verified working 2026-07-16: run panel showed `template=Summary`, `ope=NONE`, `who=<email>`,
+   no prompts.)*
+2. **Consent cards** — every tool registration: *Ask the end user before running* = **No**,
+   *Credentials to use* = **Maker-provided credentials**.
+3. **Question nodes in topics** — none in the diagnostic path.
 
-1. **A required input the fill-model didn't confidently fill** — the platform *forces* a collection
-   step; no description or instruction can override it. Two traps inside this one:
-   - **"Leave it empty" is unsatisfiable on a REQUIRED input** — empty fails the required
-     validation, so the platform asks no matter what the model does. Instructions telling the model
-     to pass a required field empty can never work.
-   - A non-empty **sentinel** ("dummy") satisfies validation but still depends on the model writing
-     it on every run — better odds, still odds. **Optional is the platform-blessed sentinel**: it
-     makes empty a *legal* value at the validator, with no model discipline and no magic strings in
-     the DAX.
-   Fix here is structural: **the template input no longer exists**, and **every remaining input
-   (`ope`/`who`) is optional** on every trigger (**⋯ → Make the field optional**). There is no
-   field left anywhere that the platform is ever obliged to collect.
-2. **A connection consent card** ("Connect to continue") — fixed per tool registration:
-   *Credentials to use* = **Maker-provided credentials** (set it on every registration; it does not
-   carry over).
-3. **Question/input nodes inside topics** — keep none in the diagnostic path.
+A question as the agent's **final text reply is not a suspension** — asking for a missing deal
+number in chat is safe and is the designed behaviour (GOLDEN RULES in the instructions).
 
-A question as the agent's **final text reply is NOT a suspension** — it flows through the
-orchestrator into `AnswerText` like any answer, and the user replies on the next send. That is why
-the blank-`ope` guard works: per-deal flows return `{"error":"missing_ope"}` instead of querying,
-and the agent asks for the deal number **as its reply** (post-call, final-text — the safe kind),
-never as a pre-call input request.
+## 3. Switch on `template`
 
-## Build pattern — per-deal flows (CompleteCare, IBExpand, CAP, Meetings, Locate)
+**Control → Switch**, **On** = the `template` input. Add a case per key and type the key into each
+case's **Equals** box as plain text (exact spelling — a blank Equals throws
+`Flow clientdata is in invalid format … 'case' … null` on save):
+`Locate` · `CompleteCare` · `CAP` · `IBExpand` · `CustomerCentricity` · `IPGreenLake` ·
+`Accreditation` · `Summary`.
 
-1. **Create → Automated cloud flow → Skip**; trigger **Microsoft Copilot Studio → When an agent
-   calls the flow**. Name it from the registry.
-2. **Trigger inputs:** + Add an input → Text → name it exactly `ope` (and `who` where the registry
-   says so). **⋯ → Make the field optional** on every input.
-3. **Guard:** **Control → Condition** with two rows joined by **Or**:
-   - `ope` (dynamic content) **is equal to** *(leave the value box empty)*
-   - `ope` **is equal to** `NONE`
-   The agent is told to pass the literal sentinel `NONE` when no deal id exists (an instruction the
-   fill-model can always satisfy, unlike "leave it blank" on older required schemas); the guard
-   treats sentinel and blank identically so neither ever reaches Power BI.
-   - **If yes:** **Respond to the agent** → output Text `evidence` = `{"error":"missing_ope"}`.
-   - **If no:** steps 4–6 go here.
-4. **Compose `Dax`:** paste the flow's query from [`dax-templates.md`](dax-templates.md) as plain
-   text; insert the `ope` / `who` dynamic-content chips between the quotes on the `VAR` lines.
-5. **Power BI → Run a query against a dataset:** Workspace + Dataset = the 1% Club semantic model;
-   **Query text** = Outputs of `Dax`.
-6. **Respond to the agent:** output Text `evidence` =
+**Inside each case put ONE Compose only** (named `Dax_<key>`, e.g. `Dax_CompleteCare`) — paste that
+key's query from [`dax-templates.md`](dax-templates.md) as **plain text**, then insert the `ope` /
+`who` dynamic-content chips between the quotes on the `VAR` lines. No fx, no replace(), no
+escaping. Do **not** put the Power BI action inside the cases.
+
+> The `NONE` sentinel is harmless in the DAX: user-level queries never read `Ope`, and per-deal
+> queries return `Found = "No"` for it — the agent then asks for the real deal number. Optional
+> hardening: a Condition before the Switch (`ope` = `NONE` **or** blank, **and** `template` is a
+> per-deal key) → respond `{"error":"missing_ope"}`.
+
+**Default case:** Respond to the agent with `evidence` = `{"error":"unknown_template"}` — no
+arbitrary key ever runs anything.
+
+## 4. After the Switch — once each
+
+1. **Compose `DaxQuery`** =
+   `coalesce(outputs('Dax_Locate'), outputs('Dax_CompleteCare'), outputs('Dax_CAP'), outputs('Dax_IBExpand'), outputs('Dax_CustomerCentricity'), outputs('Dax_IPGreenLake'), outputs('Dax_Accreditation'), outputs('Dax_Summary'))`
+   — only the matched case ran, so this returns its DAX. **Names must match your Composes with
+   spaces as underscores** (`Dax CC` → `outputs('Dax_CC')`).
+2. **Power BI → Run a query against a dataset** — ONE action, after the Switch, never per-case.
+   Workspace + Dataset = the 1% Club semantic model; **Query text** = Outputs of `DaxQuery`.
+   *("Invalid parameters" until Workspace/Dataset/Query are all set is normal.)*
+3. **Respond to the agent** — output Text **`evidence`** =
    `string(outputs('Run_a_query_against_a_dataset')?['body/firstTableRows'])`.
-7. **Save.**
 
-## Build pattern — user-level flows (Summary, IPGreenLake, Accreditation)
+## Flow at a glance
+```
+When an agent calls the flow   (template required · ope/who OPTIONAL · no-deal ope = "NONE")
+├─ Switch(template)
+│   ├─ <each key> → Compose Dax_<key>   (paste query, insert ope/who chips)
+│   └─ Default    → Respond {"error":"unknown_template"}
+├─ Compose DaxQuery = coalesce(all the case Composes)
+├─ Power BI: Run a query against a dataset (DaxQuery)   ⟵ ONE action
+└─ Respond: evidence = string(firstTableRows)           ⟵ ONE response
+```
 
-Same as above with one input `who` (optional) and the guard on `who`:
-blank → `{"error":"missing_who"}` (production always supplies it — the orchestrator embeds
-CallerEmail — so this only fires in bare test-pane runs).
+## After any trigger-input change
 
-## After any flow change
-
-Editing a trigger input (name, optional flag, add/remove) changes the tool schema. The tool in
-Copilot Studio holds the old schema until you **remove and re-add it** (re-paste its Description and
-input Customize texts — they get wiped), then **Publish** the agent. Symptoms of a stale schema:
-"Destination agent was updated", "Output binding not found", inputs typed `unknown`.
+Renaming/re-typing/adding options to trigger inputs changes the tool schema; the Copilot Studio
+tool holds the old one until you **remove and re-add it** (Description + input Customize texts get
+wiped — re-paste), then **Publish**. Symptoms: "Destination agent was updated", "Output binding not
+found", inputs typed `unknown`.
 
 ## Security
-
-- Each flow runs exactly one fixed, approved query — the agent supplies only `ope`/`who` values,
-  never query text. There is no endpoint that runs agent-supplied DAX.
-- Return only the projected columns — never raw rows or entity ids.
-- Connection: least-privilege signed-in shared account.
+- Approved keys only — unknown `template` hits Default. The agent passes a **key, never a query**;
+  there is no endpoint that runs agent-supplied DAX.
+- Return only the projected evidence columns — never raw rows or entity ids.
+- Least-privilege signed-in shared connection.

@@ -9,77 +9,53 @@ Build them top to bottom; you don't need to read anything else.
 
 ## Before you build any topic (one-time setup)
 
-**A. Register the tools — one tool per flow, nine total.**
+**A. Register the two tools** (verified working configuration, 2026-07-16 — run panel showed
+`template=Summary` · `ope=NONE` · `who=<caller email>`, no prompts).
 
-Each diagnostic is its own flow with its own embedded DAX
-([`../flows/Percy-Query.build.md`](../flows/Percy-Query.build.md) ·
-[`../flows/dax-templates.md`](../flows/dax-templates.md)) — there is no `template` input anywhere.
-The only inputs any tool has are `ope` and/or `who`, **all optional on the flow trigger**, so the
-platform can never demand a value from the user (a required input on a flow-invoked agent dies with
-the HITL BadRequest). A per-deal flow called with a blank `ope` returns `{"error":"missing_ope"}`
-and the agent asks for the deal number in normal chat.
-
-For each row: agent → **Tools → + Add a tool → Flow →** the flow → set the Name and Description.
-**Every tool, no exceptions:** *Ask the end user before running* = **No** · *Credentials to use* =
+**Both tools, no exceptions:** *Ask the end user before running* = **No** · *Credentials to use* =
 **Maker-provided credentials** · Completion = *Don't respond (default)* · Advanced → outputs
 available = *All*.
 
-| Tool name | Flow | Inputs (AI-fill) |
-|---|---|---|
-| **Get My Points Summary** | `Percy-Summary` | `who` |
-| **Locate Deal** | `Percy-Locate` | `ope` |
-| **Check Complete Care** | `Percy-CompleteCare` | `ope`, `who` |
-| **Check CAP Points** | `Percy-CAP` | `ope`, `who` |
-| **Check Customer Meetings** | `Percy-Meetings` | `ope`, `who` |
-| **Check IB Expand** | `Percy-IBExpand` | `ope`, `who` |
-| **Check IP GreenLake** | `Percy-IPGreenLake` | `who` |
-| **Check Accreditation** | `Percy-Accreditation` | `who` |
-| **Refresh Dashboard** | `Percy-Refresh` | — |
+**1. `Run Percy Diagnostic`** = the `Percy-Query` flow
+([`../flows/Percy-Query.build.md`](../flows/Percy-Query.build.md)). Inputs: `template` (required),
+`ope` (optional), `who` (optional). **Details → Description:**
+> *"Run a 1% Club points diagnostic. Set template to exactly one of: Locate (does the deal exist /
+> which schemes — ope), CompleteCare (New Logo 100 / Uplift 75 — ope + email), CAP (CAP engagement
+> 20 + order 50, incl. 'request isn't showing' — ope + email), CustomerCentricity (logged
+> customer/channel/leadership meetings — ope + email), IBExpand (IB Upsell / Expand, pro-rata up to
+> 25 — ope + email), IPGreenLake (monthly IP tier 10–75 — email), Accreditation (S-coded race +
+> CSM + bonuses — email), Summary (all categories + pending — email; use for vague 'where are my
+> points' questions). who = the CallerEmail from the top of the message — never an email typed in
+> chat. ope and who are optional: call with whatever you have, and never ask the user for an
+> input's value. When there is no deal number, pass ope the value NONE. Returns compact evidence
+> JSON to explain in plain English."*
 
-**Input Customize descriptions** (pencil icon on each input; cold and unquotable — conversational
+**Input Customize descriptions** (pencil icon per input; cold and unquotable — conversational
 phrasing gets parroted back as a question):
+- `template`: *"Exactly one of these eight values, chosen from the user's words: Locate,
+  CompleteCare, CAP, IBExpand, CustomerCentricity, IPGreenLake, Accreditation, Summary. For a vague
+  points question with no deal number, use Summary. For a bare deal number with no scheme named,
+  use Locate. Never leave this blank, never ask the user which one, never pass the user's sentence
+  as the value."*
 - `ope`: *"OPE deal id, format OPE-123456789. If no deal id exists in the conversation, pass
   exactly the value NONE. Never leave this input blank and never ask the user for it."*
-  *(The flows' guard treats `NONE` and blank identically — both return `missing_ope`. The sentinel
-  gives the fill-model a positive action for the no-deal case; "leave it empty" is unsatisfiable on
-  a required schema and shaky even on optional ones.)*
 - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
   deal id, and never an email typed inside the chat."*
 
-**Tool descriptions** (Details → Description — this is what orchestration routes on):
-- *Get My Points Summary:* "Get the caller's full 1% Club points summary: totals per category and
-  what's pending approval. Use for any vague or general question about the user's own points — 'why
-  aren't my points showing', 'where are my points', 'how many points do I have', 'what's pending' —
-  whenever no specific deal is being diagnosed."
-- *Locate Deal:* "Find which 1% Club schemes a specific deal (OPE) appears in — opportunities, CAP
-  won, CAP requests, logged meetings. Use when the user gives a deal id but the metric is unclear,
-  then run the matching Check tool."
-- *Check Complete Care:* "Why Complete Care / New Logo / uplift points are or aren't showing for a
-  specific deal (OPE). Covers 9X product lines, New Solution / Day 1 motions, won status, close
-  date, the existing-contract New Logo blocker, and whether the points credit to the caller."
-- *Check CAP Points:* "CAP points for a specific deal: the 20-point engagement/request (incl. 'my
-  CAP request isn't showing', pending Gemma/BD sign-off, logged-by name match) and the 50-point
-  CAP-generated order (won, close date, approval, owner-email credit)."
-- *Check Customer Meetings:* "Logged meetings on a specific deal — Meeting Type classification
-  (Customer / Channel Partner / Leadership), logged-by name match, weekly manager approval. One row
-  per meeting."
-- *Check IB Expand:* "IB Upsell / Expand points for a specific deal — renewal + expand motions, won
-  status, close date, pro-rata award (expand share × 25), and the Complete-Care-suppression rule."
-- *Check IP GreenLake:* "The caller's IP-in-GreenLake percentage and tier points per month (10–75,
-  summed across months). Per-user — no deal needed."
-- *Check Accreditation:* "The caller's accreditation eligibility and status (S-coded team race
-  100/50/20 split per group, CSM 30) plus crew and individual bonus points. Per-user — no deal
-  needed."
-- *Refresh Dashboard:* "Refresh the 1% Club dashboard data. Use when the user asks to
-  refresh/update, or a deal isn't showing yet / was just closed. Returns a short status. One refresh
-  per request."
+**2. `Refresh Dashboard`** = the `Percy-Refresh` flow. **No inputs.** Description:
+> *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
+> showing yet / was just closed. Returns a short status. One refresh per request."*
 
-> ⚠️ **Prompts like "please provide X" mean an input is REQUIRED somewhere.** A required input
-> *forces* the platform to collect a value — no description can suppress it (it only rewords the
-> question). Every input on every flow trigger must be **optional** (⋯ → Make the field optional).
-> If a tool still shows `*` on an input after a trigger change, it holds the old schema:
-> re-register it (Description + Customize texts get wiped — re-paste). Verify every change in the
-> test pane's **tool run panel** — it shows exactly what landed in each input.
+> ⚠️ **Why this exact configuration works — don't regress it:**
+> - "Please provide X" prompts = a **required input the fill-model didn't fill**. Only `template`
+>   is required, and its Customize text (with the Summary/Locate defaults) is what fills it
+>   reliably. `ope`/`who` stay optional.
+> - The **`NONE` sentinel** on `ope` gives the fill-model a positive, always-satisfiable action for
+>   the no-deal case — "leave it empty" is what used to produce asks. `NONE` is inert in the DAX
+>   (user-level queries never read it; per-deal queries return `Found="No"`).
+> - Customize texts and the Description get **wiped on every re-registration** — re-paste all four
+>   after any schema change, and verify in the test pane's **tool run panel** (it shows exactly
+>   what landed in each input).
 
 **B. The caller's email (`who`) — where it actually comes from.** A variable does **not** fill
 itself: the **`Percy-Orchestrator` flow embeds the caller's details in the message** it sends the
@@ -225,45 +201,25 @@ locked wording. Keep the static message where determinism matters more.
    > *Use when the user asks a vague question about their points with no specific deal and no clear
    > category — e.g. "why aren't my points showing", "where are my points", "I should have more",
    > "nothing's showing up".*
-3. **Node — Add a tool:** **+ → Add a tool → Get My Points Summary** (the pinned-template tool from
-   setup A — `template` is fixed to `Summary` at tool level, so nothing is left to AI except `who`).
-   > ⚠️ **Pick a TOOL, not the raw flow ("Percy-Query") from the Power Automate section.** Adding the
-   > raw flow gives an **"Action"** node that hard-requires every input (red *"Input variable 'ope'
-   > is required"*) and has **no AI-fill option**. If your node's header says "Action" / "Power
-   > Automate inputs", delete it and re-add via the tool.
+3. **Node — Add a tool:** **+ → Add a tool → Run Percy Diagnostic**.
+   > ⚠️ **Pick the TOOL, not the raw flow ("Percy-Query") from the Power Automate section.** The raw
+   > flow gives an **"Action"** node that hard-requires every input and has no AI-fill. If your
+   > node's header says "Action" / "Power Automate inputs", delete it and re-add via the tool.
 
    **Leave the node at "Inputs (0)" — no overrides. This is the FINAL state of the node.** Tool
-   inputs are **AI-filled by default** and "(0)" counts *overrides*, of which you need none. The
-   "+ Set value" panel is a **variable picker** (note its Custom/System/Environment tabs — variable
-   namespaces): it lists the topic's variables as potential override values and will **never** show
-   `template`/`ope`/`who` — that's the UI, not a fault. Don't open it again. The steering lives at
-   the **tool level**: the tool's **Description** + per-input **Customize** descriptions (setup A)
-   make the agent pick `Summary`, fill `who` = CallerEmail, and leave `ope` empty. Proof it works =
-   testing, not the panel: a vague question answered with the Summary, no input prompts. Two
-   prerequisites make this prompt-free:
-   1. **`ope`/`who` are optional on the `Percy-Query` trigger** (see `Percy-Query.build.md` step 2) —
-      while they're *required*, AI-fill can't pass blank and falls back to **prompting the user**
-      ("Please enter your input for ope"), which this act-first topic must never do.
-   2. **The tool + input descriptions from setup A are pasted** — an empty tool description makes
-      AI-fill flaky.
-   - Note the output variable (e.g. **`evidence`**).
+   inputs are AI-filled by default and "(0)" counts *overrides*, of which you need none: the tool's
+   Description + input Customize texts (setup A) make the agent pick `Summary`, pass `ope = NONE`,
+   and fill `who` = CallerEmail. The "+ Set value" panel is a variable picker and will never list
+   the tool's inputs — don't open it. Note the output variable (e.g. **`evidence`**).
+   *(Stale `text`/`text_1`/`text_2` variables from earlier deleted nodes can be removed via the
+   **{x} Variables** panel.)*
 
-   > **Testing in the Test pane:** the pane sends only your raw message — there's **no
-   > `CallerEmail:` wrapper** (the orchestrator adds it in production), so a *"Please provide the
-   > input for 'who'"* prompt in the pane is **expected** while `who` is required. Either answer it,
-   > or simulate production by pasting one message shaped like the orchestrator's
-   > (`CallerEmail: you@hpe.com` ⏎ `Conversation: [{"Seq":1,"Role":"user","Body":"why aren't my
-   > points showing"}]` ⏎ `CallerName: Your Name`). Making `who` optional on the flow trigger also
-   > stops the pane prompt.
-   - *Can't get `template` mapped at all? Leave **Inputs (0)** — the trigger description + the
-     instructions playbook steer the agent to Summary anyway; you only lose the hard guarantee.*
-   - *If the picker shows stale `text` / `text_1` / `text_2` variables from earlier deleted nodes,
-     delete them via the **{x} Variables** panel to keep it clean.*
-
-   > **No "Dynamically fill with AI" option in your tenant?** Then delete this whole topic instead —
-   > the Instructions' TWO MESSAGES playbook A already makes orchestration do exactly this (Summary,
-   > who = CallerEmail, total + pending, offer the OPE), personalised. The topic is optional
-   > determinism, not functionality.
+   > **Testing in the Test pane:** the pane sends only your raw message — no `CallerEmail:` wrapper
+   > (the orchestrator adds it in production). Simulate production by pasting one message shaped
+   > like the orchestrator's (`CallerEmail: you@hpe.com` ⏎ `Conversation:
+   > [{"Seq":1,"Role":"user","Body":"why aren't my points showing"}]` ⏎ `CallerName: Your Name`),
+   > then verify in the **tool run panel**: pass = `template=Summary` · `ope=NONE` · `who=<email>`,
+   > no prompts.
 4. **Ending — let the agent compose the reply (recommended, setup D):** end the topic after the Tool
    node (no Send-a-message). Orchestration writes the answer from `evidence` + the Instructions —
    personalised and specific, e.g. *"Here's where you stand, Sarah: 120 points, with 40 pending

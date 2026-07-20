@@ -1,11 +1,11 @@
-# Percy diagnostic flows — canonical DAX (one query per flow)
+# Percy-Query — canonical DAX (one query per Switch case)
 
-One small flow per diagnostic; each flow embeds exactly one of the queries below (no Switch, no
-template key). Build steps: [`Percy-Diagnostics.build.md`](Percy-Query.build.md). Grounded in the
-live model (2026-07 TMDL): `Final` (calculated point columns `CC New Logo Points`, `CC Points new`,
-`CC Points Final`, `CC Points Funnel`, `IB & NS Points NEW`, `IB & NS Points Funnel`), `Teams`
-(per-user aggregates + `S Coded?`/`Completed?`/`Job Family`), `Cap Won`, `Cap Requests`,
-`Customer Meetings`, `IP GL`.
+The single `Percy-Query` flow `Switch`es on the **template key**; each case's `Dax_<key>` Compose
+holds exactly one of the queries below. Build steps: [`Percy-Query.build.md`](Percy-Query.build.md).
+Grounded in the live model (2026-07 TMDL): `Final` (calculated point columns `CC New Logo Points`,
+`CC Points new`, `CC Points Final`, `CC Points Funnel`, `IB & NS Points NEW`,
+`IB & NS Points Funnel`), `Teams` (per-user aggregates + `S Coded?`/`Completed?`/`Job Family`),
+`Cap Won`, `Cap Requests`, `Customer Meetings`, `IP GL`.
 
 **Inserting values:** paste each query as **plain text** into the flow's Compose. On the
 `VAR Ope = ""` / `VAR Who = ""` lines, put the cursor between the quotes and insert the trigger
@@ -17,7 +17,7 @@ pending, "Approve" = approved.
 
 ---
 
-## 1. Percy-Summary — flow input: `who`
+## Summary — Switch case (uses `who`)
 
 ```dax
 DEFINE
@@ -44,7 +44,7 @@ Notes: `Teams[New CC Logo Points]` sums `Final[CC Points Final]`, so it already 
 hence the key `CompleteCarePoints`. `AccreditationAndBonusPoints` includes the S-coded race share,
 CSM 30, crew spot-prize bonus and individual bonus.
 
-## 2. Percy-Locate — flow input: `ope`
+## Locate — Switch case (uses `ope`)
 
 ```dax
 DEFINE
@@ -59,7 +59,7 @@ ROW (
 )
 ```
 
-## 3. Percy-CompleteCare — flow inputs: `ope`, `who`
+## CompleteCare — Switch case (uses `ope`, `who`)
 
 ```dax
 DEFINE
@@ -104,7 +104,7 @@ Uplift pays 75 when 9X + (New Solution S or Day 1 product) + Won + close qualifi
 If every gate shows Yes but `NewLogoPointsAwarded` is 0 and `UpliftPointsAwarded` is 75, the customer
 already had a Complete Care contract — that is the New Logo blocker.
 
-## 4. Percy-IBExpand — flow inputs: `ope`, `who`
+## IBExpand — Switch case (uses `ope`, `who`)
 
 ```dax
 DEFINE
@@ -146,7 +146,7 @@ ROW (
 Points are pro-rata: expand value ÷ (expand + renewal value) × 25, so partial awards are normal.
 A deal that scores any Complete Care points never pays IB/Expand (`SuppressedByCompleteCare`).
 
-## 5. Percy-CAP — flow inputs: `ope`, `who`
+## CAP — Switch case (uses `ope`, `who`)
 
 ```dax
 DEFINE
@@ -186,7 +186,7 @@ ROW (
 CAP orders (50) credit by EMAIL (owner or primary pipeline owner). CAP requests (20) credit by NAME
 (logged-by must match the caller's dashboard name). Approval blank = pending Gemma/BD.
 
-## 6. Percy-Meetings — flow inputs: `ope`, `who`
+## CustomerCentricity — Switch case (uses `ope`, `who`)
 
 ```dax
 DEFINE
@@ -218,7 +218,7 @@ Returns one row per meeting on the deal (empty array = none logged). Classificat
 name); approval blank = pending the weekly manager approval. Scoring applies no date gate to
 meetings.
 
-## 7. Percy-IPGreenLake — flow input: `who`
+## IPGreenLake — Switch case (uses `who`)
 
 ```dax
 DEFINE
@@ -240,7 +240,7 @@ ROW (
 Recognised per month and summed (May + June so far). Tiers: under 10% = 10, 10–25% = 20,
 25–40% = 30, 40–50% = 50, 50%+ = 75.
 
-## 8. Percy-Accreditation — flow input: `who`
+## Accreditation — Switch case (uses `who`)
 
 ```dax
 DEFINE
@@ -265,9 +265,9 @@ just "accreditation".
 
 ---
 
-## Power BI action (same in every flow)
+## Power BI action (once, after the Switch)
 
 Connector **Power BI → Run a query against a dataset**: Workspace = the 1% Club workspace,
-Dataset = the semantic model, **Query text = Outputs of the flow's DAX Compose**. Returns
+Dataset = the semantic model, **Query text = Outputs of the `DaxQuery` coalesce Compose**. Returns
 `firstTableRows` (array of row objects keyed by the names above). The connection is the signed-in
 shared account (workspace read + dataset **Build**).

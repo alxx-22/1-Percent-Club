@@ -12,20 +12,18 @@ Power Apps chat (imgSend creates a NEW SharePoint row per send; whole transcript
   → Percy-Orchestrator flow (trigger: "When an item is created" — create-only, NO loop guard)
       message to agent =  CallerEmail: <UserEmail> ⏎ Conversation: <ConversationJson> ⏎ CallerName: <Created By>
   → Percy agent (Copilot Studio, generative orchestration ON, web knowledge OFF)
-      tools → 8 diagnostic flows, ONE PER CHECK, each embedding its own fixed DAX (no template
-              input, no Switch): Percy-Summary, Percy-Locate, Percy-CompleteCare, Percy-CAP,
-              Percy-Meetings, Percy-IBExpand, Percy-IPGreenLake, Percy-Accreditation
+      tools → Percy-Query flow (Switch on template key → that key's fixed DAX → Power BI)
             → Percy-Refresh flow (Power BI dataset refresh)
   → flow writes AnswerText + Status=Answered (error branch writes friendly text — MUST stay wired)
   → app polls by row ID (varPollMax × 2s, default 120s)
 ```
 
-**Tool set (9 tools = 9 flows, registry in `deploy/copilot-studio/topics.md`):** Get My Points
-Summary · Locate Deal · Check Complete Care · Check CAP Points · Check Customer Meetings ·
-Check IB Expand · Check IP GreenLake · Check Accreditation · Refresh Dashboard. Inputs are only
-`ope`/`who`, **ALL optional on every trigger**; per-deal flows guard blank ope by returning
-`{"error":"missing_ope"}` and the agent asks for the deal number in normal chat. The old
-template-key Switch method is retired.
+**Tool set (2 tools — VERIFIED WORKING 2026-07-16; registry with exact descriptions in
+`deploy/copilot-studio/topics.md`):** `Run Percy Diagnostic` (= Percy-Query: `template` required
+with a Customize text listing the eight keys + Summary/Locate defaults; `ope` OPTIONAL with the
+**`NONE` sentinel** for the no-deal case; `who` OPTIONAL = CallerEmail) and `Refresh Dashboard`
+(= Percy-Refresh, no inputs). Proof run: `template=Summary` · `ope=NONE` · `who=<email>`, no
+prompts. A 9-tools/one-flow-per-check design exists in git history if template-fill ever regresses.
 
 **Model (TMDL 2026-07) scoring facts the DAX depends on:** CC New Logo 100 (9X + New Solution S +
 Won + close ≥ 1 May + no CC contract started before 1 Apr 2026); Uplift 75 (9X + New Solution S OR
@@ -44,13 +42,15 @@ CSM 30 + crew/individual bonus points. Canonical queries:
   **Maker-provided credentials** · Completion = *Don't respond*. Otherwise server-side runs die with
   `Run_an_agent` BadRequest: "The agent requested human input… specify HITL users" — a flow-invoked
   agent has no human to ask (consent cards and input prompts both trigger it).
-- **Required tool inputs force prompts — so NO flow input is ever required.** No description can
-  suppress a required-input prompt. Every trigger input is optional; per-deal flows return
-  `{"error":"missing_ope"}` on blank ope and the agent asks conversationally (final-text questions
-  are safe; mid-run input requests are what kill flow-invoked agents).
-- **AI-fill of free-text inputs is non-deterministic** (same input gave: right key / raw question /
-  a prompt). That's why there is no `template` input at all — one tool per check; LLMs are reliable
-  at discrete choices (which named tool), unreliable at generating exact strings.
+- **Required inputs force prompts, and "leave it empty" is unsatisfiable.** Only `template` is
+  required; `ope`/`who` are optional. The no-deal `ope` case uses the literal sentinel **`NONE`** —
+  a positive, always-satisfiable instruction (telling the fill-model to pass empty is what produced
+  the asks). NONE is inert in the DAX (user-level queries never read Ope; per-deal return
+  Found="No"). Final-text questions are safe; mid-run input requests kill flow-invoked agents.
+- **AI-fill lives or dies on the per-input Customize texts** — they get wiped on every
+  re-registration; re-paste and verify in the test pane's tool run panel. `template`'s text lists
+  the eight keys plus defaults (vague → Summary, bare OPE → Locate) — that text is what made the
+  fill reliable.
 - **Schema changes go stale silently.** Renaming/re-typing trigger inputs, adding enums, or editing
   Respond outputs → the agent-level tool AND any topic Tool node hold the old schema. Fix = remove
   & re-add the tool (re-paste Description + input Customize texts — they get wiped), re-add topic
@@ -75,7 +75,7 @@ CSM 30 + crew/individual bonus points. Canonical queries:
 |---|---|
 | Agent instructions (paste block — must match the tools that actually exist) | `powerapps-dashboard/deploy/copilot-studio/percy-instructions.md` |
 | Tool registry, input descriptions, topics | `powerapps-dashboard/deploy/copilot-studio/topics.md` |
-| Flow builds (8 diagnostics / Refresh / Orchestrator) | `powerapps-dashboard/deploy/flows/*.build.md` |
+| Flow builds (Query / Refresh / Orchestrator) | `powerapps-dashboard/deploy/flows/*.build.md` |
 | **Canonical DAX** (one query per flow, grounded in the 2026-07 TMDL) | `powerapps-dashboard/deploy/flows/dax-templates.md` |
 | Deploy order + failure tracing | `powerapps-dashboard/deploy/DEPLOY.md` · `deploy/README.md` |
 | Full design, programme rules (§9), tests (§13) — §10 DAX superseded by dax-templates.md | `powerapps-dashboard/formulas/percy/backend/PERCY_BUILD_PACK.md` |
