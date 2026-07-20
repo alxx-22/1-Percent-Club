@@ -30,11 +30,17 @@ the agent **suspends mid-run waiting for input** — a flow-invoked agent has no
 Exactly three things can suspend it, and this design eliminates all three:
 
 1. **A required input the fill-model didn't confidently fill** — the platform *forces* a collection
-   step; no description or instruction can override it. This is why the old design kept failing:
-   `ope`/`who` were optional, but the `template` key **had to stay required**, and it was the input
-   the model fumbled. Fix here is structural: **the template input no longer exists**, and **every
-   remaining input (`ope`/`who`) is optional** on every trigger (**⋯ → Make the field optional**).
-   There is no field left anywhere that the platform is ever obliged to collect.
+   step; no description or instruction can override it. Two traps inside this one:
+   - **"Leave it empty" is unsatisfiable on a REQUIRED input** — empty fails the required
+     validation, so the platform asks no matter what the model does. Instructions telling the model
+     to pass a required field empty can never work.
+   - A non-empty **sentinel** ("dummy") satisfies validation but still depends on the model writing
+     it on every run — better odds, still odds. **Optional is the platform-blessed sentinel**: it
+     makes empty a *legal* value at the validator, with no model discipline and no magic strings in
+     the DAX.
+   Fix here is structural: **the template input no longer exists**, and **every remaining input
+   (`ope`/`who`) is optional** on every trigger (**⋯ → Make the field optional**). There is no
+   field left anywhere that the platform is ever obliged to collect.
 2. **A connection consent card** ("Connect to continue") — fixed per tool registration:
    *Credentials to use* = **Maker-provided credentials** (set it on every registration; it does not
    carry over).
