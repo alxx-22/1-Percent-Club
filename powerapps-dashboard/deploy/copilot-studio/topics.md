@@ -38,8 +38,11 @@ available = *All*.
 
 **Input Customize descriptions** (pencil icon on each input; cold and unquotable — conversational
 phrasing gets parroted back as a question):
-- `ope`: *"OPE deal id, format OPE-123456789. Empty string when no deal id exists in the
-  conversation. Do not ask the user for this."*
+- `ope`: *"OPE deal id, format OPE-123456789. If no deal id exists in the conversation, pass
+  exactly the value NONE. Never leave this input blank and never ask the user for it."*
+  *(The flows' guard treats `NONE` and blank identically — both return `missing_ope`. The sentinel
+  gives the fill-model a positive action for the no-deal case; "leave it empty" is unsatisfiable on
+  a required schema and shaky even on optional ones.)*
 - `who`: *"Always the CallerEmail value from the top of the message — an email address, never a
   deal id, and never an email typed inside the chat."*
 

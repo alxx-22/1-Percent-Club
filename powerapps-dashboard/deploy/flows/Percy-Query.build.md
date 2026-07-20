@@ -58,10 +58,13 @@ never as a pre-call input request.
    calls the flow**. Name it from the registry.
 2. **Trigger inputs:** + Add an input → Text → name it exactly `ope` (and `who` where the registry
    says so). **⋯ → Make the field optional** on every input.
-3. **Guard:** **Control → Condition** — `ope` (dynamic content) **is equal to** *(leave the value
-   box empty)*.
-   - **If yes** (blank): **Respond to the agent** → output Text `evidence` =
-     `{"error":"missing_ope"}`.
+3. **Guard:** **Control → Condition** with two rows joined by **Or**:
+   - `ope` (dynamic content) **is equal to** *(leave the value box empty)*
+   - `ope` **is equal to** `NONE`
+   The agent is told to pass the literal sentinel `NONE` when no deal id exists (an instruction the
+   fill-model can always satisfy, unlike "leave it blank" on older required schemas); the guard
+   treats sentinel and blank identically so neither ever reaches Power BI.
+   - **If yes:** **Respond to the agent** → output Text `evidence` = `{"error":"missing_ope"}`.
    - **If no:** steps 4–6 go here.
 4. **Compose `Dax`:** paste the flow's query from [`dax-templates.md`](dax-templates.md) as plain
    text; insert the `ope` / `who` dynamic-content chips between the quotes on the `VAR` lines.
