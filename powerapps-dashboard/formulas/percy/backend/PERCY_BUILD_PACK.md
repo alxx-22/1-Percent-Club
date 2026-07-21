@@ -536,9 +536,16 @@ Canonical query per key: [`dax-templates.md`](../../../deploy/flows/dax-template
 Each block: the exact evidence keys the fresh DAX returns (dax-templates.md), and how to turn them
 into a plain-English answer. All flag fields are `"Yes"`/`"No"` strings; approval blank = pending.
 
-**`Locate`** — `{ OPE, InOpportunities, InCapWon, InCapRequests, InMeetings }` (counts).
-- some > 0 → "I found OPE-… — it's in the opportunity data, has a CAP request and two logged meetings, but no CAP order. Which did you want to dig into?"
-- all 0 → "I can't find that opportunity anywhere yet — double-check the number, or it may be awaiting a refresh."
+**`Locate`** — `{ OPE, InOpportunities, ScoresCompleteCare, ScoresIBExpand, OpportunityOwner, InCapWon, InCapRequests, InMeetings }`.
+- `ScoresCompleteCare=Yes` or `ScoresIBExpand=Yes` → **the deal is scoring points on this deal** — go
+  straight to that diagnostic (CompleteCare/IBExpand) **with `who`**. If it comes back
+  `CreditsToYou=No`, that's the answer: "this deal scored its points, but they credit to
+  **<OpportunityOwner>**, not you." (This is the #1 "my deal has no points" cause — do NOT report
+  "no scoring activity" just because CAP/meetings are empty; check the CC/IB flags first.)
+- CAP/meeting counts > 0 → route to that scheme's diagnostic.
+- in opportunities only, both scoring flags `No`, no CAP/meetings → "the deal's in the system but
+  isn't scoring anything yet — if you've just submitted something it may need a refresh."
+- `InOpportunities=0` and all others 0 → "I can't find that opportunity anywhere yet — double-check the number, or it may be awaiting a refresh."
 
 **`CompleteCare`** — `{ OPE, Found, OpportunityName, Account, ForecastCategory, CloseDate, OpportunityOwner, PrimaryPipelineOwner, CreditsToYou, HasCompleteCareProduct, HasNewSolutionMotion, HasDay1Product, Won, CloseOnOrAfter1May2026, NewLogoPointsAwarded, UpliftPointsAwarded, CompleteCarePointsTotal, InFunnelNotYetWon }`.
 - `CompleteCarePointsTotal=100`, `CreditsToYou=Yes` → "scoring the full 100 Complete Care New Logo points — and they're crediting to you."

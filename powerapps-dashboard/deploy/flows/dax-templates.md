@@ -49,15 +49,24 @@ CSM 30, crew spot-prize bonus and individual bonus.
 ```dax
 DEFINE
     VAR Ope = ""
+    VAR OppRows = FILTER ( ALL ( 'Final' ), 'Final'[HPE Opportunity Id] = Ope )
 EVALUATE
 ROW (
     "OPE", Ope,
-    "InOpportunities", COUNTROWS ( FILTER ( ALL ( 'Final' ), 'Final'[HPE Opportunity Id] = Ope ) ) + 0,
+    "InOpportunities", COUNTROWS ( OppRows ) + 0,
+    "ScoresCompleteCare", IF ( MAXX ( OppRows, 'Final'[CC Points Final] ) > 0, "Yes", "No" ),
+    "ScoresIBExpand",     IF ( MAXX ( OppRows, 'Final'[IB & NS Points NEW] ) > 0, "Yes", "No" ),
+    "OpportunityOwner", MAXX ( OppRows, 'Final'[Opportunity Owner] ),
     "InCapWon",        COUNTROWS ( FILTER ( ALL ( 'Cap Won' ), 'Cap Won'[HPE Opportunity Id] = Ope ) ) + 0,
     "InCapRequests",   COUNTROWS ( FILTER ( ALL ( 'Cap Requests' ), 'Cap Requests'[Opportunity ID] = Ope ) ) + 0,
     "InMeetings",      COUNTROWS ( FILTER ( ALL ( 'Customer Meetings' ), 'Customer Meetings'[HPE Opportunity Id] = Ope ) ) + 0
 )
 ```
+`ScoresCompleteCare` / `ScoresIBExpand` are the routing signal that plain table-membership can't give
+(every opportunity is "in opportunities" whether it scores or not). If either is `Yes`, the deal is
+scoring points **on this deal** — run the matching diagnostic with `who` to see if they credit to the
+caller; when they don't, `OpportunityOwner` is who they land with. This is how "why no points on my
+deal?" resolves to "it scored 100, but for <another rep>."
 
 ## CompleteCare — Switch case (uses `ope`, `who`)
 
