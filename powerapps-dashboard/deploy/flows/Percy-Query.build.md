@@ -49,9 +49,9 @@ key's query from [`dax-templates.md`](dax-templates.md) as **plain text**, then 
 escaping. Do **not** put the Power BI action inside the cases.
 
 > The `NONE` sentinel is harmless in the DAX: user-level queries never read `Ope`, and per-deal
-> queries return `Found = "No"` for it — the agent then asks for the real deal number. Optional
-> hardening: a Condition before the Switch (`ope` = `NONE` **or** blank, **and** `template` is a
-> per-deal key) → respond `{"error":"missing_ope"}`.
+> queries return `Found = "No"` for it — the agent then asks for the real deal number (its
+> instructions say to ask for a missing OPE before calling a per-deal template, so `NONE` rarely
+> reaches one). No extra guard needed.
 
 **Default case:** Respond to the agent with `evidence` = `{"error":"unknown_template"}` — no
 arbitrary key ever runs anything.

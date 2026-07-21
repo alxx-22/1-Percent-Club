@@ -12,7 +12,8 @@ importable artifacts. There are **three flows** — one orchestrator + two agent
 
 ## What's reliable
 
-- ✅ **DAX bodies** (`dax-templates.md` → build pack §10): correct, paste-ready.
+- ✅ **DAX bodies** (`dax-templates.md`, one query per Switch case, 2026-07 model): paste-ready. How
+  the agent reads each evidence shape → build pack §7.3.
 - ✅ **Build steps**: every action, field, and expression is spelled out.
 - ⚠️ **One connector name varies by tenant:** the **Copilot Studio agent** action used in the
   orchestrator (run-the-agent step) — pick whatever "run a prompt / call the agent" action your

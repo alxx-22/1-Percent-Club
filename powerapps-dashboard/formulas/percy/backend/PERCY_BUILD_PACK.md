@@ -293,119 +293,16 @@ Copilot Studio / Power BI connection. **Telemetry:** flow run history (plus an o
 
 ## 5. Percy Copilot Studio overview instructions
 
-Paste verbatim into **Percy → Overview → Instructions**. (Also reproduced in §15.)
-
-```
-ROLE
-You are Percy, the friendly assistant for HPE's "1% Club" sales gamification programme. You
-help sales users understand why 1% Club points are, or are not, showing in their Power App /
-dashboard. You answer two kinds of question: (a) FAQ questions about the programme rules, and
-(b) diagnostic questions about a specific opportunity (an "OPE" number).
-
-TONE
-Warm, concise, plain-English, encouraging. Short paragraphs or tight bullet points. No jargon.
-Never sound like a database. You are talking to a busy salesperson, not an engineer.
-
-OUTPUT — ALWAYS PLAIN TEXT
-Your final answer is shown directly to the user in a chat bubble. It MUST be plain English prose.
-Never output JSON, DAX, SQL, code blocks, table/column names, internal IDs, entity IDs, or any
-implementation detail. If a tool hands you JSON, read it, then explain it in words. The only
-exception is if an admin/developer explicitly asks for technical detail and identifies as such.
-
-READING THE CONVERSATION
-You receive the conversation as a JSON array of objects with "Seq", "Role" and "Body".
-- The CURRENT question is the object with Role = "user" and the HIGHEST Seq.
-- Use all earlier messages only as context (e.g. an OPE mentioned two turns ago).
-- IGNORE Role = "percy" messages except as context for what was already said.
-Never answer an older user message; always act on the latest one.
-
-OPE NUMBERS
-An OPE is a deal id like "OPE-123456789". Pull it from the latest message OR anywhere earlier in the
-chat. Accept it messy: with/without the "OPE-" prefix, wrong case, extra words, a stray space. If a
-check needs an OPE and there's none anywhere, ask in plain words ("what's the deal number? it looks
-like OPE-123456789") — but first see the GOLDEN RULES: usually you can act without asking.
-
-GOLDEN RULES FOR VAGUE MESSAGES (this is MOST of what you'll get)
-Salespeople will often just say "why aren't my points showing", paste an OPE with no context, or name
-a scheme loosely ("the cc thing", "my meetings", "cap"). Handle it like this:
-1. ACT BEFORE YOU ASK. If a quick lookup will probably answer them, DO IT, then reply. Asking is a
-   last resort, not a first move.
-2. ONE SMALL QUESTION AT A TIME. If you must ask, ask for the single most useful thing, in plain
-   words. NEVER ask for two things at once. NEVER dump the list of point types at them.
-3. ASSUME GOOD INTENT. Work out what they mean through typos, no capitals, no prefix, extra words.
-4. NEVER LOOP. If one clarifying question doesn't get you there, give them the most useful thing you
-   can (their summary, or the how-to) and invite an OPE.
-
-THE TWO MESSAGES YOU'LL GET MOST — do exactly this:
-A) "Why aren't my points showing?" / "where are my points" / "I should have more" (no deal, no metric)
-   → Call Run Percy Diagnostic, template Summary (their email). Tell them their total and, crucially,
-     what's PENDING (waiting on approval is the #1 reason points look missing). Then OFFER, don't
-     demand: "Is there a particular deal you're chasing? Pop the OPE in and I'll check it." Do NOT ask
-     them to choose a category.
-B) A bare OPE, or "why no points on OPE-123456789" (a deal, but no metric)
-   → Call template Locate (that OPE) to see which schemes the deal is in, then:
-     • in exactly ONE scheme → go straight to that scheme's diagnostic. Don't ask.
-     • in MORE THAN ONE → say what's on it plainly and ask which they meant ("This one's got a CAP
-       request and a couple of meetings logged — were you after the CAP points or the meeting points?").
-     • in NONE → "I can't find that deal in the scoring yet — double-check the number, or it might just
-       need a refresh. Want me to refresh the dashboard?"
-
-ROUTING
-1. FAQ / "how do I get points / where do I log / do I need a code" → answer from the Programme Rules
-   below. No tool. Give the exact number.
-2. A deal + a clear metric → call Run Percy Diagnostic with the matching template (map below).
-3. Vague deal question → use the TWO MESSAGES playbook above (Summary or Locate first — act, don't ask).
-4. "Refresh / update the dashboard", "my points aren't there yet", "I closed it today", "it's not
-   updating" → offer or run the Refresh Dashboard action (see ACTIONS).
-5. Greeting / nonsense / off-topic → be friendly, pull out any real intent and answer that; if there's
-   none, say in one line what you can help with (points questions, checking a deal, refreshing the board).
-
-MAP LOOSE WORDS → template (be generous — match sloppy phrasing):
-   complete care / CC / "the cc thing" / new logo / uplift / 9x        → CompleteCare (ope + who)
-   cap / cap request / support request / gemma / cap order / campaign  → CAP (ope + who)
-   meeting / customer / channel / leadership / "my events" / activity  → CustomerCentricity (ope + who)
-   IB / expand / renewal / pen rate / win-back / naked box             → IBExpand (ope + who)
-   IP / greenlake / GL / monthly %                                     → IPGreenLake (who)
-   accreditation / accred / s-coded / csm / "the race" / completion    → Accreditation (who)
-   "how many points do I have" / "what's pending" / "my total"         → Summary (who)
-   just an OPE, or "why no points", metric unclear                     → Locate (ope) → then route
-
-ACTIONS — YOU HAVE TWO (never touch the data any other way)
-1. "Run Percy Diagnostic" (READ-ONLY). Pass template (one key above) + ope and/or who. You NEVER
-   write, request, or pass a query/DAX — only a template key + ope/who. Call it once per diagnostic
-   (unless they ask about several metrics). Pass the user's email (who) for CompleteCare, IBExpand,
-   CAP and CustomerCentricity — it's how the check confirms the points credit to THIS person:
-   CompleteCare/IBExpand credit by owner email (a deal can score points that go to someone else),
-   CAP/CustomerCentricity credit by name (a mismatch silently kills points).
-2. "Refresh Dashboard" (REFRESHES THE DATA). Use it when the user asks to refresh/update, or when a
-   deal isn't found / points "should be there by now". Say a refresh takes a few minutes and to check
-   back shortly. One refresh per request — don't spam it. If it says a refresh is already running, tell
-   them it's already updating.
-If an action returns "not found" or an error, say so plainly and give the next step (often: refresh, or
-double-check the number) — never guess a number.
-
-COMMON REASONS POINTS AREN'T SHOWING (pick the real one from the evidence, say it simply):
-- Waiting on approval (status blank) — VERY common; say "pending sign-off", not "ineligible".
-- Logged under a different or mistyped name than theirs (CAP requests, meetings).
-- Meeting subject doesn't START with CUSTOMER / CHANNEL / LEADERSHIP (typo or wrong first word).
-- Close date before the 1 May 2026 cut-off.
-- Deal not won yet (Complete Care / IB points land when it's won).
-- Complete Care already scoring on the deal, so IB/Expand isn't paid on the same deal.
-- Just closed / very new → the data may not have refreshed yet (offer a refresh).
-- Deal not found at all (wrong number, or awaiting a refresh).
-
-HARD RULES
-- NEVER invent programme rules, point values, dates, or eligibility criteria. If the rules below
-  don't cover it, say you can only help with the 1% Club rules you know, and suggest who to ask.
-- NEVER invent a deal's data. If you haven't run a check, you don't know its status.
-- NEVER expose JSON/DAX/table names/entity IDs. Translate everything into business language.
-- If the evidence doesn't confirm it, say what you CAN confirm and what's uncertain, and give the
-  most likely reason — don't overstate certainty.
-- Keep replies short. Lead with the answer, then (if useful) one next step.
-
-PROGRAMME RULES (your only source of truth for scoring)
-<< paste the nine rules from §9 here, verbatim >>
-```
+> **Canonical instructions live in one place:**
+> [`deploy/copilot-studio/percy-instructions.md`](../../../deploy/copilot-studio/percy-instructions.md)
+> — the paste-ready block (self-contained: the §9 rules are inlined, no separate append step). It
+> is written for the **two-tool** agent (`Run Percy Diagnostic` = Percy-Query, `Refresh Dashboard`
+> = Percy-Refresh) and the fresh-DAX evidence keys (§7.3). Paste that file verbatim into
+> **Overview → Instructions**; do not re-type the block here (a second copy only drifts).
+>
+> This section previously duplicated the full block; it now defers to that file so there is a
+> single source of truth. If the programme rules change, update **§9 here AND the inlined copy
+> in percy-instructions.md together.**
 
 ---
 
@@ -621,68 +518,70 @@ echoes**. One flow replaces the earlier eight per-metric flows, while keeping ev
 - **Build steps:** [`../../../deploy/flows/Percy-Query.build.md`](../../../deploy/flows/Percy-Query.build.md).
 
 ### 7.2 Template registry (what each key runs)
-| `template` | Metric | DAX (§10) | Needs | Returns |
-|---|---|---|---|---|
-| `Locate` | existence probe | A | `ope` | counts per scheme |
-| `CompleteCare` | Complete Care 100 / 75 | B | `ope` (+`who`) | CC evidence + credits-to-you (1 row) |
-| `CAP` | CAP engagement 20 + order 50 | E | `ope` (+`who`) | CAP evidence (1 row) |
-| `IBExpand` | IB / Expand ≤25 | H | `ope` (+`who`) | IB evidence + credits-to-you (1 row) |
-| `CustomerCentricity` | meetings 10 / 10 / 20 | F | `ope` (+`who`) | one row **per meeting** |
-| `IPGreenLake` | IP tier 10–75 | I | `who` | tier (1 row) |
-| `Accreditation` | S-coded race + CSM | J | `who` | eligibility (1 row) |
-| `Summary` | all categories + pending | G | `who` | totals (1 row) |
+Canonical query per key: [`dax-templates.md`](../../../deploy/flows/dax-templates.md) (2026-07 model).
+
+| `template` | Metric | Needs | Returns |
+|---|---|---|---|
+| `Locate` | existence probe | `ope` | counts per scheme (1 row) |
+| `CompleteCare` | New Logo 100 / Uplift 75 | `ope` (+`who`) | CC evidence + credits-to-you (1 row) |
+| `CAP` | CAP request 20 + order 50 | `ope` (+`who`) | CAP evidence (1 row) |
+| `IBExpand` | IB / Expand, pro-rata ≤25 | `ope` (+`who`) | IB evidence + credits-to-you (1 row) |
+| `CustomerCentricity` | meetings 10 / 10 / 20 | `ope` (+`who`) | one row **per meeting** |
+| `IPGreenLake` | IP tier 10–75 (per month, summed) | `who` | monthly tiers (1 row) |
+| `Accreditation` | S-coded race + CSM + bonuses | `who` | eligibility + status (1 row) |
+| `Summary` | all categories + pending | `who` | totals (1 row) |
 
 ### 7.3 Per-template evidence & what Percy says
 
-Each block: the compact shape the agent receives, and how to turn it into a plain-English answer.
+Each block: the exact evidence keys the fresh DAX returns (dax-templates.md), and how to turn them
+into a plain-English answer. All flag fields are `"Yes"`/`"No"` strings; approval blank = pending.
 
-**`Locate`** — `{ ope, inOpportunities, inCapWon, inCapRequests, inMeetings }` (counts).
+**`Locate`** — `{ OPE, InOpportunities, InCapWon, InCapRequests, InMeetings }` (counts).
 - some > 0 → "I found OPE-… — it's in the opportunity data, has a CAP request and two logged meetings, but no CAP order. Which did you want to dig into?"
 - all 0 → "I can't find that opportunity anywhere yet — double-check the number, or it may be awaiting a refresh."
 
-**`CompleteCare`** — `{ ope, found, opportunityName, account, forecastCategory, closeDate, opportunityOwner, primaryPipelineOwner, creditsToYou, hasCCProductLine, hasNewSolutionMotion, hasDay1Motion, closedOnOrAfter1May2026, activeCCContract, newLogoPointsAwarded, upliftPointsAwarded, ccPointsTotal, inFunnelNotYetWon }`.
-- `ccPointsTotal=100`, `creditsToYou=Yes` → "scoring the full 100 Complete Care New Logo points — and they're crediting to you."
-- `ccPointsTotal>0`, `creditsToYou=No` → "this deal IS scoring Complete Care points, but they're crediting to **<opportunityOwner>** (the opportunity / pipeline owner), not you. If you should hold it, get the owner updated on the deal."
-- `inFunnelNotYetWon=Yes`, total 0 → "qualifies on product and timing, but it hasn't been **Won** yet — points land on win."
-- `activeCCContract=Yes` → "customer already has an active Complete Care contract, so it fails the **New Logo** condition; an uplift would score 75 — want me to re-check as uplift?"
-- `hasCCProductLine=No` → "no Complete Care product lines on this opp, so it isn't picking up CC points."
-- `found=No` → "can't find it in the scoring data yet — check the OPE, new opps take a refresh."
+**`CompleteCare`** — `{ OPE, Found, OpportunityName, Account, ForecastCategory, CloseDate, OpportunityOwner, PrimaryPipelineOwner, CreditsToYou, HasCompleteCareProduct, HasNewSolutionMotion, HasDay1Product, Won, CloseOnOrAfter1May2026, NewLogoPointsAwarded, UpliftPointsAwarded, CompleteCarePointsTotal, InFunnelNotYetWon }`.
+- `CompleteCarePointsTotal=100`, `CreditsToYou=Yes` → "scoring the full 100 Complete Care New Logo points — and they're crediting to you."
+- `CompleteCarePointsTotal>0`, `CreditsToYou=No` → "this deal IS scoring Complete Care points, but they're crediting to **<OpportunityOwner>** (the opportunity / pipeline owner), not you. If you should hold it, get the owner updated on the deal."
+- `NewLogoPointsAwarded=0` but `UpliftPointsAwarded=75` → "it's scoring as an **Uplift (75)**, not New Logo 100 — the customer already had a Complete Care contract before April 2026, so New Logo doesn't apply. That's correct, not missing points."
+- `InFunnelNotYetWon=Yes`, total 0 → "qualifies on product and timing, but it hasn't been **Won** yet — points land on win."
+- `HasCompleteCareProduct=No` → "no Complete Care (9X) product lines on this opp, so it isn't picking up CC points."
+- `Found=No` → "can't find it in the scoring data yet — check the OPE, new opps take a refresh."
 
-**`CAP`** — `{ ope, callerName, inCapWon, capWonForecast, capWonCloseDate, capWonCloseQualifies, capWonApprovalStatus, capWonApproved, capWonPoints, inCapRequests, capRequestStatus, capRequestCreatedQualifies, capRequestApprovalStatus, capRequestLoggedBy, capRequestLoggedByMatchesCaller, capRequestPoints }`.
-- engagement: `inCapRequests=No` → "no CAP request logged against this opp (log it in SFDC: Support Requests → CAP Team Engagement/Support)."
-- `capRequestCreatedQualifies=No` → "logged, but created before the 1 May 2026 cut-off."
-- `capRequestLoggedByMatchesCaller=No` → "logged under **<capRequestLoggedBy>**, not your dashboard name — that's why it isn't crediting to you."
-- request, approval blank → "logged and eligible — **pending sign-off** by Gemma/BD; 20 points on approval."
-- order: won + qualifies + approval blank → "**won and eligible** but **pending Gemma's validation** — 50 points on approval; also confirm campaign code **UKIMEA CSLV CAP Adoption**."
-- `capWonCloseQualifies=No` → "close date before 1 May 2026, the CAP-order cut-off."
+**`CAP`** — `{ OPE, CallerName, InCapWon, CapOrderForecast, CapOrderCloseDate, CapOrderCloseQualifies, CapOrderApprovalStatus, CapOrderCreditsToYou, InCapRequests, RequestCreatedDate, RequestCreatedQualifies, RequestLoggedBy, RequestLoggedByMatchesYou, RequestApprovalStatus }`.
+- request: `InCapRequests=No` → "no CAP request logged against this opp (log it in SFDC: Support Requests → CAP Team Engagement/Support)."
+- `RequestCreatedQualifies=No` → "logged, but created before the 1 May 2026 cut-off."
+- `RequestLoggedByMatchesYou=No` → "logged under **<RequestLoggedBy>**, not your dashboard name — that's why it isn't crediting to you."
+- request logged, `RequestApprovalStatus` blank → "logged and eligible — **pending sign-off** by Gemma/BD; 20 points on approval."
+- order: `InCapWon=Yes` + `CapOrderCloseQualifies=Yes` + `CapOrderApprovalStatus` blank → "**won and eligible** but **pending Gemma's validation** — 50 points on approval; also confirm campaign code **UKIMEA CSLV CAP Adoption**."
+- `CapOrderCloseQualifies=No` → "close date before 1 May 2026, the CAP-order cut-off."
+- `CapOrderCreditsToYou=No` (order scores) → "the order credits to the opportunity/pipeline owner, not you."
 
-**`IBExpand`** — `{ ope, found, forecastCategory, closeDate, opportunityOwner, primaryPipelineOwner, creditsToYou, closedOnOrAfter1May2026, hasRenewalIBMotion, hasExpandNewMotion, completeCarePointsPresent, expandPointsAwarded, inFunnelNotYetWon }`.
-- `expandPointsAwarded>0`, `creditsToYou=Yes` → "scoring <n> IB/Expand points (renewal + expand, capped 25)."
-- `expandPointsAwarded>0`, `creditsToYou=No` → "this deal earns IB/Expand points, but they credit to **<opportunityOwner>** (owner / pipeline / OS sales), not you."
-- `completeCarePointsPresent=Yes`, award 0 → "already scores Complete Care points; IB/Expand isn't awarded on the same opp — it's counted under Complete Care instead."
-- one motion missing → "IB/Expand needs **both** a renewal/IB motion and an expand motion; I only see one."
-- `inFunnelNotYetWon=Yes` → "qualifies but hasn't been **won** yet — IB/Expand lands on win."
+**`IBExpand`** — `{ OPE, Found, OpportunityName, ForecastCategory, CloseDate, OpportunityOwner, PrimaryPipelineOwner, CreditsToYou, HasRenewalMotion, HasNewExpandMotion, Won, CloseOnOrAfter1May2026, SuppressedByCompleteCare, IBExpandPointsAwarded, InFunnelNotYetWon }`.
+- `IBExpandPointsAwarded>0`, `CreditsToYou=Yes` → "scoring <IBExpandPointsAwarded> IB/Expand points. It's pro-rata (the expand share of the deal value × 25), so a partial figure is normal."
+- `IBExpandPointsAwarded>0`, `CreditsToYou=No` → "this deal earns IB/Expand points, but they credit to **<OpportunityOwner>** (owner / pipeline / OS-sales), not you."
+- `SuppressedByCompleteCare=Yes`, award 0 → "this deal already scores Complete Care points, so IB/Expand isn't paid on the same deal — it's counted under Complete Care instead."
+- `HasRenewalMotion=No` or `HasNewExpandMotion=No` → "IB/Expand needs **both** a renewal/IB motion and an expand motion; I only see one."
+- `InFunnelNotYetWon=Yes` → "qualifies but hasn't been **won** yet — IB/Expand lands on win."
 
-**`CustomerCentricity`** — array of `{ meetingType, meetingClassified, subjectPrefix, startsCustomer, startsChannel, startsLeadership, createdDate, createdQualifies, loggedBy, loggedByMatchesCaller, approvalStatus, points }` (+ `ope`, `callerName`, `meetingCount`).
-- `meetingCount=0` → "no logged events on this opp (Opportunity → Activities → New Event)."
-- `meetingClassified=No` → "your meeting's subject (\"<subjectPrefix>…\") doesn't **start** with CUSTOMER/CHANNEL/LEADERSHIP, so it isn't classified — re-log with the keyword at the very start."
-- `createdQualifies=No` → "this meeting was logged before the **1 May 2026** cut-off, so it doesn't count towards Customer Centricity."
-- `loggedByMatchesCaller=No` → "logged under **<loggedBy>**, not you, so it's crediting to them."
-- classified, approval blank → "I see a <meetingType> — <points> points once your manager approves (weekly)."
-- classified, `Approve` → "confirmed — <points> points for this <meetingType>."
+**`CustomerCentricity`** — array (one row per meeting) of `{ MeetingType, Classified, LoggedBy, LoggedByMatchesYou, ApprovalStatus, PointsWhenApproved }`.
+- empty array → "no logged meetings on this opp (Opportunity → Activities → New Event)."
+- `Classified=No` → "this activity's Meeting Type isn't Customer / Channel Partner / Leadership, so it isn't classified — re-log it with the right Meeting Type."
+- `LoggedByMatchesYou=No` → "logged under **<LoggedBy>**, not you, so it's crediting to them."
+- classified, `ApprovalStatus` blank → "I see a <MeetingType> — <PointsWhenApproved> points once your manager approves (weekly)."
+- classified, `ApprovalStatus="Approve"` → "confirmed — <PointsWhenApproved> points for this <MeetingType>."
 
-**`IPGreenLake`** — `{ user, hasIPGLRow, mayPercent, tier, pointsAwarded }`.
-- row present → "your IP-in-GreenLake for May is ~32% (25–40% band) — **30 points**."
-- `hasIPGLRow=No` / 0% → "no IP-in-GreenLake figure for you this month, so no points from that scheme yet (recognised monthly from SFDC)."
+**`IPGreenLake`** — `{ User, MayPercent, MayPoints, JunePercent, JunePoints, TotalIPPoints }`.
+- `TotalIPPoints>0` → "your IP-in-GreenLake is <MayPercent> in May (<MayPoints>) and <JunePercent> in June (<JunePoints>) — **<TotalIPPoints> points** so far."
+- `TotalIPPoints=0` → "no IP-in-GreenLake percentage for you yet, so no points from that scheme (it's recognised monthly from SFDC)."
 
-**`Accreditation`** — `{ user, name, sCoded, accreditationStatus, jobFamily, excludedIndividual, isCSM_L2plus, accreditationPointsAwarded }`.
-- `sCoded≠"S-Coded (Phil)"` → "the race is for S-coded individuals; your record isn't flagged as S-coded."
-- `accreditationStatus≠"COMPLETE"` → "your accreditation isn't COMPLETE yet — the team race credits once everyone in the sponsor group is complete."
-- `excludedIndividual=Yes` → "this scheme excludes Adrian and Garren."
-- `isCSM_L2plus=Yes` → "as a CSM (L2+) you're eligible for 30 points on completion."
-- eligible, points>0 → "you've got <n> accreditation points — the 100/50/20 is a team race decided by completion standings."
+**`Accreditation`** — `{ Name, Crew, ManagerSponsor, SCoded, AccreditationCompletionStatus, JobFamily, AccreditationAndBonusPoints }`.
+- `SCoded≠"S-Coded (Phil)"` → "the race is for S-coded individuals; your record isn't flagged as S-coded."
+- `AccreditationCompletionStatus≠"COMPLETE"` → "your accreditation isn't COMPLETE yet — the team race credits once everyone in your sponsor group is complete."
+- `JobFamily="Customer Success Architect"` (and not Adrian/Garren) → "Customer Success Architects are excluded from the S-coded race."
+- `AccreditationAndBonusPoints>0` → "you've got <AccreditationAndBonusPoints> points here — this figure is the S-coded team race (100/50/20 split per group) plus any CSM completion (30) and crew/individual bonuses. Call it 'accreditation and bonus points', not just accreditation."
 
-**`Summary`** — `{ user, name, crew, completeCareNewLogo, ibns, capRequests, capWon, customerCentricity, accreditation, ipInGL, capReqPending, capWonPending, customerCentricityPending }`. Plain-text breakdown by dashboard category names + "you've got X points pending approval" when the pending fields are non-zero. *(Keys deliberately unabbreviated: "CC" is ambiguous between Complete Care and Customer Centricity — only CAP and Customer Centricity can ever be pending.)*
+**`Summary`** — `{ User, Name, Crew, CompleteCarePoints, IBExpandPoints, CapRequestPoints, CapOrderPoints, CustomerCentricityPoints, AccreditationAndBonusPoints, IPinGreenLakePoints, CapRequestsPending, CapOrdersPending, CustomerCentricityPending }`. Plain-text breakdown by category + "you've got X points pending approval" when any pending field is non-zero. *(Keys deliberately unabbreviated — "CC" alone is ambiguous. ONLY `CapRequestsPending`, `CapOrdersPending`, `CustomerCentricityPending` can ever be non-zero; every other category is auto-calculated and never "pending".)*
 
 ### 7.4 Security controls
 - **Approved keys only — the core guardrail.** The agent passes a **key**, not a query; an unknown
@@ -694,8 +593,9 @@ Each block: the compact shape the agent receives, and how to turn it into a plai
 - **Output minimisation:** return only the projected columns (the shapes in §7.3) — never whole
   rows, PII beyond the name/account already on the dashboard, or entity IDs.
 - **Connection:** least-privilege **signed-in shared account** with workspace read + dataset
-  **Build**; rotate per policy. The `activeCCContract` flag mirrors the model's entity-id match
-  (§11 caveat) — Percy speaks to it qualitatively, never quotes IDs.
+  **Build**; rotate per policy. The New Logo existing-contract check is baked into the model's
+  `CC New Logo Points` column (entity-id match, §11 caveat); Percy sees only the resulting
+  `NewLogoPointsAwarded`/`UpliftPointsAwarded` figures and speaks to them qualitatively.
 
 ### 7.5 `Percy-Refresh` — the second action (refresh the dashboard)
 The agent's other action. Simple by design (build steps: `deploy/flows/Percy-Refresh.build.md`).
@@ -726,6 +626,14 @@ The agent's other action. Simple by design (build steps: `deploy/flows/Percy-Ref
   quick action. Design it separately when ready.
 
 ## 8. Complete Care diagnostic logic
+
+> **Evidence keys below are OLD-MODEL.** The canonical CompleteCare shape and interpretation is
+> [§7.3](#73-per-template-evidence--what-percy-says) (fresh keys `CompleteCarePointsTotal`,
+> `HasCompleteCareProduct`, `NewLogoPointsAwarded`/`UpliftPointsAwarded`, etc.); the query is in
+> [`dax-templates.md`](../../../deploy/flows/dax-templates.md). One live change to the decision tree:
+> there is no longer an `activeCCContract` flag — when every gate passes but the award lands as
+> **Uplift 75, not New Logo 100**, that *is* the "existing Complete Care contract" case (the model
+> checks a contract started before Apr 2026). Read this tree for the reasoning, §7.3 for the keys.
 
 The exact reasoning Percy follows (mirrors the model in §11). Decision order:
 
@@ -833,11 +741,13 @@ be CUSTOMER / CHANNEL / LEADERSHIP; manager approves weekly.
 
 > ⛔ **SUPERSEDED (2026-07).** The live model was rebuilt (pro-rata IB Expand, Uplift via Day 1,
 > CAP orders crediting by email, `Meeting Type` classification, IP May+June, bonus points inside
-> `Manager Sponsor Points`) and the architecture moved to **one flow per diagnostic with its own
-> embedded query** — no template keys. The canonical, current queries live in
-> [`deploy/flows/dax-templates.md`](../../../deploy/flows/dax-templates.md); flow builds in
-> [`deploy/flows/Percy-Query.build.md`](../../../deploy/flows/Percy-Query.build.md). The templates
-> below are kept for historical reference only — do not paste them into flows.
+> `Manager Sponsor Points`, unambiguous evidence keys). The **canonical current queries** — one per
+> `Switch` case of the single `Percy-Query` flow — live in
+> [`deploy/flows/dax-templates.md`](../../../deploy/flows/dax-templates.md); flow build in
+> [`deploy/flows/Percy-Query.build.md`](../../../deploy/flows/Percy-Query.build.md); how the agent
+> reads each shape in §7.3 above. The architecture is unchanged (template key → Switch → approved
+> DAX). The templates below are the **old-model** versions, kept for reference only — do not paste
+> them into flows.
 
 Read against the live TMDL. Rules followed: **no invented tables/columns**; narrow queries (one
 row per OPE, or a tiny array); comments explain each query; assumptions are stated. Each template
@@ -1412,6 +1322,11 @@ example = deal scores CC points but credits to another owner)*
 
 ## 13. Testing plan
 
+> The `evidence` fields named in some cells (e.g. `meetingClassified`, `completeCarePointsPresent`,
+> `hasIPGLRow`, `isCSM_L2plus`) are **old-model** — the behaviour each case checks still stands, but
+> the current evidence keys are in [§7.3](#73-per-template-evidence--what-percy-says) /
+> [`dax-templates.md`](../../../deploy/flows/dax-templates.md). Test the *behaviour*, read keys from §7.3.
+
 | # | Test name | Input message (latest) | Conversation JSON (abridged) | Expected intent | Expected OPE | Expected template | Expected Reply (gist) | Pass/fail |
 |---|---|---|---|---|---|---|---|---|
 | 1 | FAQ: how to earn | "how do I get points?" | `[{user,Seq:2}]` | FAQ/General | — | none | Lists the 9 categories w/ values | Lists all 9, correct values, no tool call, plain text |
@@ -1534,26 +1449,32 @@ not-found/error handling; no invented rules or numbers.
 ## 15. Final deliverables (consolidated)
 
 ### 15.1 Percy Overview Instructions
-*(Paste into Copilot Studio → Overview → Instructions — full text in [§5](#5-percy-copilot-studio-overview-instructions); append the [§9](#9-programme-rules-canonical) rules verbatim.)*
+*(Paste the self-contained block from [`deploy/copilot-studio/percy-instructions.md`](../../../deploy/copilot-studio/percy-instructions.md) into Copilot Studio → Overview → Instructions — the §9 rules are already inlined there. See [§5](#5-percy-copilot-studio-overview-instructions).)*
 
 ### 15.2 The two actions + their descriptions (for Copilot Studio orchestration)
 Percy has **two** actions:
 
-**1. `Run Percy Diagnostic` (`Percy-Query`)** — inputs **`template`** (enum) + **`ope`** + **`who`**:
-> *"Run a 1% Club points diagnostic. Set `template` to exactly one of: `Locate` (does the deal exist /
-> which schemes — input ope), `CompleteCare` (New Logo 100 / Uplift 75 — ope and the user's email),
-> `CAP` (CAP engagement 20 + order 50, incl. 'request isn't showing' — ope and email),
-> `CustomerCentricity` (logged customer/channel/leadership meetings, incl. mistyped subject — ope and
-> email), `IBExpand` (IB Upsell / Expand ≤25 — ope and email), `IPGreenLake` (monthly IP tier 10–75 —
-> email), `Accreditation` (S-coded race + CSM — email), `Summary` (all categories + pending — email).
-> Pass the user's email as `who` for CompleteCare/IBExpand/CAP/CustomerCentricity so the check
-> confirms the points credit to THIS person (owner-email for CC/IB, name-match for CAP/meetings).
-> Returns compact evidence JSON to interpret in plain English. Never send DAX — only a template key
-> and ope/who."*
+> **Verified working descriptions + input Customize texts live in
+> [`deploy/copilot-studio/topics.md`](../../../deploy/copilot-studio/topics.md) setup A** (the
+> 2026-07 proof run: `template=Summary` · `ope=NONE` · `who=<email>`, no prompts). Summary below;
+> paste from that file so the exact tested wording is used.
+
+**1. `Run Percy Diagnostic` (`Percy-Query`)** — inputs **`template`** (required) + **`ope`** +
+**`who`** (both optional; no-deal `ope` = sentinel `NONE`):
+> *"Run a 1% Club points diagnostic. Set template to exactly one of: Locate, CompleteCare, CAP,
+> CustomerCentricity, IBExpand (IB Upsell / Expand, pro-rata up to 25), IPGreenLake, Accreditation
+> (S-coded race + CSM + bonuses), Summary (all categories + pending; use for vague 'where are my
+> points'). who = the CallerEmail from the message — never an email typed in chat. ope and who are
+> optional: call with whatever you have, never ask for an input's value; when there is no deal
+> number, pass ope the value NONE. Returns compact evidence JSON to explain in plain English."*
+> Per-input Customize texts (which are what actually make fill reliable) are in topics.md setup A.
 
 **2. `Refresh Dashboard` (`Percy-Refresh`)** — **no inputs**:
 > *"Refresh the 1% Club dashboard data. Use when the user asks to refresh/update, or a deal isn't
 > showing yet / was just closed. Returns a short status. One refresh per request."*
+
+**Both tools:** *Ask the end user before running* = No · *Credentials to use* = Maker-provided
+credentials · Completion = *Don't respond* · outputs available = All.
 
 ### 15.3 Power Automate flow outline
 **`Percy-Orchestrator`:** `When an item is created` (new row per send — no loop guard needed)
@@ -1565,11 +1486,11 @@ Percy has **two** actions:
 **`Percy-Refresh`:** Copilot trigger (no inputs) → Power BI *Refresh a dataset* → return `status`
 (`started` / `already_running`). One refresh per request.
 
-### 15.4 DAX templates
-A Locate · **B Complete Care diagnosis** · C current points by OPE · D expected CC points ·
-E CAP diagnosis · **H IB/Expand** · F Customer Centricity · **I IP-in-GreenLake** · G overall
-summary · **J Accreditation** — all in [§10](#10-dax-templates); open items in
-[§10.8](#108-what-could-not-be-written-from-the-schema-todo-not-guessed).
+### 15.4 DAX (canonical)
+One query per `Switch` case — Locate · CompleteCare · CAP · IBExpand · CustomerCentricity ·
+IPGreenLake · Accreditation · Summary — in
+[`deploy/flows/dax-templates.md`](../../../deploy/flows/dax-templates.md) (2026-07 model). How the
+agent reads each evidence shape: §7.3. (§10 holds the superseded old-model versions for reference.)
 
 ### 15.5 Test matrix
 43 cases in [§13](#13-testing-plan), covering vague/low-context handling (Summary-first, Locate,
