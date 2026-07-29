@@ -12,7 +12,7 @@ Portal button that only **Non S‑Coded (Phil)** users can see.
 | [`Screen_CareCalls_OnVisible.powerfx`](Screen_CareCalls_OnVisible.powerfx) | The `OnVisible` on its own — builds `colCareOpps` and resets to the list view. |
 | [`imgCareCallsBtn.Image.powerfx`](imgCareCallsBtn.Image.powerfx) | Crew Portal button image (green pill). |
 | [`imgCareCallsBtn.OnSelect.powerfx`](imgCareCallsBtn.OnSelect.powerfx) | Navigates to `scrCareCalls`. |
-| [`imgCareCallsBtn.Visible.powerfx`](imgCareCallsBtn.Visible.powerfx) | The access gate (`'S Coded?' = "Non S-Coded (Phil)"`). |
+| [`imgCareCallsBtn.Visible.powerfx`](imgCareCallsBtn.Visible.powerfx) | The access gate. **Currently a testing lock to `alex.cohen@hpe.com`** (via `User().Email`); the `'S Coded?' = "Non S-Coded (Phil)"` production gate is kept commented out inside, ready to re‑enable. |
 
 Add the button by pasting `imgCareCallsBtn` into `scrPortal`'s children (an
 `Image` at `X=160 Y=11 W=200 H=30`; nudge to a free spot on the ribbon), or
@@ -46,10 +46,12 @@ pack     = crewLine.'Care Call Pack'
 
 ## Prerequisites / notes
 
-1. **Add both columns to the Power BI field well.** The app reads everything
-   from `PowerBIIntegration.Data`, so **`Care Call Pack`** *and* **`S Coded?`**
-   must be added as fields to the Power BI visual that feeds the app — otherwise
-   `crewLine.'Care Call Pack'` and the button's gate come back blank.
+1. **Add `Care Call Pack` to the Power BI field well.** The app reads everything
+   from `PowerBIIntegration.Data`, so **`Care Call Pack`** must be added as a
+   field to the Power BI visual that feeds the app — otherwise
+   `crewLine.'Care Call Pack'` comes back blank. **`S Coded?`** is only needed
+   once the production gate is re‑enabled on the portal button — the current
+   testing lock keys off the signed‑in email, so it isn't required yet.
 2. **Two control types are new to this app** (it otherwise uses only
    image/gallery/button/text): **`Classic/DropDown@2.3.1`** and
    **`Classic/Slider@1.0.31`**. If a paste flags a version on either, accept

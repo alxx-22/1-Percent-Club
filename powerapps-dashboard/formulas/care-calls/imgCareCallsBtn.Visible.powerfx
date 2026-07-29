@@ -1,10 +1,20 @@
 // ============================================================================
-//  imgCareCallsBtn.Visible  -  WHO CAN SEE THE CUSTOMER CARE CALLS BUTTON.
-//  Only users whose Teams 'S Coded?' value is exactly "Non S-Coded (Phil)".
-//  Read from PowerBIIntegration.Data by the signed-in email (varUserEmail), so
-//  'S Coded?' MUST be added to the Power BI visual's fields feeding the app.
+//  imgCareCallsBtn.Visible  -  WHO CAN SEE / USE THE CUSTOMER CARE CALLS BUTTON.
+//
+//  TESTING LOCK (current): only the tester below can see the button, which is
+//  the only way onto scrCareCalls. Uses the REAL signed-in email on purpose --
+//  varUserEmail is remapped for some accounts in the dashboard build (e.g.
+//  alex.cohen -> dprince), so the literal email must be matched against
+//  User().Email, not varUserEmail.
+//
+//  WHEN TESTING IS DONE: delete the active line below and un-comment the
+//  production gate -- visible to anyone whose Teams 'S Coded?' is
+//  "Non S-Coded (Phil)" (that needs 'S Coded?' added to the Power BI fields).
 // ============================================================================
-LookUp(
-    PowerBIIntegration.Data,
-    Trim( Lower( 'User Email' & "" ) ) = Trim( varUserEmail )
-).'S Coded?' = "Non S-Coded (Phil)"
+Lower( User().Email ) = "alex.cohen@hpe.com"
+
+// --- PRODUCTION GATE (re-enable after testing) ------------------------------
+// LookUp(
+//     PowerBIIntegration.Data,
+//     Trim( Lower( 'User Email' & "" ) ) = Trim( varUserEmail )
+// ).'S Coded?' = "Non S-Coded (Phil)"
