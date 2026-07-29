@@ -1,0 +1,360 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+#
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+#
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrCareCalls:
+    Properties:
+      Fill: =RGBA(247, 247, 247, 1)
+      LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
+      OnVisible: |-
+        =// ============================================================================
+        //  scrCareCalls.OnVisible  -  Customer Care Calls.
+        //  Builds colCareOpps from the crew's packed 'Care Call Pack' column (rows
+        //  joined by "||", fields by "//"), exactly like the Crew Portal funnel
+        //  unpack. Field order (from the DAX): Status // OppId // OppName // Account //
+        //  Fcst // Close(yyyy-mm-dd) // Val // OwnerName // Update.
+        //  Also resets to the opp-list view (varCareOpp Blank = list, record = survey).
+        // ============================================================================
+        Set( varCareOpp, Blank() );
+        Clear( colCareOpps );
+        With(
+            { crewLine:
+                First(
+                    Filter(
+                        PowerBIIntegration.Data,
+                        Trim( Lower( Crew & "" ) ) = Trim( Lower( varMyCrew & "" ) )
+                    )
+                )
+            },
+            With(
+                { pack: crewLine.'Care Call Pack' },
+                If(
+                    !IsBlank( pack ),
+                    ForAll(
+                        Filter( Split( pack, "||" ), !IsBlank( Trim( Value ) ) ) As Row,
+                        With(
+                            { cols: Split( Row.Value, "//" ) },
+                            Collect(
+                                colCareOpps,
+                                {
+                                    Status:           Index( cols, 1 ).Value,
+                                    OppId:            Index( cols, 2 ).Value,
+                                    OppName:          Index( cols, 3 ).Value,
+                                    AccountName:      Index( cols, 4 ).Value,
+                                    ForecastCategory: Index( cols, 5 ).Value,
+                                    CloseDate:        Index( cols, 6 ).Value,
+                                    TotalValue:       Value( Index( cols, 7 ).Value ),
+                                    OwnerName:        Index( cols, 8 ).Value,
+                                    OppUpdate:        Index( cols, 9 ).Value
+                                }
+                            )
+                        )
+                    )
+                )
+            )
+        )
+    Children:
+      - imgCareRibbon:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =52
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 52' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>" &
+                  "<line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>" &
+                  "<rect x='164' y='13' width='26' height='26' rx='7' fill='#006750'/>" &
+                  "<text x='177' y='27' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>CC</text>" &
+                  "<text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Customer Care Calls <tspan fill='#606a70' font-weight='400'>&#183; won opps, last 30 days</tspan></text>" &
+                  With(
+                      { cw: Min( 600, Max( 150, Round( 54 + Len( varRibbonChip ) * 6.8, 0 ) ) ) },
+                      With(
+                          { cx: 1120 - cw },
+                          "<rect x='" & Text(cx) & "' y='10' width='" & Text(cw) & "' height='32' rx='16' fill='#f2f3f4'/>" &
+                          "<circle cx='" & Text(cx+20) & "' cy='26' r='12' fill='#01a982'/>" &
+                          "<text x='" & Text(cx+20) & "' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+                          "<text x='" & Text(cx+40) & "' y='30' font-size='13' fill='#3e4550'>" &
+                              Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>"
+                      )
+                  ) &
+                  "</g>" &
+                  "</svg>"
+              )
+            Width: =1136
+            X: =0
+            Y: =0
+      - imgCareBack:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =30
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='1' y='1' width='130' height='28' rx='14' fill='#f2f3f4' stroke='#d4d8db'/>" &
+                  "<path d='M26,9 l-6,6 l6,6' fill='none' stroke='#006750' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>" &
+                  "<text x='40' y='16' font-size='12.5' font-weight='600' fill='#006750' dominant-baseline='central'>Crew Portal</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            OnSelect: =Navigate( scrPortal, ScreenTransition.UnCover )
+            Width: =132
+            X: =16
+            Y: =11
+      - imgCareListHead:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =26
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 26' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fo'>" &
+                  "<text x='4' y='17' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>WON OPPORTUNITIES &#183; LAST 30 DAYS &#183; YOUR CREW</text>" &
+                  "<text x='1100' y='17' font-size='11' fill='#606a70' text-anchor='end'>" &
+                  If( CountRows( colCareOpps ) = 0,
+                      "nothing to review right now",
+                      Text( CountRows( colCareOpps ) ) & " to review &#183; tap one to start its care-call survey"
+                  ) &
+                  "</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Visible: =IsBlank( varCareOpp )
+            Width: =1104
+            X: =16
+            Y: =68
+      - galCareOpps:
+          Control: Gallery@2.15.0
+          Variant: Vertical
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =508
+            Items: =colCareOpps
+            OnSelect: |-
+              =Reset( txtCareQ1 );
+              Reset( txtCareQ2 );
+              Reset( drpCareQ3 );
+              Reset( drpCareQ4 );
+              Reset( sldCareQ5 );
+              Set( varCareOpp, ThisItem )
+            TemplatePadding: =0
+            TemplateSize: =88
+            Visible: =IsBlank( varCareOpp )
+            Width: =1120
+            X: =16
+            Y: =104
+          Children:
+            - imgCareRow:
+                Control: Image@2.2.3
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Height: =88
+                  Image: |-
+                    ="data:image/svg+xml;utf8," & EncodeUrl(
+                        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 88' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                        "<g class='rw'>" &
+                        "<rect x='2' y='4' width='1100' height='80' rx='12' fill='#ffffff' stroke='#d4d8db'/>" &
+                        "<rect x='2' y='4' width='5' height='80' rx='2.5' fill='#01a982'/>" &
+                        "<text x='24' y='34' font-size='15' font-weight='700' fill='#292d3a'>" &
+                            Substitute(Substitute(Substitute( Left( ThisItem.OppName, 62 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                        "<text x='24' y='57' font-size='11.5' fill='#606a70'>" &
+                            Substitute(Substitute(Substitute( Left( ThisItem.AccountName, 48 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                        "<text x='24' y='75' font-size='10.5' fill='#8a9096'>Closed " & ThisItem.CloseDate & "  &#183;  " &
+                            Substitute(Substitute(Substitute( Left( ThisItem.OwnerName, 34 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                        "<text x='922' y='34' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>&#163; " & Text( ThisItem.TotalValue, "#,##0" ) & "</text>" &
+                        "<rect x='922' y='48' width='158' height='28' rx='14' fill='#e8f7f1' stroke='#01a982'/>" &
+                        "<text x='1001' y='63' font-size='11.5' font-weight='700' fill='#006750' text-anchor='middle'>Start survey &#8250;</text>" &
+                        "</g>" &
+                        "</svg>"
+                    )
+                  OnSelect: =Select( Parent )
+                  Width: =1104
+      - imgCareEmpty:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =160
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 160' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='1104' height='160' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                  "<circle cx='552' cy='62' r='24' fill='#d1ffee'/>" &
+                  "<path d='M544,62 l6,6 l12,-13' fill='none' stroke='#006750' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/>" &
+                  "<text x='552' y='110' font-size='14' font-weight='700' fill='#292d3a' text-anchor='middle'>No won opportunities to review</text>" &
+                  "<text x='552' y='130' font-size='11' fill='#606a70' text-anchor='middle'>Nothing closed Won in your crew in the last 30 days. Check back after your next win.</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Visible: =IsBlank( varCareOpp ) && CountRows( colCareOpps ) = 0
+            Width: =1104
+            X: =16
+            Y: =104
+      - imgCareCard:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =560
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 560' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='1104' height='560' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                  "<rect x='0' y='0' width='6' height='560' fill='#01a982'/>" &
+                  "<text x='32' y='40' font-size='19' font-weight='700' fill='#292d3a'>" &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.OppName, 70 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "<text x='32' y='64' font-size='12' fill='#606a70'>" &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.AccountName, 46 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
+                      "  &#183;  Closed " & varCareOpp.CloseDate & "  &#183;  &#163; " & Text( varCareOpp.TotalValue, "#,##0" ) &
+                      "  &#183;  " & Substitute(Substitute(Substitute( Left( varCareOpp.OwnerName, 32 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "<line x1='32' y1='84' x2='1072' y2='84' stroke='#eceef0'/>" &
+                  "<text x='32' y='106' font-size='13' font-weight='600' fill='#3e4550'>1. What did the customer say about their overall experience?</text>" &
+                  "<text x='32' y='224' font-size='13' font-weight='600' fill='#3e4550'>2. Any risks, blockers or follow-ups to flag?</text>" &
+                  "<text x='32' y='310' font-size='13' font-weight='600' fill='#3e4550'>3. How is the deployment progressing?</text>" &
+                  "<text x='32' y='386' font-size='13' font-weight='600' fill='#3e4550'>4. Would the customer act as a reference?</text>" &
+                  "<text x='32' y='474' font-size='13' font-weight='600' fill='#3e4550'>5. Overall customer satisfaction &#8212; drag 1 (low) to 5 (high)</text>" &
+                  "<text x='32' y='548' font-size='10' fill='#8a9096'>1</text>" &
+                  "<text x='392' y='548' font-size='10' fill='#8a9096' text-anchor='end'>5</text>" &
+                  "<text x='1072' y='548' font-size='10' fill='#b0b6bb' text-anchor='end'>Preview &#8212; answers are not saved yet</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Visible: =!IsBlank( varCareOpp )
+            Width: =1104
+            X: =16
+            Y: =68
+      - txtCareQ1:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =72
+            HintText: ="Type the customer's feedback..."
+            Mode: =TextMode.MultiLine
+            Size: =11
+            Visible: =!IsBlank( varCareOpp )
+            Width: =1040
+            X: =48
+            Y: =192
+      - txtCareQ2:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =44
+            HintText: ="Note anything to follow up..."
+            Size: =11
+            Visible: =!IsBlank( varCareOpp )
+            Width: =1040
+            X: =48
+            Y: =310
+      - drpCareQ3:
+          Control: Classic/DropDown@2.3.1
+          Properties:
+            Color: =RGBA(41, 45, 58, 1)
+            Fill: =RGBA(251, 252, 252, 1)
+            Items: =["Not started", "In progress", "Completed", "Blocked"]
+            Visible: =!IsBlank( varCareOpp )
+            Width: =460
+            X: =48
+            Y: =398
+      - drpCareQ4:
+          Control: Classic/DropDown@2.3.1
+          Properties:
+            Color: =RGBA(41, 45, 58, 1)
+            Fill: =RGBA(251, 252, 252, 1)
+            Items: =["Yes", "Maybe", "No", "Too early to tell"]
+            Visible: =!IsBlank( varCareOpp )
+            Width: =460
+            X: =48
+            Y: =474
+      - sldCareQ5:
+          Control: Classic/Slider@1.0.31
+          Properties:
+            Default: =3
+            Height: =32
+            Max: =5
+            Min: =1
+            Visible: =!IsBlank( varCareOpp )
+            Width: =360
+            X: =48
+            Y: =560
+      - imgCareSliderVal:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =40
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 40' font-family='Segoe UI, Arial, sans-serif'>" &
+                  "<rect x='2' y='6' width='52' height='28' rx='14' fill='#e8f7f1' stroke='#01a982'/>" &
+                  "<text x='28' y='21' font-size='15' font-weight='700' fill='#006750' text-anchor='middle' dominant-baseline='central'>" & Text( sldCareQ5.Value ) & "</text>" &
+                  "</svg>"
+              )
+            Visible: =!IsBlank( varCareOpp )
+            Width: =56
+            X: =420
+            Y: =556
+      - btnCareCancel:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Color: =RGBA(62, 69, 80, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            HoverFill: =RGBA(242, 243, 244, 1)
+            OnSelect: |-
+              =Reset( txtCareQ1 );
+              Reset( txtCareQ2 );
+              Reset( drpCareQ3 );
+              Reset( drpCareQ4 );
+              Reset( sldCareQ5 );
+              Set( varCareOpp, Blank() )
+            Height: =44
+            Text: ="Cancel"
+            Visible: =!IsBlank( varCareOpp )
+            Width: =150
+            X: =744
+            Y: =580
+      - btnCareSave:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(1, 169, 130, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(1, 169, 130, 1)
+            Font: =Font.'Open Sans'
+            HoverFill: =RGBA(0, 103, 80, 1)
+            OnSelect: |-
+              =// TODO (SharePoint): when the list exists, Patch the answers here, e.g.
+              // Patch( CareCallResponses, Defaults( CareCallResponses ),
+              //     { OppId: varCareOpp.OppId, OppName: varCareOpp.OppName,
+              //       Respondent: varUserEmail,
+              //       Q1: txtCareQ1.Text, Q2: txtCareQ2.Text,
+              //       Q3: drpCareQ3.Selected.Value, Q4: drpCareQ4.Selected.Value,
+              //       Q5: sldCareQ5.Value, SubmittedOn: Now() } );
+              // For now, just close the survey and return to the opp list:
+              Reset( txtCareQ1 );
+              Reset( txtCareQ2 );
+              Reset( drpCareQ3 );
+              Reset( drpCareQ4 );
+              Reset( sldCareQ5 );
+              Set( varCareOpp, Blank() )
+            Height: =44
+            Text: ="Save & close"
+            Visible: =!IsBlank( varCareOpp )
+            Width: =184
+            X: =904
+            Y: =580

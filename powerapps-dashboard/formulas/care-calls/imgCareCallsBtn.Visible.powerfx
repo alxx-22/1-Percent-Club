@@ -1,0 +1,10 @@
+// ============================================================================
+//  imgCareCallsBtn.Visible  -  WHO CAN SEE THE CUSTOMER CARE CALLS BUTTON.
+//  Only users whose Teams 'S Coded?' value is exactly "Non S-Coded (Phil)".
+//  Read from PowerBIIntegration.Data by the signed-in email (varUserEmail), so
+//  'S Coded?' MUST be added to the Power BI visual's fields feeding the app.
+// ============================================================================
+LookUp(
+    PowerBIIntegration.Data,
+    Trim( Lower( 'User Email' & "" ) ) = Trim( varUserEmail )
+).'S Coded?' = "Non S-Coded (Phil)"

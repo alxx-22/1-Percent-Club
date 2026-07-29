@@ -1,0 +1,46 @@
+// ============================================================================
+//  scrCareCalls.OnVisible  -  Customer Care Calls.
+//  Builds colCareOpps from the crew's packed 'Care Call Pack' column (rows
+//  joined by "||", fields by "//"), exactly like the Crew Portal funnel
+//  unpack. Field order (from the DAX): Status // OppId // OppName // Account //
+//  Fcst // Close(yyyy-mm-dd) // Val // OwnerName // Update.
+//  Also resets to the opp-list view (varCareOpp Blank = list, record = survey).
+// ============================================================================
+Set( varCareOpp, Blank() );
+Clear( colCareOpps );
+With(
+    { crewLine:
+        First(
+            Filter(
+                PowerBIIntegration.Data,
+                Trim( Lower( Crew & "" ) ) = Trim( Lower( varMyCrew & "" ) )
+            )
+        )
+    },
+    With(
+        { pack: crewLine.'Care Call Pack' },
+        If(
+            !IsBlank( pack ),
+            ForAll(
+                Filter( Split( pack, "||" ), !IsBlank( Trim( Value ) ) ) As Row,
+                With(
+                    { cols: Split( Row.Value, "//" ) },
+                    Collect(
+                        colCareOpps,
+                        {
+                            Status:           Index( cols, 1 ).Value,
+                            OppId:            Index( cols, 2 ).Value,
+                            OppName:          Index( cols, 3 ).Value,
+                            AccountName:      Index( cols, 4 ).Value,
+                            ForecastCategory: Index( cols, 5 ).Value,
+                            CloseDate:        Index( cols, 6 ).Value,
+                            TotalValue:       Value( Index( cols, 7 ).Value ),
+                            OwnerName:        Index( cols, 8 ).Value,
+                            OppUpdate:        Index( cols, 9 ).Value
+                        }
+                    )
+                )
+            )
+        )
+    )
+)

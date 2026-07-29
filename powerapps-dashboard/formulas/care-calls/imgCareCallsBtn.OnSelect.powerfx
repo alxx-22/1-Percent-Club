@@ -1,0 +1,5 @@
+// ============================================================================
+//  imgCareCallsBtn.OnSelect  -  open the Customer Care Calls screen.
+//  PLACEMENT (Crew Portal ribbon): X=160 Y=11 W=200 H=30, ImagePosition=Fit.
+// ============================================================================
+Navigate( scrCareCalls, ScreenTransition.Cover )
