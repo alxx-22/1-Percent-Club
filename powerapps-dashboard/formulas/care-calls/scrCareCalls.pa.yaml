@@ -213,25 +213,26 @@ Screens:
                   "<text x='32' y='40' font-size='19' font-weight='700' fill='#292d3a'>" &
                       Substitute(Substitute(Substitute( Left( varCareOpp.OppName, 70 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<text x='32' y='64' font-size='12' fill='#606a70'>" &
-                      Substitute(Substitute(Substitute( Left( varCareOpp.AccountName, 46 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.AccountName, 42 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
                       "  &#183;  Closed " & varCareOpp.CloseDate & "  &#183;  &#163; " & Text( varCareOpp.TotalValue, "#,##0" ) &
-                      "  &#183;  " & Substitute(Substitute(Substitute( Left( varCareOpp.OwnerName, 32 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                      "  &#183;  " & Substitute(Substitute(Substitute( Left( varCareOpp.OwnerName, 30 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<line x1='32' y1='84' x2='1072' y2='84' stroke='#eceef0'/>" &
-                  "<text x='32' y='106' font-size='13' font-weight='600' fill='#3e4550'>1. What did the customer say about their overall experience?</text>" &
-                  "<text x='32' y='224' font-size='13' font-weight='600' fill='#3e4550'>2. Any risks, blockers or follow-ups to flag?</text>" &
-                  "<text x='32' y='310' font-size='13' font-weight='600' fill='#3e4550'>3. How is the deployment progressing?</text>" &
-                  "<text x='32' y='386' font-size='13' font-weight='600' fill='#3e4550'>4. Would the customer act as a reference?</text>" &
-                  "<text x='32' y='474' font-size='13' font-weight='600' fill='#3e4550'>5. Overall customer satisfaction &#8212; drag 1 (low) to 5 (high)</text>" &
-                  "<text x='32' y='548' font-size='10' fill='#8a9096'>1</text>" &
-                  "<text x='392' y='548' font-size='10' fill='#8a9096' text-anchor='end'>5</text>" &
-                  "<text x='1072' y='548' font-size='10' fill='#b0b6bb' text-anchor='end'>Preview &#8212; answers are not saved yet</text>" &
+                  "<line x1='552' y1='100' x2='552' y2='452' stroke='#f0f2f3'/>" &
+                  "<text x='32' y='112' font-size='13' font-weight='600' fill='#3e4550'>1. What did the customer say about their overall experience?</text>" &
+                  "<text x='32' y='332' font-size='13' font-weight='600' fill='#3e4550'>2. Any risks, blockers or follow-ups to flag?</text>" &
+                  "<text x='576' y='112' font-size='13' font-weight='600' fill='#3e4550'>3. How is the deployment progressing?</text>" &
+                  "<text x='576' y='212' font-size='13' font-weight='600' fill='#3e4550'>4. Would the customer act as a reference?</text>" &
+                  "<text x='576' y='300' font-size='13' font-weight='600' fill='#3e4550'>5. Overall customer satisfaction &#8212; 1 (low) to 5 (high)</text>" &
+                  "<text x='576' y='366' font-size='10' fill='#8a9096'>1</text>" &
+                  "<text x='1006' y='366' font-size='10' fill='#8a9096' text-anchor='end'>5</text>" &
+                  "<text x='32' y='540' font-size='10' fill='#b0b6bb'>Preview &#8212; answers are not saved yet</text>" &
                   "</g>" &
                   "</svg>"
               )
             Visible: =!IsBlank( varCareOpp )
             Width: =1104
             X: =16
-            Y: =68
+            Y: =64
       - txtCareQ1:
           Control: Classic/TextInput@2.3.2
           Properties:
@@ -239,14 +240,14 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =72
+            Height: =176
             HintText: ="Type the customer's feedback..."
             Mode: =TextMode.MultiLine
-            Size: =11
+            Size: =12
             Visible: =!IsBlank( varCareOpp )
-            Width: =1040
+            Width: =504
             X: =48
-            Y: =192
+            Y: =180
       - txtCareQ2:
           Control: Classic/TextInput@2.3.2
           Properties:
@@ -254,44 +255,57 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =44
+            Height: =148
             HintText: ="Note anything to follow up..."
-            Size: =11
+            Mode: =TextMode.MultiLine
+            Size: =12
             Visible: =!IsBlank( varCareOpp )
-            Width: =1040
+            Width: =504
             X: =48
-            Y: =310
+            Y: =400
       - drpCareQ3:
           Control: Classic/DropDown@2.3.1
           Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
             Color: =RGBA(41, 45, 58, 1)
-            Fill: =RGBA(251, 252, 252, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            Height: =44
             Items: =["Not started", "In progress", "Completed", "Blocked"]
+            Size: =13
             Visible: =!IsBlank( varCareOpp )
-            Width: =460
-            X: =48
-            Y: =398
+            Width: =504
+            X: =584
+            Y: =180
       - drpCareQ4:
           Control: Classic/DropDown@2.3.1
           Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
             Color: =RGBA(41, 45, 58, 1)
-            Fill: =RGBA(251, 252, 252, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            Height: =44
             Items: =["Yes", "Maybe", "No", "Too early to tell"]
+            Size: =13
             Visible: =!IsBlank( varCareOpp )
-            Width: =460
-            X: =48
-            Y: =474
+            Width: =504
+            X: =584
+            Y: =280
       - sldCareQ5:
           Control: Classic/Slider@1.0.31
           Properties:
             Default: =3
-            Height: =32
+            HandleFill: =RGBA(1, 169, 130, 1)
+            Height: =24
             Max: =5
             Min: =1
+            RailFill: =RGBA(224, 227, 230, 1)
+            ShowValue: =false
+            ValueFill: =RGBA(1, 169, 130, 1)
             Visible: =!IsBlank( varCareOpp )
-            Width: =360
-            X: =48
-            Y: =560
+            Width: =430
+            X: =584
+            Y: =384
       - imgCareSliderVal:
           Control: Image@2.2.3
           Properties:
@@ -306,8 +320,8 @@ Screens:
               )
             Visible: =!IsBlank( varCareOpp )
             Width: =56
-            X: =420
-            Y: =556
+            X: =1032
+            Y: =372
       - btnCareCancel:
           Control: Classic/Button@2.2.0
           Properties:
@@ -315,6 +329,7 @@ Screens:
             Color: =RGBA(62, 69, 80, 1)
             Fill: =RGBA(255, 255, 255, 1)
             Font: =Font.'Open Sans'
+            HoverColor: =RGBA(62, 69, 80, 1)
             HoverFill: =RGBA(242, 243, 244, 1)
             OnSelect: |-
               =Reset( txtCareQ1 );
@@ -324,11 +339,12 @@ Screens:
               Reset( sldCareQ5 );
               Set( varCareOpp, Blank() )
             Height: =44
+            Size: =14
             Text: ="Cancel"
             Visible: =!IsBlank( varCareOpp )
             Width: =150
-            X: =744
-            Y: =580
+            X: =740
+            Y: =556
       - btnCareSave:
           Control: Classic/Button@2.2.0
           Properties:
@@ -336,6 +352,7 @@ Screens:
             Color: =RGBA(255, 255, 255, 1)
             Fill: =RGBA(1, 169, 130, 1)
             Font: =Font.'Open Sans'
+            HoverColor: =RGBA(255, 255, 255, 1)
             HoverFill: =RGBA(0, 103, 80, 1)
             OnSelect: |-
               =// TODO (SharePoint): when the list exists, Patch the answers here, e.g.
@@ -353,8 +370,9 @@ Screens:
               Reset( sldCareQ5 );
               Set( varCareOpp, Blank() )
             Height: =44
+            Size: =14
             Text: ="Save & close"
             Visible: =!IsBlank( varCareOpp )
             Width: =184
             X: =904
-            Y: =580
+            Y: =556
