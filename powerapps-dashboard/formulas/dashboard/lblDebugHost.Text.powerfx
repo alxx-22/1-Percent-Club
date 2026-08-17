@@ -1,0 +1,39 @@
+// ============================================================================
+//  lblDebugHost.Text  -  WHY IS THE DASHBOARD BLANK IN THE POWER BI SERVICE?
+//
+//  Add a Label "lblDebugHost" to scrDashboard and paste this into its Text.
+//  Label props:  Wrap = true,  AutoHeight = true,  Size = 11,
+//                Fill = White,  Color = Red,  X = 16,  Y = 70,  Width = 700.
+//  Then SAVE + PUBLISH the app, open the report in the Power BI SERVICE, and
+//  screenshot this label. It reads the host directly, so it renders even when
+//  OnVisible never ran.
+//
+//  HOW TO READ IT
+//    rows = 0            -> the visual is passing NO data to the app. The app is
+//                           fine; the report/visual is the problem (fields not in
+//                           the visual's field well in the PUBLISHED report, a
+//                           filter/slicer emptying it, or the visual is bound to a
+//                           different app version). Re-publish the REPORT from
+//                           Desktop, not just the app.
+//    rows > 0, role = "" -> data IS arriving but OnVisible never completed. The
+//                           build aborted; look at the first-row lines below to
+//                           see which column is unreadable.
+//    rows > 0, role set  -> OnVisible ran fine; the blank render was a stale
+//                           published app version.
+//    a line below is blank/errors -> that column is missing from the PUBLISHED
+//                           visual's field well (or its type is broken). That is
+//                           the column to add/fix, then re-publish the report.
+// ============================================================================
+"HOST: rows in PowerBIIntegration.Data = " & CountRows( PowerBIIntegration.Data ) & Char(10) &
+"BUILD: colMembers = " & CountRows( colMembers ) & "   colCrew = " & CountRows( colCrew ) & Char(10) &
+"VARS: varReady = [" & varReady & "]   varRole = [" & varRole & "]   varMyCrew = [" & varMyCrew & "]" & Char(10) &
+"VARS: varUserEmail = [" & varUserEmail & "]   viewer = [" & Lower( User().Email ) & "]" & Char(10) &
+"ORDER PROGRESS: raw = [" & varOrderProgRaw & "]   pct = [" & varOrderProgPct & "]" & Char(10) &
+Char(10) &
+"FIRST ROW, read as text (blank = column not in the published visual):" & Char(10) &
+"  Name = [" & ( First( PowerBIIntegration.Data ).Name & "" ) & "]" & Char(10) &
+"  Crew = [" & ( First( PowerBIIntegration.Data ).Crew & "" ) & "]" & Char(10) &
+"  User Email = [" & ( First( PowerBIIntegration.Data ).'User Email' & "" ) & "]" & Char(10) &
+"  Order Progress = [" & ( First( PowerBIIntegration.Data ).'Order Progress' & "" ) & "]" & Char(10) &
+"  S Coded? = [" & ( First( PowerBIIntegration.Data ).'S Coded?' & "" ) & "]" & Char(10) &
+"  Care Call Pack length = [" & Len( First( PowerBIIntegration.Data ).'Care Call Pack' & "" ) & "]"
