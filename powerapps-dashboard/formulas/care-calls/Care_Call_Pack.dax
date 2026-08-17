@@ -1,0 +1,113 @@
+-- ============================================================================
+--  Care Call Pack  -  the packed list of won opportunities the Customer Care
+--  Calls screen unpacks (rows joined by "||", fields by "//").
+--
+--  CHANGE vs the original: opportunities are now dropped when the person the
+--  opp is credited to reports to an excluded L1 manager. The credited person is
+--  resolved exactly the way the name in the pack is (owner email if the owner is
+--  in this crew, otherwise the primary pipeline owner), then Teams is looked up
+--  for their L1 Manager Email.
+--
+--  >>> SET THIS <<<  ExcludedL1Managers holds the L1 manager EMAIL(s) to hide.
+--  Add more inside the braces, comma separated. Matching is case-insensitive.
+--
+--  Blank-safe on purpose: if a person is not in Teams, or has no L1 manager set,
+--  the lookup returns blank, the row does NOT match an excluded manager, and the
+--  opportunity is KEPT. Missing data never silently hides work.
+--
+--  The Power Apps screen needs no change - it just unpacks whatever this emits.
+-- ============================================================================
+Care Call Pack =
+VAR ExcludedL1Managers =
+    { "first.last@hpe.com" }        -- <<< the L1 manager(s) to filter out
+
+VAR CrewEmails =
+    CALCULATETABLE ( VALUES ( Teams[User Email] ), ALLEXCEPT ( Teams, Teams[Crew] ) )
+
+-- Distinct Won Opp Ids (this crew, Close Date in last 30 days), then each opp's attributes
+VAR WonSrc =
+    ADDCOLUMNS (
+        SUMMARIZE (
+            FILTER (
+                'Final',
+                'Final'[Forecast Category] = "Won"
+                    && 'Final'[Close Date] >= TODAY () - 30
+                    && 'Final'[Close Date] <= TODAY ()
+                    && (
+                        'Final'[Opportunity Owner Email] IN CrewEmails
+                            || 'Final'[Primary Pipeline Owner User Email] IN CrewEmails
+                    )
+            ),
+            'Final'[HPE Opportunity Id]          -- group by Id ONLY => unique ids
+        ),
+        "OppName",    CALCULATE ( MAX ( 'Final'[Opportunity Name] ) ),
+        "Account",    CALCULATE ( MAX ( 'Final'[Account Name] ) ),
+        "Fcst",       CALCULATE ( MAX ( 'Final'[Forecast Category] ) ),
+        "Close",      CALCULATE ( MAX ( 'Final'[Close Date] ) ),
+        "Val",        CALCULATE ( MAX ( 'Final'[Total Value to HPE (converted)] ) ),
+        "OwnerEmail", CALCULATE ( MAX ( 'Final'[Opportunity Owner Email] ) ),
+        "PipeEmail",  CALCULATE ( MAX ( 'Final'[Primary Pipeline Owner User Email] ) ),
+        "Update",     CALCULATE ( MAX ( 'Final'[HPE Opportunity Update] ) )
+    )
+
+-- Who the opp is credited to, and who that person reports to (L1)
+VAR WonWithL1 =
+    ADDCOLUMNS (
+        WonSrc,
+        "CreditEmail", IF ( [OwnerEmail] IN CrewEmails, [OwnerEmail], [PipeEmail] )
+    )
+
+VAR WonKept =
+    FILTER (
+        ADDCOLUMNS (
+            WonWithL1,
+            "L1Email",
+                LOOKUPVALUE (
+                    Teams[L1 Manager Email],
+                    Teams[User Email], [CreditEmail],
+                    BLANK ()
+                )
+        ),
+        NOT ( LOWER ( [L1Email] & "" ) IN ExcludedL1Managers )
+    )
+
+-- Same packing principle: fields joined by //, rows joined by ||
+RETURN
+    CONCATENATEX (
+        WonKept,
+        VAR oe = [OwnerEmail]
+        VAR pe = [PipeEmail]
+        VAR nm = LOOKUPVALUE ( Teams[Name], Teams[User Email], IF ( oe IN CrewEmails, oe, pe ) )
+        RETURN
+            "Won" & "//"
+                & 'Final'[HPE Opportunity Id] & "//"
+                & [OppName] & "//"
+                & [Account] & "//"
+                & [Fcst] & "//"
+                & FORMAT ( [Close], "yyyy-mm-dd" ) & "//"
+                & FORMAT ( [Val], "0.00" ) & "//"
+                & nm & "//"
+                & [Update],
+        "||"
+    )
+
+-- ----------------------------------------------------------------------------
+--  VARIANT: exclude by the manager's NAME instead of their email.
+--  Replace the WonKept block above with this if Teams holds the L1 manager's
+--  name somewhere and you would rather match on that:
+--
+--  VAR ExcludedL1Names = { "First Last" }
+--  VAR WonKept =
+--      FILTER (
+--          ADDCOLUMNS (
+--              WonWithL1,
+--              "L1Name",
+--                  VAR l1e =
+--                      LOOKUPVALUE ( Teams[L1 Manager Email], Teams[User Email], [CreditEmail], BLANK () )
+--                  RETURN
+--                      LOOKUPVALUE ( Teams[Name], Teams[User Email], l1e, BLANK () )
+--          ),
+--          NOT ( [L1Name] IN ExcludedL1Names )
+--      )
+--  (this only resolves if the L1 manager is themselves a row in Teams)
+-- ----------------------------------------------------------------------------
