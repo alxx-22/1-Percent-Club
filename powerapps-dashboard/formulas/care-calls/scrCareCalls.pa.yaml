@@ -15,7 +15,7 @@ Screens:
         =// ============================================================================
         //  scrCareCalls.OnVisible  -  Customer Care Calls (post-renewal questionnaire).
         //
-        //  DATA SOURCE: the SharePoint list HPE_Services_Post_Renewal_Questionnaire
+        //  DATA SOURCE: the SharePoint list 'HPE Services Post Renewal Questionnaire'
         //  must be added to the app (Data > Add data). If your list is named
         //  differently, rename it here and in btnCareSave / btnCareNoContact.
         //
@@ -42,7 +42,7 @@ Screens:
         //    (small list; if it ever passes 500 rows raise the app's data row limit)
         ClearCollect(
             colCareDone,
-            ForAll( HPE_Services_Post_Renewal_Questionnaire As q, { OppKey: q.Opportunity & "" } )
+            ForAll( 'HPE Services Post Renewal Questionnaire' As q, { OppKey: q.Opportunity & "" } )
         );
 
         // 2) unpack the crew's Care Call Pack ----------------------------------------
@@ -556,8 +556,8 @@ Screens:
               // ============================================================================
               IfError(
                   Patch(
-                      HPE_Services_Post_Renewal_Questionnaire,
-                      Defaults( HPE_Services_Post_Renewal_Questionnaire ),
+                      'HPE Services Post Renewal Questionnaire',
+                      Defaults( 'HPE Services Post Renewal Questionnaire' ),
                       {
                           Account:         varCareOpp.AccountName,
                           Opportunity:     varCareOpp.OppId,
@@ -646,7 +646,7 @@ Screens:
             HoverFill: =RGBA(0, 103, 80, 1)
             OnSelect: |-
               =// ============================================================================
-              //  Writes one row to the SharePoint list HPE_Services_Post_Renewal_Questionnaire
+              //  Writes one row to the SharePoint list 'HPE Services Post Renewal Questionnaire'
               //  using the questionnaire's own column names. Account / Opportunity /
               //  Renewal Rep / Renewal Date come from the opportunity, Response Date is
               //  stamped now, and the answers come from the inputs. Once written, the
@@ -658,8 +658,8 @@ Screens:
               // ============================================================================
               IfError(
                   Patch(
-                      HPE_Services_Post_Renewal_Questionnaire,
-                      Defaults( HPE_Services_Post_Renewal_Questionnaire ),
+                      'HPE Services Post Renewal Questionnaire',
+                      Defaults( 'HPE Services Post Renewal Questionnaire' ),
                       {
                           Account:          varCareOpp.AccountName,
                           Opportunity:      varCareOpp.OppId,

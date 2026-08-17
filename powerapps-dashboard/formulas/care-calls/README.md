@@ -17,9 +17,26 @@ Crew Portal button.
 
 ## Setup (required)
 
-1. **Add the SharePoint list** `HPE_Services_Post_Renewal_Questionnaire` to the app
-   (**Data ▸ Add data**). If your list is named differently, rename it in three places:
-   `OnVisible`, `btnCareSave.OnSelect`, `btnCareNoContact.OnSelect`.
+1. **Add the SharePoint list** to the app (**Data ▸ Add data**). In Power Fx it is
+   referenced by its **display name, which contains spaces**, so it must be
+   single‑quoted every time:
+
+   ```
+   'HPE Services Post Renewal Questionnaire'
+   ```
+
+   The list name is *not* the underscored file name — using
+   `HPE_Services_Post_Renewal_Questionnaire` gives
+   *"Name isn't valid … isn't recognized"*. If your connection shows a different
+   display name, change it in three places: `OnVisible`, `btnCareSave.OnSelect`,
+   `btnCareNoContact.OnSelect`.
+
+   > ⚠️ **Where the list lives matters.** The connection currently resolves to a
+   > **personal OneDrive site** (`hpe-my.sharepoint.com/personal/alex_cohen_hpe_com`).
+   > That works for the owner, but other crew members generally cannot read or write a
+   > list on someone's personal site — every other caller's save would fail. Before
+   > rollout, move/recreate the list on the **team SharePoint site** that hosts
+   > `PercyConversations` and re‑point the data source.
 2. **Add to the Power BI field well**: `Care Call Pack` (the opp list) and `S Coded?`
    (the caller roster). Both are read off `PowerBIIntegration.Data`.
 

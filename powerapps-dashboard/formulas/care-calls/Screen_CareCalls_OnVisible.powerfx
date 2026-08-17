@@ -1,7 +1,7 @@
 // ============================================================================
 //  scrCareCalls.OnVisible  -  Customer Care Calls (post-renewal questionnaire).
 //
-//  DATA SOURCE: the SharePoint list HPE_Services_Post_Renewal_Questionnaire
+//  DATA SOURCE: the SharePoint list 'HPE Services Post Renewal Questionnaire'
 //  must be added to the app (Data > Add data). If your list is named
 //  differently, rename it here and in btnCareSave / btnCareNoContact.
 //
@@ -28,7 +28,7 @@ Set( varCareStep, 1 );
 //    (small list; if it ever passes 500 rows raise the app's data row limit)
 ClearCollect(
     colCareDone,
-    ForAll( HPE_Services_Post_Renewal_Questionnaire As q, { OppKey: q.Opportunity & "" } )
+    ForAll( 'HPE Services Post Renewal Questionnaire' As q, { OppKey: q.Opportunity & "" } )
 );
 
 // 2) unpack the crew's Care Call Pack ----------------------------------------
