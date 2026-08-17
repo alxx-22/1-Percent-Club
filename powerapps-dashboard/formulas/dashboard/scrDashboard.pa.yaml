@@ -1,0 +1,773 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+# 
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+# 
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrDashboard:
+    Properties:
+      Fill: =RGBA(247, 247, 247, 1)
+      LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
+      OnVisible: |-
+        =// ============================================================================
+        //  Screen.OnVisible  —  BUILDS ALL DASHBOARD DATA.
+        //
+        //  CREW IS NOW A NAME (text), not a number. Teams submitted names, so:
+        //   - Crew is read as trimmed TEXT. (The old Value() coercion turned every
+        //     name into 0 and collapsed the whole board into a single "Crew 0".)
+        //   - Ranking: CrewTotal desc, ties alphabetical — done with ONE text SortKey,
+        //     because this environment rejects GroupBy/SortByColumns string args.
+        //   - CrewName is the name itself (no "Crew " prefix).
+        //   - Blank numeric point cells still throw on read -> IfError(pbi.col, 0).
+        // ============================================================================
+
+        // 1) members (typed + totals) ---------------------------------------------
+        ClearCollect(
+            colMembers,
+            ForAll(
+                PowerBIIntegration.Data As pbi,
+                With(
+                    { ib:   IfError(pbi.'IB & NS Points', 0),
+                      mgr:  IfError(pbi.'Manager Sponsor Points', 0),
+                      ncc:  IfError(pbi.'New CC Logo Points', 0),
+                      cw:   IfError(pbi.'Cap Won Points', 0),
+                      cr:   IfError(pbi.'Cap Requests', 0),
+                      cust: IfError(pbi.'Customer Centricity Points', 0),
+                      ipg:  IfError(pbi.'IP in GL points', 0),
+                      cwp:  IfError(pbi.'Cap Won Points Pending', 0),
+                      crp:  IfError(pbi.'Cap Requests Pending', 0),
+                      ccp:  IfError(pbi.'Customer Centricity Points Pending', 0),
+                      crw:  Trim(pbi.Crew & "") },
+                    {
+                        Name:          pbi.Name & "",
+                        Crew:          If(crw = "", "Unassigned", crw),
+                        Role:          pbi.'Job Family' & "",      
+                        Email:         Lower(pbi.'User Email' & ""),
+                        SponsorEmail:  Lower(pbi.'Manager Sponsor Email' & ""),
+                        Sponsor:       pbi.'Manager Sponsor' & "",
+                        IBNS:          ib,
+                        MgrPts:        mgr,
+                        NewCCLogo:     ncc,
+                        CapWon:        cw,
+                        CapReq:        cr,
+                        CustCent:      cust,
+                        IPgl:          ipg,
+                        MemberTotal:   ib + mgr + ncc + cw + cr + cust + ipg,
+                        MemberPending: cwp + crp + ccp
+                    }
+                )
+            )
+        );
+
+        // 2) crew totals — one row per distinct crew NAME --------------------------
+        //    SortKey: bigger total => smaller key (sorts first ascending). The base is
+        //    fixed-width 8 digits so a 0-point crew (99999999) still sorts AFTER higher
+        //    totals (99999xxx) instead of before them. Equal totals fall back to name A-Z.
+        ClearCollect(
+            colCrewAgg,
+            ForAll(
+                Distinct( colMembers, Crew ) As d,
+                With(
+                    { f: Filter( colMembers, Crew = d.Value ) },
+                    With(
+                        { t: Sum( f, MemberTotal ) },
+                        { Crew:        d.Value,
+                          CrewTotal:   t,
+                          CrewPending: Sum( f, MemberPending ),
+                          CrewSize:    CountRows( f ),
+                          SortKey:     Text( 99999999 - t, "00000000" ) & Lower( d.Value ) }
+                    )
+                )
+            )
+        );
+
+        // 2b) rank them (ascending SortKey == total desc, name asc on ties) --------
+        ClearCollect(
+            colCrew,
+            ForAll(
+                Sequence( CountRows( colCrewAgg ) ),
+                With(
+                    { row: Last( FirstN( Sort( colCrewAgg, SortKey ), Value ) ) },
+                    { Rank:        Value,
+                      Crew:        row.Crew,
+                      CrewName:    row.Crew,
+                      CrewTotal:   row.CrewTotal,
+                      CrewPending: row.CrewPending,
+                      CrewSize:    row.CrewSize }
+                )
+            )
+        );
+        Set( varLeaderMax, Max( 1, Coalesce( First( colCrew ).CrewTotal, 0 ) ) );  // >=1 so bars never divide by a 0 leader
+        ClearCollect( colCrewRest, Filter( colCrew, Rank >= 4 ) );
+
+        // 3) viewer role  (varMyCrew is now the crew NAME) --------------------------
+        // was: Set( varUserEmail, Lower( User().Email ) );
+        Set( varTestActive, Len( varTestCrew ) > 0 );
+        Set( varTestMember,
+            If( varTestActive,
+                First( Sort( Filter( colMembers, Crew = varTestCrew ), MemberTotal, SortOrder.Descending ) ),
+                Blank() ) );
+        Set(
+            varUserEmail,
+            If(
+                Or(
+                    Lower(User().Email) = "alex.cohen@hpe.com",
+                    Lower(User().Email) = "darren_rogers@hpe.com"
+                ),
+                "dprince@hpe.com",
+                Lower(User().Email)
+            )
+        );
+        Set( varMemberRec,  If( varTestActive, varTestMember, LookUp( colMembers, Email = varUserEmail ) ) );
+        Set( varSponsorRec, If( varTestActive, Blank(), LookUp( colMembers, SponsorEmail = varUserEmail ) ) );
+        Set( varRole,
+            If( varTestActive, "member",
+                If( !IsBlank( varMemberRec.Name ), "member",
+                    If( !IsBlank( varSponsorRec.Name ), "sponsor", "spectator" ) ) ) );
+        Set( varMyCrew,
+            If( varTestActive, varTestCrew,
+                Switch( varRole, "member", varMemberRec.Crew, "sponsor", varSponsorRec.Crew, Blank() ) ) );
+        Set( varMyCrewTag, If( varRole = "sponsor", "YOU SPONSOR", "YOUR CREW" ) );
+        Set( varDispName,
+            Switch( varRole, "member", varMemberRec.Name, "sponsor", varSponsorRec.Sponsor, "Guest Viewer" ) );
+        Set( varMyInitials,
+            Upper( Left( varDispName, 1 ) & Mid( varDispName & " ", Find( " ", varDispName & " " ) + 1, 1 ) ) );
+        Set( varRibbonChip,
+            Switch( varRole,
+                "member",  varDispName & " · " & varMyCrew,
+                "sponsor", varDispName & " · Sponsor",
+                "Guest Viewer · Spectator" ) );
+
+        // 4) per-crew category breakdown ------------------------------------------
+        ClearCollect(
+            colCrewBreak,
+            ForAll(
+                Sort( colCrew, Rank ) As c,
+                With(
+                    { f: Filter( colMembers, Crew = c.Crew ) },
+                    { Rank: c.Rank, Crew: c.Crew, CrewName: c.CrewName, Total: c.CrewTotal, Pending: c.CrewPending,
+                      NewCC:  Sum( f, IBNS + NewCCLogo ),
+                      CapEng: Sum( f, CapReq ),
+                      CapOrd: Sum( f, CapWon ),
+                      CC:     Sum( f, CustCent ),
+                      Accred: Sum( f, MgrPts ),
+                      IP:     Sum( f, IPgl ) }
+                )
+            )
+        );
+
+        // 5) viewer's crew members (grid), 0-based Idx ----------------------------
+        ClearCollect(
+            colMyCrewSorted,
+            Sort( Filter( colMembers, Crew = varMyCrew ), MemberTotal, SortOrder.Descending )
+        );
+        ClearCollect(
+            colMyCrew,
+            ForAll(
+                Sequence( CountRows( colMyCrewSorted ) ),
+                With( { row: Last( FirstN( colMyCrewSorted, Value ) ) },
+                    { Idx: Value - 1, Name: row.Name, MemberTotal: row.MemberTotal,
+                      IsMe: row.Email = varUserEmail } )
+            )
+        );
+
+        // 6) left "box" values -----------------------------------------------------
+        Set( varCB, LookUp( colCrewBreak, Crew = varMyCrew ) );
+        Set( varBoxTitle,  If( varRole = "sponsor", "YOUR CREW", "YOUR PERFORMANCE" ) );
+        Set( varBoxName,   If( varRole = "sponsor", varCB.CrewName, varMemberRec.Name ) );
+        Set( varBoxSub,    If( varRole = "sponsor", "You sponsor · " & CountRows(colMyCrew) & " people", varMyCrew & " · You" ) );
+        Set( varBoxTotLbl, If( varRole = "sponsor", "CREW TOTAL · EXCL PENDING", "TOTAL · EXCL PENDING" ) );
+        Set( varBoxTotal,  If( varRole = "sponsor", varCB.Total,   varMemberRec.MemberTotal ) );
+        Set( varBoxPending,If( varRole = "sponsor", varCB.Pending, varMemberRec.MemberPending ) );
+        Set( varB1, If( varRole = "sponsor", varCB.NewCC,  varMemberRec.IBNS + varMemberRec.NewCCLogo ) );
+        Set( varB2, If( varRole = "sponsor", varCB.CapEng, varMemberRec.CapReq ) );
+        Set( varB3, If( varRole = "sponsor", varCB.CapOrd, varMemberRec.CapWon ) );
+        Set( varB4, If( varRole = "sponsor", varCB.CC,     varMemberRec.CustCent ) );
+        Set( varB5, If( varRole = "sponsor", varCB.Accred, varMemberRec.MgrPts ) );
+        Set( varB6, If( varRole = "sponsor", varCB.IP,     varMemberRec.IPgl ) );
+
+        // 7) shared SVG motion stylesheet -----------------------------------------
+        Set(
+            varSvgCss,
+            "<style>.fu{animation:fu .55s cubic-bezier(.2,.7,.2,1) both}.fo{animation:fo .5s ease-out both}.pp{animation:pp .5s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:center}.gx{animation:gx .65s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:left center}.rw{animation:rw .5s cubic-bezier(.2,.7,.2,1) both}.ring{transform-box:fill-box;transform-origin:center;animation:ring 2.8s ease-out infinite}.brz{animation:brz 2.6s ease-in-out infinite}.bob{transform-box:fill-box;transform-origin:center;animation:bob 2.4s ease-in-out infinite}@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}@keyframes fo{from{opacity:0}to{opacity:1}}@keyframes pp{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}@keyframes gx{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes rw{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}@keyframes ring{0%{opacity:.45;transform:scale(.75)}70%{opacity:0;transform:scale(2)}100%{opacity:0;transform:scale(2)}}@keyframes brz{0%,100%{opacity:.9}50%{opacity:.45}}@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-2px) rotate(4deg)}}@media(prefers-reduced-motion:reduce){.fu,.fo,.pp,.gx,.rw,.ring,.brz,.scrl,.bob{animation:none}}</style>"
+        );
+
+        // 8) ready flag (drives the optional loading overlay) ---------------------
+        Set( varReady, CountRows( colMembers ) > 0 );
+
+        // 9) Order Progress (the yearly order goal that drives imgOrderAnchor) ----
+        //    The model column arrives as ONE value repeated on every row, so Max()
+        //    just lifts that single number out. Accepts either a 0-1 fraction or a
+        //    0-100 percentage; blank/error reads as 0 so the rail always draws.
+        Set( varOrderProgRaw, IfError( Coalesce( Max( PowerBIIntegration.Data, 'Order Progress' ), 0 ), 0 ) );
+        Set( varOrderProgPct,
+            Round( If( varOrderProgRaw > 0 && varOrderProgRaw <= 1, varOrderProgRaw * 100, varOrderProgRaw ), 0 ) );
+    Children:
+      - Image1:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =52
+            Image: |-
+              =// ============================================================================
+              //  RIBBON — top app bar (NON-gallery).  Control: Image "imgRibbon"
+              //  Geometry on the 1136 x 640 screen:  X=0  Y=0  Width=1136  Height=52
+              //  ImagePosition = Fit
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 52' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>" &
+                  "<line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>" &
+                  "<text x='54' y='32' font-size='17' font-weight='700' fill='#292d3a'>                <tspan fill='#606a70' font-weight='400'>&#183; Dashboard</tspan></text>" &
+                  "<rect x='876' y='10' width='244' height='32' rx='16' fill='#f2f3f4'/>" &
+                  "<circle cx='896' cy='26' r='12' fill='#01a982'/>" &
+                  "<text x='896' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+                  "<text x='916' y='30' font-size='13' fill='#3e4550'>" &
+                      Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Width: =1136
+      - Image2:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =300
+            Image: |-
+              =// ============================================================================
+              //  MY POINTS / CREW SUMMARY (NON-gallery).  Control: Image "imgMyPoints"
+              //  Geometry: X=16  Y=68  Width=420  Height=300   ImagePosition=Fit
+              //  Visible:  varRole <> "spectator"
+              //  Driven by OnVisible vars: member shows personal points, sponsor shows the
+              //  sponsored crew's summary (same layout, different values/labels).
+              //
+              //  Category re-labels: New CC Logo / IB Upsell (IB&NS + New CC Logo) ·
+              //  CAP Engagement (Cap Requests) · CAP Orders Booked (Cap Won) ·
+              //  Customer Centricity · Accreditation Race (Manager Sponsor) · IP Push (IP in GL)
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 300' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>" & varBoxTitle & "</text>" &
+                  "<g class='fu'>" &
+                  "<rect x='2' y='24' width='416' height='272' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                  "<circle cx='38' cy='60' r='18' fill='none' stroke='#01a982' stroke-width='2' class='ring' opacity='0'/>" &
+                  "<g class='pp' style='animation-delay:120ms'>" &
+                  "<circle cx='38' cy='60' r='18' fill='#01a982'/>" &
+                  "<text x='38' y='61' font-size='14' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+                  "</g>" &
+                  "<text x='64' y='55' font-size='15' font-weight='700' fill='#292d3a'>" & Substitute(Substitute(Substitute(varBoxName,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "<text x='64' y='72' font-size='11.5' fill='#606a70'>" & Substitute(Substitute(Substitute(varBoxSub,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "<text x='404' y='56' font-size='28' font-weight='700' fill='#006750' text-anchor='end'>" & Text(varBoxTotal) & "</text>" &
+                  "<text x='404' y='71' font-size='8.5' font-weight='600' letter-spacing='.6' fill='#606a70' text-anchor='end'>" & varBoxTotLbl & "</text>" &
+                  If( varBoxPending > 0,
+                      "<g class='brz'><rect x='64' y='80' width='" & Text(7*Len(Text(varBoxPending))+66) & "' height='17' rx='8.5' fill='#FBEEDF'/>" &
+                      "<text x='" & Text(64+(7*Len(Text(varBoxPending))+66)/2) & "' y='91' font-size='10' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(varBoxPending) & " pending</text></g>",
+                      "" ) &
+                  "<line x1='18' y1='104' x2='402' y2='104' stroke='#d4d8db'/>" &
+                  Concat(
+                      Table(
+                          { i:0, lbl:"New CC Logo / IB Upsell", val:varB1, col:"#0070f8" },
+                          { i:1, lbl:"CAP Engagement",          val:varB2, col:"#04909d" },
+                          { i:2, lbl:"CAP Orders Booked",       val:varB3, col:"#009a71" },
+                          { i:3, lbl:"Customer Centricity",     val:varB4, col:"#7764fc" },
+                          { i:4, lbl:"Accreditation Race",      val:varB5, col:"#cc54a4" },
+                          { i:5, lbl:"IP Push",                 val:varB6, col:"#d25f4b" }
+                      ),
+                      With(
+                          { x: 18 + Mod(i,2)*198, y: 112 + Int(i/2)*62 },
+                          "<g class='fo' style='animation-delay:" & Text(280 + i*70) & "ms'>" &
+                          "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='186' height='54' rx='10' fill='#fbfcfc' stroke='#d4d8db'/>" &
+                          "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='5' height='54' rx='2.5' fill='" & col & "'/>" &
+                          "<circle cx='" & Text(x+20) & "' cy='" & Text(y+19) & "' r='3.5' fill='" & col & "'/>" &
+                          "<text x='" & Text(x+30) & "' y='" & Text(y+22) & "' font-size='10.5' font-weight='600' fill='#606a70'>" & lbl & "</text>" &
+                          "<text x='" & Text(x+16) & "' y='" & Text(y+43) & "' font-size='19' font-weight='700' fill='#292d3a'>" & Text(val) & "</text>" &
+                          "</g>"
+                      )
+                  ) &
+                  "</g></svg>"
+              )
+            Visible: =varRole <> "spectator"
+            Width: =420
+            X: =16
+            Y: =68
+      - Image3:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =244
+            Image: |-
+              =// ============================================================================
+              //  IN-CREW MEMBER GRID (NON-gallery).  Control: Image "imgCrewGrid"
+              //  Geometry: X=16  Y=380  Width=420  Height=244   ImagePosition=Fit
+              //  Visible:  varRole <> "spectator"
+              //  Tiles auto-stretch so the grid fills the box for any crew size (up to 10).
+              //  Member view highlights the viewer ("YOU"); sponsor view shows the crew only.
+              // ============================================================================
+              With(
+                  { rows: RoundUp( CountRows( colMyCrew ) / 2, 0 ) },
+                  With(
+                      { th: Int( (244 - 26 - (rows-1)*8) / rows ) },
+                      "data:image/svg+xml;utf8," & EncodeUrl(
+                          "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 244' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                          "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>" &
+                              Substitute(Substitute(Substitute( Left(Upper(varMyCrew), 20), "&","&amp;"),"<","&lt;"),">","&gt;") & " · MEMBERS</text>" &
+                          "<text x='416' y='16' font-size='11' fill='#606a70' text-anchor='end'>" & Text(CountRows(colMyCrew)) & " people</text>" &
+                          Concat(
+                              colMyCrew,
+                              With(
+                                  { x: 2 + Mod(Idx,2)*212, y: 26 + Int(Idx/2)*(th+8) },
+                                  "<g class='pp' style='animation-delay:" & Text(100 + Idx*50) & "ms'>" &
+                                  "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='" & If(IsMe,"#d1ffee","#ffffff") & "' stroke='" & If(IsMe,"#01a982","#d4d8db") & "' stroke-width='" & If(IsMe,"2","1") & "'/>" &
+                                  If( IsMe, "<rect x='" & Text(x) & "' y='" & Text(y) & "' width='204' height='" & Text(th) & "' rx='11' fill='none' stroke='#01a982' stroke-width='2' class='brz' opacity='0'/>", "" ) &
+                                  "<text x='" & Text(x+14) & "' y='" & Text(y+22) & "' font-size='12.5' font-weight='600' fill='" & If(IsMe,"#292d3a","#3e4550") & "'>" &
+                                      Substitute(Substitute(Substitute( Left(Name, 22), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                                  If( IsMe, "<text x='" & Text(x+192) & "' y='" & Text(y+21) & "' font-size='9.5' font-weight='700' letter-spacing='.5' fill='#006750' text-anchor='end'>YOU</text>", "" ) &
+                                  "<text x='" & Text(x+14) & "' y='" & Text(y+th-11) & "' font-size='20' font-weight='700' fill='" & If(IsMe,"#006750","#292d3a") & "'>" & Text(MemberTotal) & "</text>" &
+                                  "<text x='" & Text(x+14 + Len(Text(MemberTotal))*12 + 5) & "' y='" & Text(y+th-11) & "' font-size='11' fill='#606a70'>pts</text>" &
+                                  "</g>"
+                              )
+                          ) &
+                          "</svg>"
+                      )
+                  )
+              )
+            Visible: =varRole <> "spectator"
+            Width: =420
+            X: =16
+            Y: =380
+      - Image4:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =556
+            Image: |-
+              =// ============================================================================
+              //  SPECTATOR TOUR (NON-gallery).  Control: Image "imgSpectator"
+              //  Geometry: X=16  Y=68  Width=420  Height=556   ImagePosition=Fit
+              //  Visible:  varRole = "spectator"   (email not in User Email or Manager Sponsor Email)
+              //  Slowly auto-scrolls through every crew's points breakdown (CSS marquee).
+              //  Scroll distance/speed scale with the number of crews. Honours reduced-motion.
+              // ============================================================================
+              With(
+                  { n: CountRows( colCrewBreak ) },
+                  With(
+                      { dist: Max( 0, n*160 - 10 - 510 ), dur: Max( 24, n*4 ) },
+                      "data:image/svg+xml;utf8," & EncodeUrl(
+                          "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 420 556' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                          "<style>.scrl{animation:scrl " & Text(dur) & "s linear infinite alternate}@keyframes scrl{from{transform:translateY(0)}to{transform:translateY(-" & Text(dist) & "px)}}@media(prefers-reduced-motion:reduce){.scrl{animation:none}}</style>" &
+                          "<clipPath id='spec'><rect x='6' y='36' width='408' height='510' rx='12'/></clipPath>" &
+                          "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>ALL CREWS &#8212; LIVE TOUR</text>" &
+                          "<circle cx='408' cy='12' r='4' fill='#01a982' class='brz'/>" &
+                          "<text x='398' y='16' font-size='10' font-weight='600' fill='#606a70' text-anchor='end'>auto</text>" &
+                          "<rect x='4' y='34' width='412' height='514' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                          "<g clip-path='url(#spec)'><g class='scrl'>" &
+                          Concat(
+                              Sort( colCrewBreak, Rank ),
+                              With(
+                                  { yc: 42 + (Rank-1)*160,
+                                    medal: Switch( Rank, 1, "#E0A300", 2, "#8C99A4", 3, "#B5742E", "#606a70" ),
+                                    mbg:   Switch( Rank, 1, "#FBF1D6", 2, "#EDEFF1", 3, "#F4E9DD", "#f2f3f4" ),
+                                    mx:    Max( 1, NewCC, CapEng, CapOrd, CC, Accred, IP ),
+                                    v1:NewCC, v2:CapEng, v3:CapOrd, v4:CC, v5:Accred, v6:IP, tot:Total, rk:Rank,
+                                    nm: Substitute(Substitute(Substitute( Left(CrewName, 24), "&","&amp;"),"<","&lt;"),">","&gt;") },
+                                  "<g transform='translate(12," & Text(yc) & ")'>" &
+                                  "<rect x='0' y='0' width='396' height='150' rx='12' fill='#fbfcfc' stroke='#d4d8db'/>" &
+                                  "<circle cx='26' cy='28' r='15' fill='" & mbg & "' stroke='" & medal & "' stroke-width='1.5'/>" &
+                                  "<text x='26' y='29' font-size='13' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rk) & "</text>" &
+                                  "<text x='50' y='24' font-size='16' font-weight='700' fill='#292d3a'>" & nm & "</text>" &
+                                  "<text x='50' y='40' font-size='10.5' fill='#606a70'>rank #" & Text(rk) & "</text>" &
+                                  "<text x='382' y='26' font-size='24' font-weight='700' fill='#006750' text-anchor='end'>" & Text(tot) & "</text>" &
+                                  "<text x='382' y='40' font-size='8.5' font-weight='600' letter-spacing='.5' fill='#606a70' text-anchor='end'>TOTAL POINTS</text>" &
+                                  Concat(
+                                      Table(
+                                          { i:0, lbl:"New CC Logo / IB Upsell", val:v1, col:"#0070f8" },
+                                          { i:1, lbl:"CAP Engagement",          val:v2, col:"#04909d" },
+                                          { i:2, lbl:"CAP Orders Booked",       val:v3, col:"#009a71" },
+                                          { i:3, lbl:"Customer Centricity",     val:v4, col:"#7764fc" },
+                                          { i:4, lbl:"Accreditation Race",      val:v5, col:"#cc54a4" },
+                                          { i:5, lbl:"IP Push",                 val:v6, col:"#d25f4b" }
+                                      ),
+                                      With(
+                                          { yy: 54 + i*15 },
+                                          "<circle cx='14' cy='" & Text(yy+5) & "' r='3' fill='" & col & "'/>" &
+                                          "<text x='22' y='" & Text(yy+8) & "' font-size='9.5' fill='#3e4550'>" & lbl & "</text>" &
+                                          "<rect x='196' y='" & Text(yy+1) & "' width='156' height='7' rx='3.5' fill='#f2f3f4'/>" &
+                                          "<rect x='196' y='" & Text(yy+1) & "' width='" & Text( Round( Max( 3, 156*val/mx ), 0 ) ) & "' height='7' rx='3.5' fill='" & col & "'/>" &
+                                          "<text x='382' y='" & Text(yy+8) & "' font-size='9.5' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(val) & "</text>"
+                                      )
+                                  ) &
+                                  "</g>"
+                              )
+                          ) &
+                          "</g></g>" &
+                          "</svg>"
+                      )
+                  )
+              )
+            Visible: =varRole = "spectator"
+            Width: =420
+            X: =16
+            Y: =68
+      - Image6:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =232
+            Image: |-
+              =// ============================================================================
+              //  PODIUM — top 3 crews (NON-gallery).  Control: Image "imgPodium"
+              //  Geometry: X=452  Y=68  Width=668  Height=300   ImagePosition=Fit
+              //  If the viewer's crew (varMyCrew) is in the top 3 it gets a green outline +
+              //  a "YOUR CREW" / "YOU SPONSOR" flag (varMyCrewTag). Spectators: varMyCrew is
+              //  blank so nothing is flagged.
+              // ============================================================================
+              With(
+                  { p1: First( colCrew ),
+                    p2: Last( FirstN( colCrew, 2 ) ),
+                    p3: Last( FirstN( colCrew, 3 ) ) },
+                  "data:image/svg+xml;utf8," & EncodeUrl(
+                      "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 300' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                      "<text x='4' y='16' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>CREW LEADERBOARD</text>" &
+                      "<text x='664' y='16' font-size='11' fill='#606a70' text-anchor='end'>Top 3 crews</text>" &
+                      Concat(
+                          Table(
+                              { cx:148, top:120, medal:"#8C99A4", tint:"#EDEFF1", cd:180, md:390, rank:p2.Rank, num:p2.Crew, nm:p2.CrewName, pts:p2.CrewTotal, pend:p2.CrewPending },
+                              { cx:334, top: 78, medal:"#E0A300", tint:"#FBF1D6", cd:340, md:550, rank:p1.Rank, num:p1.Crew, nm:p1.CrewName, pts:p1.CrewTotal, pend:p1.CrewPending },
+                              { cx:520, top:142, medal:"#B5742E", tint:"#F4E9DD", cd: 50, md:260, rank:p3.Rank, num:p3.Crew, nm:p3.CrewName, pts:p3.CrewTotal, pend:p3.CrewPending }
+                          ),
+                          "<g class='fu' style='animation-delay:" & Text(cd) & "ms'>" &
+                          "<rect x='" & Text(cx-90) & "' y='" & Text(top) & "' width='180' height='" & Text(292-top) & "' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                          "<path d='M" & Text(cx-89) & "," & Text(top+14) & " v-1 a13,13 0 0 1 13,-13 h152 a13,13 0 0 1 13,13 v1 z' fill='" & medal & "'/>" &
+                          If( rank = 1, "<circle cx='" & Text(cx) & "' cy='" & Text(top+36) & "' r='22' fill='none' stroke='" & medal & "' stroke-width='2' class='ring' opacity='0'/>", "" ) &
+                          "<g class='pp' style='animation-delay:" & Text(md) & "ms'>" &
+                          "<circle cx='" & Text(cx) & "' cy='" & Text(top+36) & "' r='22' fill='" & tint & "' stroke='" & medal & "' stroke-width='2'/>" &
+                          "<text x='" & Text(cx) & "' y='" & Text(top+37) & "' font-size='18' font-weight='700' fill='" & medal & "' text-anchor='middle' dominant-baseline='central'>" & Text(rank) & "</text>" &
+                          "</g>" &
+                          "<text x='" & Text(cx) & "' y='" & Text(top+76) & "' font-size='17' font-weight='700' fill='#292d3a' text-anchor='middle'>" &
+                              Substitute(Substitute(Substitute( Left(nm, 16), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                          "<text x='" & Text(cx) & "' y='" & Text(top+112) & "' font-size='30' font-weight='700' fill='#006750' text-anchor='middle'>" & Text(pts) & "</text>" &
+                          "<text x='" & Text(cx) & "' y='" & Text(top+128) & "' font-size='9' font-weight='600' letter-spacing='1' fill='#606a70' text-anchor='middle'>TOTAL POINTS</text>" &
+                          If( pend > 0,
+                              "<rect x='" & Text(cx - (7*(Len(Text(pend))+9)+24)/2) & "' y='262' width='" & Text(7*(Len(Text(pend))+9)+24) & "' height='22' rx='11' fill='#FBEEDF'/>" &
+                              "<text x='" & Text(cx) & "' y='277' font-size='11' font-weight='600' fill='#d36d00' text-anchor='middle'>+" & Text(pend) & " pending</text>",
+                              "<rect x='" & Text(cx-47) & "' y='262' width='94' height='22' rx='11' fill='#f2f3f4'/>" &
+                              "<text x='" & Text(cx) & "' y='277' font-size='11' font-weight='600' fill='#606a70' text-anchor='middle'>no pending</text>"
+                          ) &
+                          If( !IsBlank(varMyCrew) && num = varMyCrew,
+                              "<rect x='" & Text(cx-90) & "' y='" & Text(top) & "' width='180' height='" & Text(292-top) & "' rx='14' fill='none' stroke='#01a982' stroke-width='2.5'/>" &
+                              "<g class='pp'><rect x='" & Text(cx - (7*Len(varMyCrewTag)+22)/2) & "' y='" & Text(top-19) & "' width='" & Text(7*Len(varMyCrewTag)+22) & "' height='18' rx='9' fill='#01a982'/>" &
+                              "<text x='" & Text(cx) & "' y='" & Text(top-10) & "' font-size='10' font-weight='700' letter-spacing='.4' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyCrewTag & "</text></g>",
+                              "" ) &
+                          "</g>"
+                      ) &
+                      "</svg>"
+                  )
+              )
+            Width: =516
+            X: =452
+            Y: =68
+      - Image7:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =22
+            Image: |-
+              =// ============================================================================
+              //  RANKS HEADER — title strip above the gallery.  Control: Image "imgRanksHeader"
+              //  Geometry: X=452  Y=380  Width=668  Height=28   ImagePosition=Fit
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 28' font-family='Segoe UI, Arial, sans-serif'>" &
+                  "<text x='4' y='19' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>RANKS 4&#8211;10</text>" &
+                  "<text x='664' y='19' font-size='11' fill='#606a70' text-anchor='end'>" & Text(CountRows(colCrew)) & " crews total</text>" &
+                  "</svg>"
+              )
+            Width: =516
+            X: =452
+            Y: =312
+      - Gallery1:
+          Control: Gallery@2.15.0
+          Variant: Vertical
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =296
+            Items: =colCrewRest
+            LoadingSpinner: =LoadingSpinner.None
+            TemplateSize: =23
+            Width: =516
+            X: =452
+            Y: =328
+          Children:
+            - Image8:
+                Control: Image@2.2.3
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Height: =23
+                  Image: |-
+                    =// ============================================================================
+                    //  LEADERBOARD ROW — ranks 4..10 (GALLERY template).
+                    //  Gallery "galLeaderboard":  Items = colCrewRest
+                    //        X=452  Y=412  Width=668  Height=212   TemplateSize=30  TemplatePadding=0
+                    //  Inside template, Image "imgRow":  X=0 Y=0  Width=Parent.TemplateWidth
+                    //        Height=Parent.TemplateHeight  ImagePosition=Fit  Image = (below)
+                    //  The viewer's crew row is tinted + flagged (varMyCrew / varMyCrewTag).
+                    // ============================================================================
+                    "data:image/svg+xml;utf8," & EncodeUrl(
+                        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 668 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                        "<g class='rw' style='animation-delay:" & Text( Max( 0, (ThisItem.Rank-4)*80 ) ) & "ms'>" &
+                        With(
+                            { m:  !IsBlank(varMyCrew) && ThisItem.Crew = varMyCrew,
+                              nm: Left(ThisItem.CrewName, 22) },
+                            "<rect x='2' y='2' width='664' height='26' rx='8' fill='" & If(m,"#d1ffee","#ffffff") & "' stroke='" & If(m,"#01a982","#d4d8db") & "' stroke-width='" & If(m,"2","1") & "'/>" &
+                            If( m, "<rect x='2' y='2' width='5' height='26' rx='2.5' fill='#01a982'/>", "" ) &
+                            "<rect x='10' y='5' width='20' height='20' rx='6' fill='" & If(m,"#01a982","#f2f3f4") & "'/>" &
+                            "<text x='20' y='15' font-size='11' font-weight='700' fill='" & If(m,"#ffffff","#292d3a") & "' text-anchor='middle' dominant-baseline='central'>" & Text(ThisItem.Rank) & "</text>" &
+                            "<text x='40' y='19' font-size='13' font-weight='700' fill='" & If(m,"#006750","#292d3a") & "'>" &
+                                Substitute(Substitute(Substitute( nm, "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                            If( m,
+                                "<rect x='" & Text(40 + Len(nm)*7 + 8) & "' y='8' width='" & Text(7*Len(varMyCrewTag)+16) & "' height='14' rx='7' fill='#d1ffee' stroke='#01a982'/>" &
+                                "<text x='" & Text(40 + Len(nm)*7 + 8 + (7*Len(varMyCrewTag)+16)/2) & "' y='15' font-size='8.5' font-weight='700' letter-spacing='.3' fill='#006750' text-anchor='middle' dominant-baseline='central'>" & varMyCrewTag & "</text>",
+                                "" )
+                        ) &
+                        // ---- progress = a ship sailing a wave (water fills, ship rides the leading edge) ----
+                        With(
+                            { d:  Max( 0, (ThisItem.Rank-4)*80 ),
+                              fw: Round( Max( 4, 358 * ThisItem.CrewTotal / Max( varLeaderMax, 1 ) ), 0 ) },
+                            "<rect x='190' y='15' width='358' height='7' rx='3.5' fill='#eef1f3'/>" &
+                            "<rect x='190' y='15' width='" & Text(fw) & "' height='7' rx='3.5' fill='#01a982' class='gx' style='animation-delay:" & Text(d+250) & "ms'/>" &
+                            "<g class='fo' style='animation-delay:" & Text(d+500) & "ms' transform='translate(" & Text(190+fw) & ",15)'>" &
+                            "<path d='M-12,5 q3,-3 6,0 t6,0 t6,0' fill='none' stroke='#ffffff' stroke-width='1.4' opacity='.7'/>" &
+                            "<g class='bob'>" &
+                            "<path d='M-8,-1 L8,-1 L5,4 L-5,4 Z' fill='#292d3a'/>" &
+                            "<line x1='0' y1='-1' x2='0' y2='-12' stroke='#292d3a' stroke-width='1.4'/>" &
+                            "<path d='M1.5,-11 L7,-2 L1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>" &
+                            "<path d='M-1.5,-9 L-5.5,-2 L-1.5,-2 Z' fill='#ffffff' stroke='#b1b9be' stroke-width='.5'/>" &
+                            "<path d='M0,-12 L4,-11 L0,-10 Z' fill='#01a982'/>" &
+                            "</g></g>"
+                        ) &
+                        "<text x='598' y='20' font-size='16' font-weight='700' fill='#292d3a' text-anchor='end'>" & Text(ThisItem.CrewTotal) & "</text>" &
+                        "<text x='602' y='20' font-size='10' font-weight='600' fill='#606a70'>pts</text>" &
+                        If( ThisItem.CrewPending > 0,
+                            "<text x='658' y='20' font-size='10' font-weight='600' fill='#d36d00' text-anchor='end'>+" & Text(ThisItem.CrewPending) & "</text>",
+                            "" ) &
+                        "</g>" &
+                        "</svg>"
+                    )
+                  OnSelect: =Select(Parent)
+                  Width: =506
+      - Image11:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =73
+            Image: |+
+              ="data:image/svg+xml;utf8," & EncodeUrl("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160.32 384' preserveAspectRatio='xMidYMid meet'> <desc>PowerApps animation reload marker</desc> <g opacity='0'>    <animate attributeName='opacity' values='0;1' dur='1.8s' fill='freeze' repeatCount='1'/>    <animateTransform attributeName='transform' type='translate' values='0 30;0 0' dur='1.8s' fill='freeze' repeatCount='1' calcMode='spline' keySplines='.16 1 .3 1'/>    <g transform='translate(80.16 192)'>      <g transform='scale(.94)'>        <animateTransform attributeName='transform' type='scale' values='.94;1' dur='1.8s' fill='freeze' repeatCount='1' calcMode='spline' keySplines='.16 1 .3 1'/>        <g transform='translate(-80.16 -192)'>          <image width='334' height='800' transform='translate(7 21) scale(.48)' href='data:image/png;base64,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BCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEYEJwAYEZwAYERwAoARwQkARgQnABgRnABgRHACgBHBCQBGBCcAGBGcAGBEcAKAEcEJAEb/H1aoowio2lt3AAAAAElFTkSuQmCC'/>        </g>      </g>    </g>  </g></svg>")
+            Width: =65
+      - Image5:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =30
+            Image: |-
+              =// ============================================================================
+              //  CREW PORTAL BUTTON (SVG).  Control: Image "imgCrewPortalBtn"
+              //  Geometry on the dashboard ribbon:  X=720  Y=11  Width=140  Height=30
+              //        ImagePosition = Fit
+              //
+              //  An Image, NOT a Button — so it matches the rest of the SVG design language.
+              //  Image controls are tappable, so put the navigation formula straight on this
+              //  control's OnSelect:
+              //        imgCrewPortalBtn.OnSelect = (the contents of btnCrewPortal.OnSelect.powerfx)
+              //  (If you want hover/press feedback too, drop a transparent Button with the same
+              //   size/position on top of this image and put the OnSelect there instead.)
+              //
+              //  Green HPE pill, a leaf glyph (nods to the leaf-wipe transition), "Crew Portal",
+              //  and a chevron that gently nudges to signal "go". Fades up on load (varSvgCss
+              //  .fu); honours prefers-reduced-motion.
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<style>.nudge{animation:nudge 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}@media(prefers-reduced-motion:reduce){.nudge{animation:none}}</style>" &
+                  "<g class='fu'>" &
+                  "<rect x='1' y='1' width='138' height='28' rx='14' fill='#01a982'/>" &
+                  "<rect x='1' y='1' width='138' height='14' rx='13' fill='#ffffff' opacity='.12'/>" &
+                  "<g transform='translate(20,15)'><path d='M0,-7 C4,-5 4,3 0,7 C-4,3 -4,-5 0,-7 Z' fill='#ffffff' opacity='.95'/><path d='M0,-6 L0,6' stroke='#01a982' stroke-width='.8' opacity='.5'/></g>" &
+                  "<text x='36' y='16' font-size='13' font-weight='600' fill='#ffffff' dominant-baseline='central'>Crew Portal</text>" &
+                  "<path d='M122,11 l5,4 l-5,4' fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudge'/>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            OnSelect: |-
+              =// ============================================================================
+              //  btnCrewPortal.OnSelect  —  the "Crew Portal" button on the dashboard ribbon.
+              //
+              //  RECOMMENDED PLACEMENT (matches the SVG design language): put the SVG button
+              //  image "imgCrewPortalBtn" (see imgCrewPortalBtn.Image.powerfx) on the ribbon at
+              //    X=720  Y=11  Width=140  Height=30   ImagePosition=Fit
+              //  and paste THIS formula into imgCrewPortalBtn.OnSelect (Image controls are
+              //  tappable — no separate Button needed).
+              //
+              //  ALTERNATIVE: a plain Button with this OnSelect (Text="Crew Portal",
+              //  Fill=RGBA(1,169,130,1), Color=White, HoverFill=RGBA(0,103,80,1), radius 15,
+              //  BorderThickness=0) — or a transparent Button laid over imgCrewPortalBtn if you
+              //  want hover/press feedback on the SVG.
+              //
+              //  This just arms the leaf-wipe transition and navigates. The opportunity pack
+              //  Collect (your pack-split formula) now runs in scrPortal.OnVisible, so it
+              //  rebuilds every time the portal opens — see Screen_Portal_OnVisible.powerfx.
+              //  ScreenTransition.Cover is the reliable base transition; the leaf-wipe overlay
+              //  (imgLeafWipe + varLeafBusy) is the flourish on top.
+              // ============================================================================
+              Set( varLeafKey, varLeafKey + 1 );
+              Set( varLeafBusy, true );
+              Navigate( scrPortal, ScreenTransition.Cover )
+            Width: =140
+            X: =486
+            Y: =11
+      - imgPointsHubBtn:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =30
+            Image: |-
+              =// ============================================================================
+              //  POINTS HQ BUTTON (SVG).  Control: Image "imgPointsHubBtn"
+              //  Geometry on the dashboard ribbon:  X=570  Y=11  Width=140  Height=30
+              //        ImagePosition = Fit
+              //  Sibling of imgCrewPortalBtn but in the DARK green (#006750) so the two ribbon
+              //  actions read differently at a glance. Tiny rising-bars glyph = "points
+              //  breakdown"; chevron nudges right; fades up on load; reduced-motion safe.
+              //  Visible  = imgPointsHubBtn.Visible.powerfx  (the admin list lives THERE)
+              //  OnSelect = imgPointsHubBtn.OnSelect.powerfx
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<style>.nudge{animation:nudge 2.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(3px)}}@media(prefers-reduced-motion:reduce){.nudge{animation:none}}</style>" &
+                  "<g class='fu'>" &
+                  "<rect x='1' y='1' width='138' height='28' rx='14' fill='#006750'/>" &
+                  "<rect x='1' y='1' width='138' height='14' rx='13' fill='#ffffff' opacity='.12'/>" &
+                  "<g class='gx' style='animation-delay:.25s'>" &
+                  "<rect x='14' y='16' width='4' height='6' rx='1.5' fill='#ffffff' opacity='.95'/>" &
+                  "<rect x='20' y='12' width='4' height='10' rx='1.5' fill='#ffffff' opacity='.95'/>" &
+                  "<rect x='26' y='8'  width='4' height='14' rx='1.5' fill='#ffffff' opacity='.95'/>" &
+                  "</g>" &
+                  "<text x='38' y='16' font-size='13' font-weight='600' fill='#ffffff' dominant-baseline='central'>Points HQ</text>" &
+                  "<path d='M122,11 l5,4 l-5,4' fill='none' stroke='#ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='nudge'/>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            OnSelect: |-
+              =// ============================================================================
+              //  imgPointsHubBtn.OnSelect  —  the "Points HQ" button on the dashboard ribbon.
+              //
+              //  PLACEMENT (dashboard ribbon, left of the Crew Portal button):
+              //    X=570  Y=11  Width=140  Height=30   ImagePosition=Fit
+              //  Image controls are tappable — the navigation lives on this control's
+              //  OnSelect. Same leaf-wipe flourish as the Crew Portal.
+              // ============================================================================
+              Set( varLeafKey, varLeafKey + 1 );
+              Set( varLeafBusy, true );
+              Navigate( scrPoints, ScreenTransition.Cover )
+            Visible: |-
+              =// ============================================================================
+              //  imgPointsHubBtn.Visible  —  WHO CAN SEE THE POINTS HQ BUTTON.
+              //
+              //  Two doors in:
+              //   1) THE ADMIN LIST — put the exact emails in the table below (lowercase).
+              //      <<< EDIT THE EMAILS HERE — nothing else on the page gates access >>>
+              //   2) MANAGER SPONSORS — anyone whose email appears in the data's
+              //      'Manager Sponsor Email' column. Checked directly against colMembers
+              //      (NOT via varRole: a sponsor who is ALSO a member gets varRole="member",
+              //      and would wrongly lose access if we tested the role).
+              //
+              //  Uses the real signed-in email on purpose — the varTestCrew diagnostic
+              //  impersonation never unlocks the hub for someone who shouldn't see it.
+              // ============================================================================
+              With(
+                  { adminEmails: [
+                      "alex.cohen@hpe.com",
+                      "gabriela.gancheva@hpe.com",
+                      "nicola.harding@hpe.com",
+                      "lucas.pieltain@hpe.com",
+                      "jack.meanley@hpe.com"
+                    ]
+                  },
+                  Lower( User().Email ) in adminEmails
+                  || !IsBlank( LookUp( colMembers, SponsorEmail = Lower( User().Email ) ) )
+              )
+            Width: =140
+            X: =332
+            Y: =11
+      - imgOrderAnchor:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =556
+            Image: |-
+              =// ============================================================================
+              //  ORDER PROGRESS RAIL (NON-gallery).  Control: Image "imgOrderAnchor"
+              //  Geometry: X=984  Y=68  Width=136  Height=556   ImagePosition=Fit
+              //
+              //  The yearly ORDER GOAL, drawn as an anchor on a chain: the higher the anchor
+              //  rides, the closer the crew is to the goal. 100% = anchor hoisted to the deck
+              //  (GRAND PRIZE, gold); 50%+ = being pulled up (HOISTING, green); under 50% =
+              //  being dropped back into the water (DROPPING, amber) and rewards reduce.
+              //  Anchor travel maps 0%->y=470 (in the water) and 100%->y=140 (at the deck).
+              //  Value comes from varOrderProgPct (Screen.OnVisible step 9); blank reads 0.
+              // ============================================================================
+              "data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 136 556' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  With(
+                      { p: Min( 100, Max( 0, Coalesce( varOrderProgPct, 0 ) ) ) },
+                      With(
+                          { ay:  470 - Min( 100, Max( 0, Coalesce( varOrderProgPct, 0 ) ) ) * 3.12,
+                            col: If( p >= 100, "#E0A300", If( p >= 50, "#01a982", "#d36d00" ) ),
+                            lbl: If( p >= 100, "GRAND PRIZE", If( p >= 50, "HOISTING", "DROPPING" ) ) },
+                          "<clipPath id='oclip'><rect x='0' y='0' width='136' height='556' rx='14'/></clipPath>" &
+                          "<g class='fu'>" &
+                          "<rect x='0.5' y='0.5' width='135' height='555' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                          "<g clip-path='url(#oclip)'>" &
+                          "<rect x='0' y='0' width='136' height='5' fill='" & col & "'/>" &
+                          "<path d='M0,398 q17,-8 34,0 t34,0 t34,0 t34,0 v158 h-136 z' fill='#eaf4fb'/>" &
+                          "<path d='M0,414 q17,-8 34,0 t34,0 t34,0 t34,0 v142 h-136 z' fill='#dcecf8'/>" &
+                          "<rect x='0' y='540' width='136' height='16' fill='#efe6cf'/>" &
+                          "</g>" &
+                          "<text x='68' y='26' font-size='9' font-weight='700' letter-spacing='1.1' fill='#606a70' text-anchor='middle'>ORDER PROGRESS</text>" &
+                          "<text x='68' y='64' font-size='30' font-weight='700' fill='" & col & "' text-anchor='middle'>" & Text( Round( p, 0 ) ) & "%</text>" &
+                          "<text x='68' y='81' font-size='7.5' font-weight='600' letter-spacing='.5' fill='#8a9096' text-anchor='middle'>OF THE YEARLY GOAL</text>" &
+                          "<rect x='18' y='90' width='100' height='21' rx='10.5' fill='" & col & "'/>" &
+                          "<text x='68' y='101' font-size='9' font-weight='700' letter-spacing='.8' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & lbl & "</text>" &
+                          "<line x1='14' y1='130' x2='122' y2='130' stroke='#c2c8cd' stroke-width='2'/>" &
+                          "<circle cx='68' cy='130' r='5' fill='#ffffff' stroke='#8a9096' stroke-width='2'/>" &
+                          "<line x1='14' y1='140' x2='122' y2='140' stroke='#c9ced2' stroke-dasharray='3 3'/>" &
+                          "<text x='14' y='136' font-size='7' font-weight='600' fill='#a7adb2'>GOAL</text>" &
+                          "<text x='14' y='308' font-size='7' fill='#b0b6bb'>50%</text>" &
+                          "<text x='14' y='474' font-size='7' fill='#b0b6bb'>0%</text>" &
+                          "<line x1='68' y1='" & Text( Round( ay + 18, 1 ) ) & "' x2='68' y2='470' stroke='#c9ced2' stroke-dasharray='2 4'/>" &
+                          "<line x1='68' y1='134' x2='68' y2='" & Text( Round( ay - 22, 1 ) ) & "' stroke='#8a9096' stroke-width='2.5' stroke-dasharray='4 3'/>" &
+                          "<g class='bob'>" &
+                          "<circle cx='68' cy='" & Text( Round( ay - 18, 1 ) ) & "' r='4.5' fill='none' stroke='" & col & "' stroke-width='2.5'/>" &
+                          "<path d='M68," & Text( Round( ay - 14, 1 ) ) & " L68," & Text( Round( ay + 14, 1 ) ) & "' stroke='" & col & "' stroke-width='2.5' stroke-linecap='round'/>" &
+                          "<path d='M55," & Text( Round( ay - 5, 1 ) ) & " L81," & Text( Round( ay - 5, 1 ) ) & "' stroke='" & col & "' stroke-width='2.5' stroke-linecap='round'/>" &
+                          "<path d='M52," & Text( Round( ay + 1, 1 ) ) & " C53," & Text( Round( ay + 12, 1 ) ) & " 60," & Text( Round( ay + 17, 1 ) ) & " 68," & Text( Round( ay + 14, 1 ) ) &
+                              " C76," & Text( Round( ay + 17, 1 ) ) & " 83," & Text( Round( ay + 12, 1 ) ) & " 84," & Text( Round( ay + 1, 1 ) ) & "' fill='none' stroke='" & col & "' stroke-width='2.5' stroke-linecap='round'/>" &
+                          "</g>" &
+                          If( p >= 50,
+                              "<path d='M104," & Text( Round( ay + 6, 1 ) ) & " l0,-16 m-5,5 l5,-5 l5,5' fill='none' stroke='" & col & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>",
+                              "<path d='M104," & Text( Round( ay - 10, 1 ) ) & " l0,16 m-5,-5 l5,5 l5,-5' fill='none' stroke='" & col & "' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>" ) &
+                          "<text x='68' y='522' font-size='7.5' font-weight='600' fill='#3e4550' text-anchor='middle'>" &
+                              If( p >= 100, "Goal hit - grand prize is on", "Hit 100% for the grand prize" ) & "</text>" &
+                          "<text x='68' y='534' font-size='7' fill='#606a70' text-anchor='middle'>" &
+                              If( p >= 100, "keep it above the line", "below goal = reduced rewards" ) & "</text>" &
+                          "</g>"
+                      )
+                  ) &
+                  "</svg>"
+              )
+            Width: =136
+            X: =984
+            Y: =68

@@ -13,15 +13,40 @@ Screens:
       LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
       OnVisible: |-
         =// ============================================================================
-        //  scrCareCalls.OnVisible  -  Customer Care Calls.
-        //  Builds colCareOpps from the crew's packed 'Care Call Pack' column (rows
-        //  joined by "||", fields by "//"), exactly like the Crew Portal funnel
-        //  unpack. Field order (from the DAX): Status // OppId // OppName // Account //
-        //  Fcst // Close(yyyy-mm-dd) // Val // OwnerName // Update.
-        //  Also resets to the opp-list view (varCareOpp Blank = list, record = survey).
+        //  scrCareCalls.OnVisible  -  Customer Care Calls (post-renewal questionnaire).
+        //
+        //  DATA SOURCE: the SharePoint list HPE_Services_Post_Renewal_Questionnaire
+        //  must be added to the app (Data > Add data). If your list is named
+        //  differently, rename it here and in btnCareSave / btnCareNoContact.
+        //
+        //  Builds, in order:
+        //    colCareDone     one row per opportunity already actioned (surveyed OR
+        //                    cleared by the rep) - these drop off the list.
+        //    colCareRaw      the crew's 'Care Call Pack' unpacked (rows "||", cols "//"):
+        //                    Status // OppId // OppName // Account // Fcst //
+        //                    Close(yyyy-mm-dd) // Val // OwnerName // Update.
+        //    colCareCallers  the NON S-CODED people in this crew - the callers.
+        //    colCareReps     the distinct aligned reps on those opps, indexed A-Z.
+        //    colCareOpps     each opp + the caller it is aligned to.
+        //
+        //  ALIGNMENT RULE: every opportunity belonging to the same sales rep goes to
+        //  the SAME non-S-coded caller (so one caller builds one relationship), and
+        //  reps are dealt round-robin across the callers, so the callers end up with
+        //  a similar number of opportunities. Deterministic: both lists are sorted,
+        //  so the same input always produces the same allocation.
         // ============================================================================
         Set( varCareOpp, Blank() );
-        Clear( colCareOpps );
+        Set( varCareStep, 1 );
+
+        // 1) what has already been answered or cleared -------------------------------
+        //    (small list; if it ever passes 500 rows raise the app's data row limit)
+        ClearCollect(
+            colCareDone,
+            ForAll( HPE_Services_Post_Renewal_Questionnaire As q, { OppKey: q.Opportunity & "" } )
+        );
+
+        // 2) unpack the crew's Care Call Pack ----------------------------------------
+        Clear( colCareRaw );
         With(
             { crewLine:
                 First(
@@ -40,7 +65,7 @@ Screens:
                         With(
                             { cols: Split( Row.Value, "//" ) },
                             Collect(
-                                colCareOpps,
+                                colCareRaw,
                                 {
                                     Status:           Index( cols, 1 ).Value,
                                     OppId:            Index( cols, 2 ).Value,
@@ -57,7 +82,84 @@ Screens:
                     )
                 )
             )
-        )
+        );
+
+        // 3) the callers: NON S-coded people in this crew, alphabetical for stability -
+        ClearCollect(
+            colCareCallers,
+            Sort(
+                ForAll(
+                    Filter(
+                        PowerBIIntegration.Data,
+                        Trim( Lower( Crew & "" ) ) = Trim( Lower( varMyCrew & "" ) ),
+                        Trim( 'S Coded?' & "" ) = "Non S-Coded (Phil)"
+                    ) As t,
+                    { CallerName: t.Name & "", CallerEmail: Trim( Lower( t.'User Email' & "" ) ) }
+                ),
+                CallerEmail
+            )
+        );
+        ClearCollect(
+            colCareCallerIdx,
+            ForAll(
+                Sequence( CountRows( colCareCallers ) ) As s,
+                With(
+                    { c: Last( FirstN( colCareCallers, s.Value ) ) },
+                    { Idx: s.Value - 1, CallerName: c.CallerName, CallerEmail: c.CallerEmail }
+                )
+            )
+        );
+        Set( varCareCallerCount, CountRows( colCareCallerIdx ) );
+
+        // 4) the aligned reps on those opps, indexed A-Z ------------------------------
+        ClearCollect(
+            colCareReps,
+            ForAll(
+                Sequence( CountRows( Distinct( colCareRaw, OwnerName ) ) ) As s,
+                With(
+                    { rp: Last( FirstN( Sort( Distinct( colCareRaw, OwnerName ), Value ), s.Value ) ).Value },
+                    { RepIdx: s.Value - 1, RepName: rp }
+                )
+            )
+        );
+
+        // 5) deal each rep's opportunities to a caller (round-robin over the reps) ----
+        ClearCollect(
+            colCareOpps,
+            ForAll(
+                colCareRaw As o,
+                With(
+                    { asg:
+                        If( varCareCallerCount > 0,
+                            LookUp(
+                                colCareCallerIdx,
+                                Idx = Mod(
+                                    Coalesce( LookUp( colCareReps, RepName = o.OwnerName, RepIdx ), 0 ),
+                                    varCareCallerCount
+                                )
+                            )
+                        )
+                    },
+                    {
+                        Status:           o.Status,
+                        OppId:            o.OppId,
+                        OppName:          o.OppName,
+                        AccountName:      o.AccountName,
+                        ForecastCategory: o.ForecastCategory,
+                        CloseDate:        o.CloseDate,
+                        TotalValue:       o.TotalValue,
+                        OwnerName:        o.OwnerName,
+                        OppUpdate:        o.OppUpdate,
+                        AssignedName:     asg.CallerName,
+                        AssignedEmail:    asg.CallerEmail
+                    }
+                )
+            )
+        );
+
+        // 6) am I one of the callers? (if not - e.g. a tester - show the whole crew) --
+        Set( varCareMyEmail, Trim( Lower( varUserEmail ) ) );
+        Set( varCareIsCaller, !IsBlank( LookUp( colCareCallerIdx, CallerEmail = varCareMyEmail ) ) )
     Children:
       - imgCareRibbon:
           Control: Image@2.2.3
@@ -72,7 +174,7 @@ Screens:
                   "<line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>" &
                   "<rect x='164' y='13' width='26' height='26' rx='7' fill='#006750'/>" &
                   "<text x='177' y='27' font-size='11' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>CC</text>" &
-                  "<text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Customer Care Calls <tspan fill='#606a70' font-weight='400'>&#183; won opps, last 30 days</tspan></text>" &
+                  "<text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Customer Care Calls <tspan fill='#606a70' font-weight='400'>&#183; post-renewal questionnaire</tspan></text>" &
                   With(
                       { cw: Min( 600, Max( 150, Round( 54 + Len( varRibbonChip ) * 6.8, 0 ) ) ) },
                       With(
@@ -113,18 +215,25 @@ Screens:
           Control: Image@2.2.3
           Properties:
             BorderColor: =RGBA(0, 18, 107, 1)
-            Height: =26
+            Height: =48
             Image: |-
               ="data:image/svg+xml;utf8," & EncodeUrl(
-                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 26' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1104 48' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
                   "<g class='fo'>" &
-                  "<text x='4' y='17' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>WON OPPORTUNITIES &#183; LAST 30 DAYS &#183; YOUR CREW</text>" &
-                  "<text x='1100' y='17' font-size='11' fill='#606a70' text-anchor='end'>" &
+                  "<text x='4' y='13' font-size='11' font-weight='700' letter-spacing='1.2' fill='#606a70'>YOUR CARE CALLS &#183; WON OPPORTUNITIES, LAST 30 DAYS</text>" &
+                  "<text x='1100' y='13' font-size='11' fill='#606a70' text-anchor='end'>" &
                   If( CountRows( colCareOpps ) = 0,
                       "nothing to review right now",
-                      Text( CountRows( colCareOpps ) ) & " to review &#183; tap one to start its care-call survey"
+                      If( varCareIsCaller,
+                          "aligned to you &#183; tap one to open its questionnaire",
+                          "showing the whole crew &#183; you are not on the caller list" )
                   ) &
                   "</text>" &
+                  "<rect x='0' y='22' width='1104' height='26' rx='8' fill='#FDF3E2' stroke='#E8B76B'/>" &
+                  "<circle cx='18' cy='35' r='7.5' fill='#d36d00'/>" &
+                  "<text x='18' y='35' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>!</text>" &
+                  "<text x='34' y='35' font-size='11' fill='#7a4a00' dominant-baseline='central'>" &
+                  "<tspan font-weight='700'>Before you call:</tspan> always speak to the aligned sales rep first and ask them to organise the call with the customer. Never contact a customer cold.</text>" &
                   "</g>" &
                   "</svg>"
               )
@@ -137,21 +246,30 @@ Screens:
           Variant: Vertical
           Properties:
             BorderColor: =RGBA(0, 18, 107, 1)
-            Height: =508
-            Items: =colCareOpps
+            Height: =496
+            Items: |-
+              =Sort(
+                  Filter(
+                      colCareOpps As c,
+                      IsBlank( LookUp( colCareDone, OppKey = c.OppId ) ),
+                      !varCareIsCaller || c.AssignedEmail = varCareMyEmail
+                  ),
+                  CloseDate,
+                  SortOrder.Descending
+              )
             OnSelect: |-
-              =Reset( txtCareQ1 );
-              Reset( txtCareQ2 );
-              Reset( drpCareQ3 );
-              Reset( drpCareQ4 );
-              Reset( sldCareQ5 );
+              =Reset( txtCareContact ); Reset( txtCareEmail );
+              Reset( txtCareQ1 ); Reset( txtCareQ2 ); Reset( txtCareQ3 ); Reset( txtCareQ4 );
+              Reset( txtCareQ5 ); Reset( txtCareQ6 ); Reset( txtCareQ7 );
+              Reset( drpCareMap ); Reset( txtCareNotes );
+              Set( varCareStep, 1 );
               Set( varCareOpp, ThisItem )
             TemplatePadding: =0
             TemplateSize: =88
             Visible: =IsBlank( varCareOpp )
             Width: =1120
             X: =16
-            Y: =104
+            Y: =124
           Children:
             - imgCareRow:
                 Control: Image@2.2.3
@@ -165,14 +283,18 @@ Screens:
                         "<rect x='2' y='4' width='1100' height='80' rx='12' fill='#ffffff' stroke='#d4d8db'/>" &
                         "<rect x='2' y='4' width='5' height='80' rx='2.5' fill='#01a982'/>" &
                         "<text x='24' y='34' font-size='15' font-weight='700' fill='#292d3a'>" &
-                            Substitute(Substitute(Substitute( Left( ThisItem.OppName, 62 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                            Substitute(Substitute(Substitute( Left( ThisItem.OppName, 58 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                         "<text x='24' y='57' font-size='11.5' fill='#606a70'>" &
-                            Substitute(Substitute(Substitute( Left( ThisItem.AccountName, 48 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
-                        "<text x='24' y='75' font-size='10.5' fill='#8a9096'>Closed " & ThisItem.CloseDate & "  &#183;  " &
-                            Substitute(Substitute(Substitute( Left( ThisItem.OwnerName, 34 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
-                        "<text x='922' y='34' font-size='15' font-weight='700' fill='#006750' text-anchor='end'>&#163; " & Text( ThisItem.TotalValue, "#,##0" ) & "</text>" &
-                        "<rect x='922' y='48' width='158' height='28' rx='14' fill='#e8f7f1' stroke='#01a982'/>" &
-                        "<text x='1001' y='63' font-size='11.5' font-weight='700' fill='#006750' text-anchor='middle'>Start survey &#8250;</text>" &
+                            Substitute(Substitute(Substitute( Left( ThisItem.AccountName, 44 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                        "<text x='24' y='75' font-size='10.5' fill='#8a9096'>Closed " & ThisItem.CloseDate & "  &#183;  &#163; " & Text( ThisItem.TotalValue, "#,##0" ) & "</text>" &
+                        "<rect x='620' y='26' width='300' height='24' rx='12' fill='#f2f3f4'/>" &
+                        "<text x='636' y='38' font-size='10.5' fill='#3e4550' dominant-baseline='central'>Speak to rep: " &
+                            Substitute(Substitute(Substitute( Left( ThisItem.OwnerName, 26 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                        If( varCareIsCaller, "",
+                            "<text x='636' y='62' font-size='10' fill='#8a9096'>caller: " &
+                            Substitute(Substitute(Substitute( Left( ThisItem.AssignedName, 26 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" ) &
+                        "<rect x='942' y='30' width='140' height='28' rx='14' fill='#e8f7f1' stroke='#01a982'/>" &
+                        "<text x='1012' y='45' font-size='11.5' font-weight='700' fill='#006750' text-anchor='middle'>Open survey &#8250;</text>" &
                         "</g>" &
                         "</svg>"
                     )
@@ -190,15 +312,23 @@ Screens:
                   "<rect x='0' y='0' width='1104' height='160' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
                   "<circle cx='552' cy='62' r='24' fill='#d1ffee'/>" &
                   "<path d='M544,62 l6,6 l12,-13' fill='none' stroke='#006750' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/>" &
-                  "<text x='552' y='110' font-size='14' font-weight='700' fill='#292d3a' text-anchor='middle'>No won opportunities to review</text>" &
-                  "<text x='552' y='130' font-size='11' fill='#606a70' text-anchor='middle'>Nothing closed Won in your crew in the last 30 days. Check back after your next win.</text>" &
+                  "<text x='552' y='110' font-size='14' font-weight='700' fill='#292d3a' text-anchor='middle'>Nothing to call about right now</text>" &
+                  "<text x='552' y='130' font-size='11' fill='#606a70' text-anchor='middle'>Every won opportunity aligned to you has been answered or cleared. Check back after the next win.</text>" &
                   "</g>" &
                   "</svg>"
               )
-            Visible: =IsBlank( varCareOpp ) && CountRows( colCareOpps ) = 0
+            Visible: |-
+              =IsBlank( varCareOpp ) &&
+              CountRows(
+                  Filter(
+                      colCareOpps As c,
+                      IsBlank( LookUp( colCareDone, OppKey = c.OppId ) ),
+                      !varCareIsCaller || c.AssignedEmail = varCareMyEmail
+                  )
+              ) = 0
             Width: =1104
             X: =16
-            Y: =104
+            Y: =124
       - imgCareCard:
           Control: Image@2.2.3
           Properties:
@@ -211,21 +341,33 @@ Screens:
                   "<rect x='0' y='0' width='1104' height='560' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
                   "<rect x='0' y='0' width='6' height='560' fill='#01a982'/>" &
                   "<text x='32' y='40' font-size='19' font-weight='700' fill='#292d3a'>" &
-                      Substitute(Substitute(Substitute( Left( varCareOpp.OppName, 70 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.OppName, 62 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<text x='32' y='64' font-size='12' fill='#606a70'>" &
-                      Substitute(Substitute(Substitute( Left( varCareOpp.AccountName, 42 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
-                      "  &#183;  Closed " & varCareOpp.CloseDate & "  &#183;  &#163; " & Text( varCareOpp.TotalValue, "#,##0" ) &
-                      "  &#183;  " & Substitute(Substitute(Substitute( Left( varCareOpp.OwnerName, 30 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.AccountName, 40 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
+                      "  &#183;  Renewed " & varCareOpp.CloseDate & "  &#183;  &#163; " & Text( varCareOpp.TotalValue, "#,##0" ) & "</text>" &
+                  "<text x='1072' y='40' font-size='11' font-weight='700' fill='#006750' text-anchor='end'>STEP " & Text( varCareStep ) & " OF 2</text>" &
+                  "<text x='1072' y='60' font-size='10.5' fill='#8a9096' text-anchor='end'>" &
+                      If( varCareStep = 1, "the customer and their first answers", "the rest of the questionnaire" ) & "</text>" &
                   "<line x1='32' y1='84' x2='1072' y2='84' stroke='#eceef0'/>" &
-                  "<line x1='552' y1='100' x2='552' y2='452' stroke='#f0f2f3'/>" &
-                  "<text x='32' y='112' font-size='13' font-weight='600' fill='#3e4550'>1. What did the customer say about their overall experience?</text>" &
-                  "<text x='32' y='332' font-size='13' font-weight='600' fill='#3e4550'>2. Any risks, blockers or follow-ups to flag?</text>" &
-                  "<text x='576' y='112' font-size='13' font-weight='600' fill='#3e4550'>3. How is the deployment progressing?</text>" &
-                  "<text x='576' y='212' font-size='13' font-weight='600' fill='#3e4550'>4. Would the customer act as a reference?</text>" &
-                  "<text x='576' y='300' font-size='13' font-weight='600' fill='#3e4550'>5. Overall customer satisfaction &#8212; 1 (low) to 5 (high)</text>" &
-                  "<text x='576' y='366' font-size='10' fill='#8a9096'>1</text>" &
-                  "<text x='1006' y='366' font-size='10' fill='#8a9096' text-anchor='end'>5</text>" &
-                  "<text x='32' y='540' font-size='10' fill='#b0b6bb'>Preview &#8212; answers are not saved yet</text>" &
+                  "<rect x='32' y='94' width='1040' height='48' rx='8' fill='#FDF3E2' stroke='#E8B76B'/>" &
+                  "<circle cx='56' cy='118' r='9' fill='#d36d00'/>" &
+                  "<text x='56' y='118' font-size='12' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>!</text>" &
+                  "<text x='76' y='112' font-size='12' font-weight='700' fill='#7a4a00'>Speak to " &
+                      Substitute(Substitute(Substitute( Left( varCareOpp.OwnerName, 30 ), "&","&amp;"),"<","&lt;"),">","&gt;") &
+                      " first - ask them to organise this call with the customer.</text>" &
+                  "<text x='76' y='130' font-size='11' fill='#7a4a00'>This is important: never contact the customer before the aligned sales rep has set the call up. If the rep says it is not a good idea, use Rep says do not contact.</text>" &
+                  If( varCareStep = 1,
+                      "<text x='32' y='154' font-size='12.5' font-weight='600' fill='#3e4550'>Contact name</text>" &
+                      "<text x='568' y='154' font-size='12.5' font-weight='600' fill='#3e4550'>Contact email</text>" &
+                      "<text x='32' y='222' font-size='12.5' font-weight='600' fill='#3e4550'>Q1. Did the renewal outcome line up with their priorities and goals?</text>" &
+                      "<text x='568' y='222' font-size='12.5' font-weight='600' fill='#3e4550'>Q2. What differences have they noticed day to day since the renewal?</text>" &
+                      "<text x='32' y='352' font-size='12.5' font-weight='600' fill='#3e4550'>Q3. What has been most valuable about the renewed services?</text>" &
+                      "<text x='568' y='352' font-size='12.5' font-weight='600' fill='#3e4550'>Q4. Where could the services or support be better aligned?</text>",
+                      "<text x='32' y='154' font-size='12.5' font-weight='600' fill='#3e4550'>Q5. How is the working relationship with the HPE team since renewal?</text>" &
+                      "<text x='568' y='154' font-size='12.5' font-weight='600' fill='#3e4550'>Q6. Any upcoming changes or initiatives we should know about?</text>" &
+                      "<text x='32' y='284' font-size='12.5' font-weight='600' fill='#3e4550'>Q7. What does success with HPE look like by the next renewal?</text>" &
+                      "<text x='568' y='284' font-size='12.5' font-weight='600' fill='#3e4550'>Open to a mapping session?</text>" &
+                      "<text x='568' y='354' font-size='12.5' font-weight='600' fill='#3e4550'>Follow-up notes</text>" ) &
                   "</g>" &
                   "</svg>"
               )
@@ -233,6 +375,34 @@ Screens:
             Width: =1104
             X: =16
             Y: =64
+      - txtCareContact:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =40
+            HintText: ="Who you spoke to at the customer"
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
+            Width: =504
+            X: =48
+            Y: =228
+      - txtCareEmail:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =40
+            HintText: ="their.name@customer.com"
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
+            Width: =504
+            X: =584
+            Y: =228
       - txtCareQ1:
           Control: Classic/TextInput@2.3.2
           Properties:
@@ -240,14 +410,14 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =176
-            HintText: ="Type the customer's feedback..."
+            Height: =104
+            HintText: ="What they said..."
             Mode: =TextMode.MultiLine
             Size: =12
-            Visible: =!IsBlank( varCareOpp )
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
             Width: =504
             X: =48
-            Y: =180
+            Y: =296
       - txtCareQ2:
           Control: Classic/TextInput@2.3.2
           Properties:
@@ -255,15 +425,90 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =148
-            HintText: ="Note anything to follow up..."
+            Height: =104
+            HintText: ="What they said..."
             Mode: =TextMode.MultiLine
             Size: =12
-            Visible: =!IsBlank( varCareOpp )
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
+            Width: =504
+            X: =584
+            Y: =296
+      - txtCareQ3:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =104
+            HintText: ="What they said..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
             Width: =504
             X: =48
-            Y: =400
-      - drpCareQ3:
+            Y: =426
+      - txtCareQ4:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =104
+            HintText: ="What they said..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
+            Width: =504
+            X: =584
+            Y: =426
+      - txtCareQ5:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =104
+            HintText: ="What they said..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
+            Width: =504
+            X: =48
+            Y: =228
+      - txtCareQ6:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =104
+            HintText: ="What they said..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
+            Width: =504
+            X: =584
+            Y: =228
+      - txtCareQ7:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =172
+            HintText: ="What they said..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
+            Width: =504
+            X: =48
+            Y: =358
+      - drpCareMap:
           Control: Classic/DropDown@2.3.1
           Properties:
             BorderColor: =RGBA(212, 216, 219, 1)
@@ -271,57 +516,72 @@ Screens:
             Fill: =RGBA(255, 255, 255, 1)
             Font: =Font.'Open Sans'
             Height: =44
-            Items: =["Not started", "In progress", "Completed", "Blocked"]
+            Items: =["Yes", "No"]
             Size: =13
-            Visible: =!IsBlank( varCareOpp )
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
             Width: =504
             X: =584
-            Y: =180
-      - drpCareQ4:
-          Control: Classic/DropDown@2.3.1
+            Y: =358
+      - txtCareNotes:
+          Control: Classic/TextInput@2.3.2
           Properties:
             BorderColor: =RGBA(212, 216, 219, 1)
-            Color: =RGBA(41, 45, 58, 1)
-            Fill: =RGBA(255, 255, 255, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =44
-            Items: =["Yes", "Maybe", "No", "Too early to tell"]
-            Size: =13
-            Visible: =!IsBlank( varCareOpp )
+            Height: =102
+            HintText: ="Anything to pick up after the call..."
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
             Width: =504
             X: =584
-            Y: =280
-      - sldCareQ5:
-          Control: Classic/Slider@1.0.31
+            Y: =428
+      - btnCareNoContact:
+          Control: Classic/Button@2.2.0
           Properties:
-            Default: =3
-            HandleFill: =RGBA(1, 169, 130, 1)
-            Height: =24
-            Max: =5
-            Min: =1
-            RailFill: =RGBA(224, 227, 230, 1)
-            ShowValue: =false
-            ValueFill: =RGBA(1, 169, 130, 1)
-            Visible: =!IsBlank( varCareOpp )
-            Width: =430
-            X: =584
-            Y: =384
-      - imgCareSliderVal:
-          Control: Image@2.2.3
-          Properties:
-            BorderColor: =RGBA(0, 18, 107, 1)
-            Height: =40
-            Image: |-
-              ="data:image/svg+xml;utf8," & EncodeUrl(
-                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 40' font-family='Segoe UI, Arial, sans-serif'>" &
-                  "<rect x='2' y='6' width='52' height='28' rx='14' fill='#e8f7f1' stroke='#01a982'/>" &
-                  "<text x='28' y='21' font-size='15' font-weight='700' fill='#006750' text-anchor='middle' dominant-baseline='central'>" & Text( sldCareQ5.Value ) & "</text>" &
-                  "</svg>"
+            BorderColor: =RGBA(216, 168, 168, 1)
+            Color: =RGBA(158, 42, 42, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            HoverColor: =RGBA(158, 42, 42, 1)
+            HoverFill: =RGBA(250, 240, 240, 1)
+            OnSelect: |-
+              =// ============================================================================
+              //  "Rep says do not contact" - clears this opportunity off the call list.
+              //  No new column: the reason goes into the existing 'Follow-up Notes' field
+              //  and 'Response Date' stamps it as actioned, which is what takes it off the
+              //  list (the list hides any opportunity already present in the SharePoint
+              //  list). Anything typed in the notes box is appended.
+              // ============================================================================
+              IfError(
+                  Patch(
+                      HPE_Services_Post_Renewal_Questionnaire,
+                      Defaults( HPE_Services_Post_Renewal_Questionnaire ),
+                      {
+                          Account:         varCareOpp.AccountName,
+                          Opportunity:     varCareOpp.OppId,
+                          'Renewal Rep':   varCareOpp.OwnerName,
+                          'Renewal Date':  DateValue( varCareOpp.CloseDate ),
+                          'Response Date': Today(),
+                          'Follow-up Notes':
+                              "DO NOT CONTACT - the aligned sales rep advised against contacting this customer." &
+                              If( !IsBlank( Trim( txtCareNotes.Text ) ), " Note: " & txtCareNotes.Text, "" )
+                      }
+                  ),
+                  Notify( "Couldn't clear that one: " & FirstError.Message, NotificationType.Error ),
+                  Collect( colCareDone, { OppKey: varCareOpp.OppId } );
+                  Notify( "Cleared - that opportunity is off your call list.", NotificationType.Success );
+                  Set( varCareOpp, Blank() );
+                  Set( varCareStep, 1 )
               )
+            Height: =44
+            Size: =13
+            Text: ="Rep says do not contact"
             Visible: =!IsBlank( varCareOpp )
-            Width: =56
-            X: =1032
-            Y: =372
+            Width: =250
+            X: =48
+            Y: =556
       - btnCareCancel:
           Control: Classic/Button@2.2.0
           Properties:
@@ -332,18 +592,48 @@ Screens:
             HoverColor: =RGBA(62, 69, 80, 1)
             HoverFill: =RGBA(242, 243, 244, 1)
             OnSelect: |-
-              =Reset( txtCareQ1 );
-              Reset( txtCareQ2 );
-              Reset( drpCareQ3 );
-              Reset( drpCareQ4 );
-              Reset( sldCareQ5 );
-              Set( varCareOpp, Blank() )
+              =Set( varCareOpp, Blank() );
+              Set( varCareStep, 1 )
             Height: =44
             Size: =14
             Text: ="Cancel"
-            Visible: =!IsBlank( varCareOpp )
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
             Width: =150
             X: =740
+            Y: =556
+      - btnCareBack:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Color: =RGBA(62, 69, 80, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            HoverColor: =RGBA(62, 69, 80, 1)
+            HoverFill: =RGBA(242, 243, 244, 1)
+            OnSelect: =Set( varCareStep, 1 )
+            Height: =44
+            Size: =14
+            Text: ="Back"
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
+            Width: =150
+            X: =740
+            Y: =556
+      - btnCareNext:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(1, 169, 130, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            Fill: =RGBA(1, 169, 130, 1)
+            Font: =Font.'Open Sans'
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(0, 103, 80, 1)
+            OnSelect: =Set( varCareStep, 2 )
+            Height: =44
+            Size: =14
+            Text: ="Next"
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 1
+            Width: =184
+            X: =904
             Y: =556
       - btnCareSave:
           Control: Classic/Button@2.2.0
@@ -355,24 +645,50 @@ Screens:
             HoverColor: =RGBA(255, 255, 255, 1)
             HoverFill: =RGBA(0, 103, 80, 1)
             OnSelect: |-
-              =// TODO (SharePoint): when the list exists, Patch the answers here, e.g.
-              // Patch( CareCallResponses, Defaults( CareCallResponses ),
-              //     { OppId: varCareOpp.OppId, OppName: varCareOpp.OppName,
-              //       Respondent: varUserEmail,
-              //       Q1: txtCareQ1.Text, Q2: txtCareQ2.Text,
-              //       Q3: drpCareQ3.Selected.Value, Q4: drpCareQ4.Selected.Value,
-              //       Q5: sldCareQ5.Value, SubmittedOn: Now() } );
-              // For now, just close the survey and return to the opp list:
-              Reset( txtCareQ1 );
-              Reset( txtCareQ2 );
-              Reset( drpCareQ3 );
-              Reset( drpCareQ4 );
-              Reset( sldCareQ5 );
-              Set( varCareOpp, Blank() )
+              =// ============================================================================
+              //  Writes one row to the SharePoint list HPE_Services_Post_Renewal_Questionnaire
+              //  using the questionnaire's own column names. Account / Opportunity /
+              //  Renewal Rep / Renewal Date come from the opportunity, Response Date is
+              //  stamped now, and the answers come from the inputs. Once written, the
+              //  opportunity drops off the call list.
+              //
+              //  If your list requires the built-in Title column, add:  Title: varCareOpp.OppId,
+              //  If 'Open to a mapping session? (Yes/No)' is a CHOICE column (not text),
+              //  use:  { Value: drpCareMap.Selected.Value }
+              // ============================================================================
+              IfError(
+                  Patch(
+                      HPE_Services_Post_Renewal_Questionnaire,
+                      Defaults( HPE_Services_Post_Renewal_Questionnaire ),
+                      {
+                          Account:          varCareOpp.AccountName,
+                          Opportunity:      varCareOpp.OppId,
+                          'Contact Name':   txtCareContact.Text,
+                          'Contact Email':  txtCareEmail.Text,
+                          'Renewal Rep':    varCareOpp.OwnerName,
+                          'Renewal Date':   DateValue( varCareOpp.CloseDate ),
+                          'Response Date':  Today(),
+                          'Q1 - Alignment of renewal outcome with priorities and goals':          txtCareQ1.Text,
+                          'Q2 - Differences noticed in how services support day-to-day operations': txtCareQ2.Text,
+                          'Q3 - Most valuable aspects of the renewed services or engagement':     txtCareQ3.Text,
+                          'Q4 - Areas where services or support could be better aligned':         txtCareQ4.Text,
+                          'Q5 - Working relationship with the HPE team since renewal':            txtCareQ5.Text,
+                          'Q6 - Upcoming changes or initiatives we should be aware of':           txtCareQ6.Text,
+                          'Q7 - What success with HPE looks like by the next renewal':            txtCareQ7.Text,
+                          'Open to a mapping session? (Yes/No)': drpCareMap.Selected.Value,
+                          'Follow-up Notes': txtCareNotes.Text
+                      }
+                  ),
+                  Notify( "Couldn't save that response: " & FirstError.Message, NotificationType.Error ),
+                  Collect( colCareDone, { OppKey: varCareOpp.OppId } );
+                  Notify( "Saved - thanks. That opportunity is now off your call list.", NotificationType.Success );
+                  Set( varCareOpp, Blank() );
+                  Set( varCareStep, 1 )
+              )
             Height: =44
             Size: =14
             Text: ="Save & close"
-            Visible: =!IsBlank( varCareOpp )
+            Visible: =!IsBlank( varCareOpp ) && varCareStep = 2
             Width: =184
             X: =904
             Y: =556

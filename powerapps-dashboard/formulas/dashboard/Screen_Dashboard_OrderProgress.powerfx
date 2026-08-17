@@ -1,0 +1,8 @@
+// Appended to the END of scrDashboard.OnVisible (after the varReady line).
+// 9) Order Progress (the yearly order goal that drives imgOrderAnchor) ----
+//    The model column arrives as ONE value repeated on every row, so Max()
+//    just lifts that single number out. Accepts either a 0-1 fraction or a
+//    0-100 percentage; blank/error reads as 0 so the rail always draws.
+Set( varOrderProgRaw, IfError( Coalesce( Max( PowerBIIntegration.Data, 'Order Progress' ), 0 ), 0 ) );
+Set( varOrderProgPct,
+    Round( If( varOrderProgRaw > 0 && varOrderProgRaw <= 1, varOrderProgRaw * 100, varOrderProgRaw ), 0 ) );
