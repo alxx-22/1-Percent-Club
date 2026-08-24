@@ -139,7 +139,7 @@ Screens:
                   "<text x='32' y='100' font-size='12.5' font-weight='600' fill='#3e4550'>Account <tspan fill='#c0392b'>*</tspan></text>" &
                   "<text x='32' y='160' font-size='12.5' font-weight='600' fill='#3e4550'>Opportunity <tspan fill='#8a9096' font-weight='400'>(optional - OPE number if there is one)</tspan></text>" &
                   "<text x='32' y='220' font-size='12.5' font-weight='600' fill='#3e4550'>Meeting type <tspan fill='#c0392b'>*</tspan></text>" &
-                  "<text x='32' y='284' font-size='12.5' font-weight='600' fill='#3e4550'>Notes for your approver <tspan fill='#8a9096' font-weight='400'>(what the meeting covered)</tspan></text>" &
+                  "<text x='32' y='284' font-size='12.5' font-weight='600' fill='#3e4550'>Notes for your approver <tspan fill='#c0392b'>*</tspan> <tspan fill='#8a9096' font-weight='400'>(your manager needs this context to approve it)</tspan></text>" &
                   "<rect x='32' y='396' width='608' height='40' rx='8' fill='#f7f6ff' stroke='#d9d3ff'/>" &
                   "<text x='48' y='412' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>APPROVAL TYPE WRITTEN TO SHAREPOINT</text>" &
                   "<text x='48' y='429' font-size='12.5' font-weight='600' fill='#292d3a'>" &
@@ -210,7 +210,7 @@ Screens:
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
             Height: =92
-            HintText: ="Who you met, what was discussed, any outcome - this is all the approver sees"
+            HintText: ="Who you met, what was discussed, any outcome - your manager needs this to approve it"
             Mode: =TextMode.MultiLine
             Size: =12
             Width: =608
@@ -243,7 +243,8 @@ Screens:
             DisplayMode: |-
               =If( varMeetIsEligible
                    && !IsBlank( Trim( txtMeetAccount.Text ) )
-                   && !IsBlank( drpMeetSubject.Selected.Value ),
+                   && !IsBlank( drpMeetSubject.Selected.Value )
+                   && !IsBlank( Trim( txtMeetNotes.Text ) ),
                    DisplayMode.Edit, DisplayMode.Disabled )
             Fill: =RGBA(119, 100, 252, 1)
             Font: =Font.'Open Sans'
@@ -316,7 +317,8 @@ Screens:
                                     "Customer Meeting", 10,
                                     "Channel Partner Meeting", 10, 0 ),
                         hasAcc: !IsBlank( Trim( txtMeetAccount.Text ) ),
-                        hasSub: !IsBlank( drpMeetSubject.Selected.Value ) },
+                        hasSub: !IsBlank( drpMeetSubject.Selected.Value ),
+                        hasNotes: !IsBlank( Trim( txtMeetNotes.Text ) ) },
                       "<g class='fu'>" &
                       "<rect x='0' y='0' width='416' height='270' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
                       "<text x='24' y='30' font-size='11' font-weight='700' letter-spacing='1.1' fill='#606a70'>THIS MEETING IS WORTH</text>" &
@@ -335,9 +337,10 @@ Screens:
                                   { i:1, ok: hasSub, t: "A meeting type is chosen (writes Approval Type)" },
                                   { i:2, ok: !IsBlank( varMeetMyName ), t: "Your name goes on as Requestor Name" },
                                   { i:3, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" },
-                                  { i:4, ok: varMeetIsEligible, t: "You are set up to log meetings (Non S-Coded)" }
+                                  { i:4, ok: hasNotes, t: "Notes are written for your manager to read" },
+                                  { i:5, ok: varMeetIsEligible, t: "You are set up to log meetings (Non S-Coded)" }
                               ),
-                              "<g transform='translate(26," & Text( 162 + i*22 ) & ")'>" &
+                              "<g transform='translate(26," & Text( 160 + i*19 ) & ")'>" &
                               If( ok, tick, dot ) &
                               "<text x='20' y='4' font-size='11' fill='" & If( ok, "#3e4550", "#8a9096" ) & "'>" & t & "</text>" &
                               "</g>"
