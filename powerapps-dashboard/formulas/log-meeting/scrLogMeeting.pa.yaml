@@ -1,0 +1,376 @@
+# ************************************************************************************************
+# Warning: YAML source code for Canvas Apps should only be used to review changes made within Power Apps Studio and for minor edits (Preview).
+# Use the maker portal to create and edit your Power Apps.
+#
+# The schema file for Canvas Apps is available at https://go.microsoft.com/fwlink/?linkid=2304907
+#
+# For more information, visit https://go.microsoft.com/fwlink/?linkid=2292623
+# ************************************************************************************************
+Screens:
+  scrLogMeeting:
+    Properties:
+      Fill: =RGBA(247, 247, 247, 1)
+      LoadingSpinnerColor: =RGBA(56, 96, 178, 1)
+      OnVisible: |-
+        =// ============================================================================
+        //  scrLogMeeting.OnVisible  -  Log a customer meeting (Customer Centricity).
+        //
+        //  DATA SOURCE: the approvals SharePoint list, added via Data > Add data.
+        //  Referenced below as '1 Percent Approvals' - if your list's display name
+        //  differs, change it here, in btnMeetSave, and in galMeetMine.Items.
+        //  (A name containing spaces MUST stay single-quoted in Power Fx.)
+        //
+        //  HOW A MEETING SCORES (mirrors the model, do not change lightly):
+        //    1. Subject must START with CUSTOMER / CHANNEL / LEADERSHIP. The model
+        //       derives Meeting Type from that leading word; anything else leaves
+        //       Meeting Type blank and the meeting earns NOTHING. That is why the
+        //       Subject written to SharePoint is always "<KEYWORD> - <label>".
+        //    2. Created Date >= 1 May 2026.
+        //    3. Approval Status = "Approve" (your L1 manager signs it off).
+        //    4. Credit is by NAME - Requestor Name / Last Modified By: Full Name -
+        //       so the logger's dashboard name is written, never an email.
+        //  Points: Leadership 20, Customer 10, Channel Partner 10.
+        // ============================================================================
+
+        // 1) the meeting types, and how each one is written + scored ------------------
+        //    Keyword is what makes it classify; Pts mirrors the model's award.
+        ClearCollect(
+            colMeetTypes,
+            Table(
+                { Label: "Leadership introduction",  Keyword: "LEADERSHIP", MType: "Leadership Meeting",      Pts: 20 },
+                { Label: "Customer meeting",         Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
+                { Label: "Face to face meeting",     Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
+                { Label: "Channel partner meeting",  Keyword: "CHANNEL",    MType: "Channel Partner Meeting", Pts: 10 }
+            )
+        );
+
+        // 2) who is logging, and who approves it -------------------------------------
+        //    Credit is by NAME, so varMeetMyName is what gets written. The approver is
+        //    the logger's L1 manager, read straight off the model row for this user.
+        Set( varMeetMyEmail, Trim( Lower( varUserEmail ) ) );
+        With(
+            { me: LookUp( PowerBIIntegration.Data, Trim( Lower( 'User Email' & "" ) ) = varMeetMyEmail ) },
+            Set( varMeetMyName, me.Name & "" );
+            Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) );
+            Set( varMeetIsEligible, Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)" )
+        );
+
+        // 3) what I have logged already (newest first) -------------------------------
+        Set( varMeetSaved, false );
+        ClearCollect(
+            colMeetMine,
+            ForAll(
+                Filter( '1 Percent Approvals', 'Requestor Name' = varMeetMyName ) As r,
+                {
+                    MAccount:  r.Account & "",
+                    MSubject:  r.Subject & "",
+                    MStatus:   If( IsBlank( r.'Approval Status' & "" ), "Pending", r.'Approval Status' & "" )
+                }
+            )
+        )
+    Children:
+      - imgMeetRibbon:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =52
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1136 52' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='1136' height='52' fill='#ffffff'/>" &
+                  "<line x1='0' y1='51' x2='1136' y2='51' stroke='#d4d8db'/>" &
+                  "<rect x='164' y='13' width='26' height='26' rx='7' fill='#7764fc'/>" &
+                  "<path d='M171,26 l4,4 l8,-9' fill='none' stroke='#ffffff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/>" &
+                  "<text x='202' y='32' font-size='17' font-weight='700' fill='#292d3a'>Log a meeting <tspan fill='#606a70' font-weight='400'>&#183; customer centricity points</tspan></text>" &
+                  With(
+                      { cw: Min( 600, Max( 150, Round( 54 + Len( varRibbonChip ) * 6.8, 0 ) ) ) },
+                      With(
+                          { cx: 1120 - cw },
+                          "<rect x='" & Text(cx) & "' y='10' width='" & Text(cw) & "' height='32' rx='16' fill='#f2f3f4'/>" &
+                          "<circle cx='" & Text(cx+20) & "' cy='26' r='12' fill='#01a982'/>" &
+                          "<text x='" & Text(cx+20) & "' y='27' font-size='10' font-weight='700' fill='#ffffff' text-anchor='middle' dominant-baseline='central'>" & varMyInitials & "</text>" &
+                          "<text x='" & Text(cx+40) & "' y='30' font-size='13' fill='#3e4550'>" &
+                              Substitute(Substitute(Substitute(varRibbonChip,"&","&amp;"),"<","&lt;"),">","&gt;") & "</text>"
+                      )
+                  ) &
+                  "</g>" &
+                  "</svg>"
+              )
+            Width: =1136
+            X: =0
+            Y: =0
+      - imgMeetBack:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =30
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 132 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='1' y='1' width='130' height='28' rx='14' fill='#f2f3f4' stroke='#d4d8db'/>" &
+                  "<path d='M26,9 l-6,6 l6,6' fill='none' stroke='#006750' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/>" &
+                  "<text x='40' y='16' font-size='12.5' font-weight='600' fill='#006750' dominant-baseline='central'>Crew Portal</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            OnSelect: =Navigate( scrPortal, ScreenTransition.UnCover )
+            Width: =132
+            X: =16
+            Y: =11
+      - imgMeetForm:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =556
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 672 556' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='0' y='0' width='672' height='556' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                  "<rect x='0' y='0' width='6' height='556' fill='#7764fc'/>" &
+                  "<text x='32' y='42' font-size='19' font-weight='700' fill='#292d3a'>Log a customer meeting</text>" &
+                  "<text x='32' y='64' font-size='12' fill='#606a70'>Goes to your L1 manager for weekly approval. Points land once approved.</text>" &
+                  "<line x1='32' y1='84' x2='640' y2='84' stroke='#eceef0'/>" &
+                  "<text x='32' y='112' font-size='12.5' font-weight='600' fill='#3e4550'>Account <tspan fill='#c0392b'>*</tspan></text>" &
+                  "<text x='32' y='190' font-size='12.5' font-weight='600' fill='#3e4550'>Opportunity <tspan fill='#8a9096' font-weight='400'>(optional - OPE number if there is one)</tspan></text>" &
+                  "<text x='32' y='268' font-size='12.5' font-weight='600' fill='#3e4550'>Subject <tspan fill='#c0392b'>*</tspan></text>" &
+                  "<rect x='32' y='356' width='608' height='60' rx='8' fill='#f7f6ff' stroke='#d9d3ff'/>" &
+                  "<text x='48' y='378' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>WRITTEN TO SHAREPOINT AS</text>" &
+                  "<text x='48' y='400' font-size='12.5' font-weight='600' fill='#292d3a'>" &
+                      Substitute(Substitute(Substitute(
+                          If( IsBlank( drpMeetSubject.Selected.Keyword ), "pick a subject above",
+                              drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label ),
+                          "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                  "<text x='32' y='442' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
+                      Substitute(Substitute(Substitute(
+                          If( IsBlank( varMeetApprover ), "not set on your record", varMeetApprover ),
+                          "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
+                  "<text x='32' y='464' font-size='11.5' fill='#606a70'>Logged by (credit goes to this name): <tspan font-weight='600' fill='#3e4550'>" &
+                      Substitute(Substitute(Substitute( varMeetMyName & "", "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Width: =672
+            X: =16
+            Y: =68
+      - txtMeetAccount:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =40
+            HintText: ="Customer / account name"
+            Size: =12
+            Width: =608
+            X: =48
+            Y: =192
+      - txtMeetOpp:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =40
+            HintText: ="OPE-000000000 (leave blank if none)"
+            Size: =12
+            Width: =608
+            X: =48
+            Y: =270
+      - drpMeetSubject:
+          Control: Classic/DropDown@2.3.1
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Color: =RGBA(41, 45, 58, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            Height: =44
+            Items: =colMeetTypes
+            Size: =13
+            Value: ="Label"
+            Width: =608
+            X: =48
+            Y: =348
+      - btnMeetClear:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Color: =RGBA(62, 69, 80, 1)
+            Fill: =RGBA(255, 255, 255, 1)
+            Font: =Font.'Open Sans'
+            HoverColor: =RGBA(62, 69, 80, 1)
+            HoverFill: =RGBA(242, 243, 244, 1)
+            OnSelect: |-
+              =Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject );
+              Set( varMeetSaved, false )
+            Height: =44
+            Size: =14
+            Text: ="Clear"
+            Width: =150
+            X: =48
+            Y: =560
+      - btnMeetSave:
+          Control: Classic/Button@2.2.0
+          Properties:
+            BorderColor: =RGBA(119, 100, 252, 1)
+            Color: =RGBA(255, 255, 255, 1)
+            DisplayMode: |-
+              =If( varMeetIsEligible
+                   && !IsBlank( Trim( txtMeetAccount.Text ) )
+                   && !IsBlank( drpMeetSubject.Selected.Keyword ),
+                   DisplayMode.Edit, DisplayMode.Disabled )
+            Fill: =RGBA(119, 100, 252, 1)
+            Font: =Font.'Open Sans'
+            HoverColor: =RGBA(255, 255, 255, 1)
+            HoverFill: =RGBA(91, 75, 214, 1)
+            OnSelect: |-
+              =// ============================================================================
+              //  Writes one approval row. The Subject is ALWAYS prefixed with the
+              //  classifying keyword - that prefix is what the model reads to set
+              //  Meeting Type, and without it the meeting scores nothing.
+              //
+              //  FIELD NAMES: these mirror the existing customer-meeting approval rows.
+              //  If your list uses different display names, fix them here only.
+              //  Delete any line whose column does not exist in your list.
+              //
+              //  If 'Approver' is a PERSON column rather than text, swap that line for:
+              //    Approver: { '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
+              //                Claims: "i:0#.f|membership|" & varMeetApprover,
+              //                DisplayName: varMeetApprover, Email: varMeetApprover },
+              // ============================================================================
+              IfError(
+                  Patch(
+                      '1 Percent Approvals',
+                      Defaults( '1 Percent Approvals' ),
+                      {
+                          Title:                 Trim( txtMeetAccount.Text ),
+                          Account:               Trim( txtMeetAccount.Text ),
+                          'HPE Opportunity Id':  Trim( txtMeetOpp.Text ),
+                          Subject:               drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+                          'Meeting Type':        drpMeetSubject.Selected.MType,
+                          'Requestor Name':      varMeetMyName,
+                          'Requestor Email':     varMeetMyEmail,
+                          Approver:              varMeetApprover,
+                          'Approval Status':     "",
+                          'Created Date':        Today()
+                      }
+                  ),
+                  Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
+                  Collect( colMeetMine,
+                      { MAccount: Trim( txtMeetAccount.Text ),
+                        MSubject: drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+                        MStatus:  "Pending" } );
+                  Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
+                  Set( varMeetSaved, true );
+                  Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject )
+              )
+            Height: =44
+            Size: =14
+            Text: ="Log meeting"
+            Width: =200
+            X: =488
+            Y: =560
+      - imgMeetScore:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =270
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 416 270' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  With(
+                      { pts: Coalesce( drpMeetSubject.Selected.Pts, 0 ),
+                        hasAcc: !IsBlank( Trim( txtMeetAccount.Text ) ),
+                        hasSub: !IsBlank( drpMeetSubject.Selected.Keyword ) },
+                      "<g class='fu'>" &
+                      "<rect x='0' y='0' width='416' height='270' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
+                      "<text x='24' y='30' font-size='11' font-weight='700' letter-spacing='1.1' fill='#606a70'>THIS MEETING IS WORTH</text>" &
+                      "<text x='24' y='76' font-size='38' font-weight='700' fill='" & If( pts > 0, "#7764fc", "#c9ced2" ) & "'>" & Text( pts ) & "</text>" &
+                      "<text x='" & Text( 34 + 22*Len(Text(pts)) ) & "' y='76' font-size='13' font-weight='600' fill='#8a9096'>points</text>" &
+                      "<text x='24' y='98' font-size='11' fill='#8a9096'>" &
+                          If( pts > 0, "once your L1 manager approves it", "pick a subject to see the award" ) & "</text>" &
+                      "<line x1='24' y1='116' x2='392' y2='116' stroke='#eceef0'/>" &
+                      "<text x='24' y='138' font-size='10' font-weight='700' letter-spacing='.8' fill='#606a70'>TO SCORE, ALL OF THESE MUST BE TRUE</text>" &
+                      With(
+                          { tick: "<path d='M0,0 l3.5,3.5 l7,-8' fill='none' stroke='#01a982' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/>",
+                            dot:  "<circle cx='4' cy='0' r='3.5' fill='none' stroke='#c9ced2' stroke-width='2'/>" },
+                          Concat(
+                              Table(
+                                  { i:0, ok: hasAcc, t: "An account is filled in" },
+                                  { i:1, ok: hasSub, t: "Subject starts CUSTOMER / CHANNEL / LEADERSHIP" },
+                                  { i:2, ok: true,   t: "Logged on or after 1 May 2026" },
+                                  { i:3, ok: !IsBlank( varMeetMyName ), t: "Your name is on the record (credit is by name)" },
+                                  { i:4, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" }
+                              ),
+                              "<g transform='translate(26," & Text( 162 + i*22 ) & ")'>" &
+                              If( ok, tick, dot ) &
+                              "<text x='20' y='4' font-size='11' fill='" & If( ok, "#3e4550", "#8a9096" ) & "'>" & t & "</text>" &
+                              "</g>"
+                          )
+                      ) &
+                      "</g>"
+                  ) &
+                  "</svg>"
+              )
+            Width: =416
+            X: =704
+            Y: =68
+      - imgMeetMineHead:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =26
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 416 26' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fo'>" &
+                  "<text x='4' y='17' font-size='11' font-weight='700' letter-spacing='1.1' fill='#606a70'>WHAT YOU HAVE LOGGED</text>" &
+                  "<text x='412' y='17' font-size='11' fill='#606a70' text-anchor='end'>" & Text( CountRows( colMeetMine ) ) & " total</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            Width: =416
+            X: =704
+            Y: =354
+      - galMeetMine:
+          Control: Gallery@2.15.0
+          Variant: Vertical
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =236
+            Items: =colMeetMine
+            TemplatePadding: =0
+            TemplateSize: =56
+            Width: =420
+            X: =704
+            Y: =388
+          Children:
+            - imgMeetMineRow:
+                Control: Image@2.2.3
+                Properties:
+                  BorderColor: =RGBA(0, 18, 107, 1)
+                  Height: =56
+                  Image: |-
+                    ="data:image/svg+xml;utf8," & EncodeUrl(
+                        "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 416 56' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                        With(
+                            { ok: ThisItem.MStatus = "Approve" },
+                            "<g class='rw'>" &
+                            "<rect x='2' y='3' width='412' height='50' rx='10' fill='#ffffff' stroke='#d4d8db'/>" &
+                            "<rect x='2' y='3' width='4' height='50' rx='2' fill='" & If( ok, "#01a982", "#d36d00" ) & "'/>" &
+                            "<text x='18' y='24' font-size='12' font-weight='700' fill='#292d3a'>" &
+                                Substitute(Substitute(Substitute( Left( ThisItem.MAccount, 30 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                            "<text x='18' y='42' font-size='10.5' fill='#8a9096'>" &
+                                Substitute(Substitute(Substitute( Left( ThisItem.MSubject, 38 ), "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
+                            "<rect x='306' y='16' width='96' height='24' rx='12' fill='" & If( ok, "#e8f7f1", "#FBEEDF" ) & "'/>" &
+                            "<text x='354' y='28' font-size='10.5' font-weight='700' fill='" & If( ok, "#006750", "#d36d00" ) &
+                                "' text-anchor='middle' dominant-baseline='central'>" & If( ok, "APPROVED", "PENDING" ) & "</text>" &
+                            "</g>" &
+                            "</svg>"
+                        )
+                    )
+                  Width: =416

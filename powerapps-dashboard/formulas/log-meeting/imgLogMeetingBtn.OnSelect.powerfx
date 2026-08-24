@@ -1,0 +1,5 @@
+// ============================================================================
+//  imgLogMeetingBtn.OnSelect  -  "Log a meeting" button on the Crew Portal ribbon.
+//  Geometry: X=370 Y=11 Width=168 Height=30  ImagePosition=Fit
+// ============================================================================
+Navigate( scrLogMeeting, ScreenTransition.Cover )

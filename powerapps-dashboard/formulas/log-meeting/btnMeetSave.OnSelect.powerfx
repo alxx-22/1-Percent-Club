@@ -1,0 +1,40 @@
+// ============================================================================
+//  Writes one approval row. The Subject is ALWAYS prefixed with the
+//  classifying keyword - that prefix is what the model reads to set
+//  Meeting Type, and without it the meeting scores nothing.
+//
+//  FIELD NAMES: these mirror the existing customer-meeting approval rows.
+//  If your list uses different display names, fix them here only.
+//  Delete any line whose column does not exist in your list.
+//
+//  If 'Approver' is a PERSON column rather than text, swap that line for:
+//    Approver: { '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
+//                Claims: "i:0#.f|membership|" & varMeetApprover,
+//                DisplayName: varMeetApprover, Email: varMeetApprover },
+// ============================================================================
+IfError(
+    Patch(
+        '1 Percent Approvals',
+        Defaults( '1 Percent Approvals' ),
+        {
+            Title:                 Trim( txtMeetAccount.Text ),
+            Account:               Trim( txtMeetAccount.Text ),
+            'HPE Opportunity Id':  Trim( txtMeetOpp.Text ),
+            Subject:               drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+            'Meeting Type':        drpMeetSubject.Selected.MType,
+            'Requestor Name':      varMeetMyName,
+            'Requestor Email':     varMeetMyEmail,
+            Approver:              varMeetApprover,
+            'Approval Status':     "",
+            'Created Date':        Today()
+        }
+    ),
+    Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
+    Collect( colMeetMine,
+        { MAccount: Trim( txtMeetAccount.Text ),
+          MSubject: drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+          MStatus:  "Pending" } );
+    Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
+    Set( varMeetSaved, true );
+    Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject )
+)

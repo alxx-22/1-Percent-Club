@@ -1,0 +1,56 @@
+// ============================================================================
+//  scrLogMeeting.OnVisible  -  Log a customer meeting (Customer Centricity).
+//
+//  DATA SOURCE: the approvals SharePoint list, added via Data > Add data.
+//  Referenced below as '1 Percent Approvals' - if your list's display name
+//  differs, change it here, in btnMeetSave, and in galMeetMine.Items.
+//  (A name containing spaces MUST stay single-quoted in Power Fx.)
+//
+//  HOW A MEETING SCORES (mirrors the model, do not change lightly):
+//    1. Subject must START with CUSTOMER / CHANNEL / LEADERSHIP. The model
+//       derives Meeting Type from that leading word; anything else leaves
+//       Meeting Type blank and the meeting earns NOTHING. That is why the
+//       Subject written to SharePoint is always "<KEYWORD> - <label>".
+//    2. Created Date >= 1 May 2026.
+//    3. Approval Status = "Approve" (your L1 manager signs it off).
+//    4. Credit is by NAME - Requestor Name / Last Modified By: Full Name -
+//       so the logger's dashboard name is written, never an email.
+//  Points: Leadership 20, Customer 10, Channel Partner 10.
+// ============================================================================
+
+// 1) the meeting types, and how each one is written + scored ------------------
+//    Keyword is what makes it classify; Pts mirrors the model's award.
+ClearCollect(
+    colMeetTypes,
+    Table(
+        { Label: "Leadership introduction",  Keyword: "LEADERSHIP", MType: "Leadership Meeting",      Pts: 20 },
+        { Label: "Customer meeting",         Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
+        { Label: "Face to face meeting",     Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
+        { Label: "Channel partner meeting",  Keyword: "CHANNEL",    MType: "Channel Partner Meeting", Pts: 10 }
+    )
+);
+
+// 2) who is logging, and who approves it -------------------------------------
+//    Credit is by NAME, so varMeetMyName is what gets written. The approver is
+//    the logger's L1 manager, read straight off the model row for this user.
+Set( varMeetMyEmail, Trim( Lower( varUserEmail ) ) );
+With(
+    { me: LookUp( PowerBIIntegration.Data, Trim( Lower( 'User Email' & "" ) ) = varMeetMyEmail ) },
+    Set( varMeetMyName, me.Name & "" );
+    Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) );
+    Set( varMeetIsEligible, Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)" )
+);
+
+// 3) what I have logged already (newest first) -------------------------------
+Set( varMeetSaved, false );
+ClearCollect(
+    colMeetMine,
+    ForAll(
+        Filter( '1 Percent Approvals', 'Requestor Name' = varMeetMyName ) As r,
+        {
+            MAccount:  r.Account & "",
+            MSubject:  r.Subject & "",
+            MStatus:   If( IsBlank( r.'Approval Status' & "" ), "Pending", r.'Approval Status' & "" )
+        }
+    )
+)

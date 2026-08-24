@@ -1,0 +1,11 @@
+// ============================================================================
+//  imgLogMeetingBtn.Visible  -  "Log a meeting" button on the Crew Portal ribbon.
+//  Geometry: X=370 Y=11 Width=168 Height=30  ImagePosition=Fit
+// ============================================================================
+// Only NON S-CODED people can see (and therefore use) the meeting logger.
+// Reads the signed-in user's row straight off the model, so it needs
+// 'S Coded?' in the Power BI visual's field well.
+LookUp(
+    PowerBIIntegration.Data,
+    Trim( Lower( 'User Email' & "" ) ) = Trim( Lower( varUserEmail ) )
+).'S Coded?' = "Non S-Coded (Phil)"
