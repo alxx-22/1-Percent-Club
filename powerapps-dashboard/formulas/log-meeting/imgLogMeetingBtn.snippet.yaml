@@ -1,0 +1,30 @@
+# Paste into scrPortal's Children (same indent as its other controls).
+# Visible only to Non S-Coded (Phil) people.
+      - imgLogMeetingBtn:
+          Control: Image@2.2.3
+          Properties:
+            BorderColor: =RGBA(0, 18, 107, 1)
+            Height: =30
+            Image: |-
+              ="data:image/svg+xml;utf8," & EncodeUrl(
+                  "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 168 30' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
+                  "<g class='fu'>" &
+                  "<rect x='1' y='1' width='166' height='28' rx='14' fill='#7764fc' stroke='#7764fc'/>" &
+                  "<circle cx='20' cy='15' r='9' fill='#ffffff' opacity='0.18'/>" &
+                  "<path d='M15,15 l3.5,3.5 l7,-8' fill='none' stroke='#ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/>" &
+                  "<text x='38' y='16' font-size='12.5' font-weight='700' fill='#ffffff' dominant-baseline='central'>Log a meeting</text>" &
+                  "</g>" &
+                  "</svg>"
+              )
+            OnSelect: =Navigate( scrLogMeeting, ScreenTransition.Cover )
+            Visible: |-
+              =// Only NON S-CODED people can see (and therefore use) the meeting logger.
+              // Reads the signed-in user's row straight off the model, so it needs
+              // 'S Coded?' in the Power BI visual's field well.
+              LookUp(
+                  PowerBIIntegration.Data,
+                  Trim( Lower( 'User Email' & "" ) ) = Trim( Lower( varUserEmail ) )
+              ).'S Coded?' = "Non S-Coded (Phil)"
+            Width: =168
+            X: =370
+            Y: =11
