@@ -49,14 +49,12 @@ Screens:
         With(
             { me: LookUp( PowerBIIntegration.Data, Trim( Lower( 'User Email' & "" ) ) = varMeetMyEmail ) },
             Set( varMeetMyName, me.Name & "" );
-            Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) );
-            Set( varMeetIsEligible,
-        Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)"
-        // TESTING: lets the programme owner use the screen even though their
-        // record is S-Coded. Uses the REAL signed-in email (varUserEmail is
-        // remapped for some accounts). Delete this line for production.
-        || Lower( User().Email ) = "alex.cohen@hpe.com" )
+            Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) )
         );
+        // WHO MAY LOG: controlled by imgLogMeetingBtn.Visible on the Crew Portal
+        // (Non S-Coded only). Deliberately NOT re-checked here - a second gate
+        // keyed on a hardcoded email only ever disagreed with the first and left
+        // the button greyed out with nothing on screen to explain why.
 
         // 3) what I have logged already (newest first) -------------------------------
         Set( varMeetSaved, false );
@@ -241,8 +239,7 @@ Screens:
             BorderColor: =RGBA(119, 100, 252, 1)
             Color: =RGBA(255, 255, 255, 1)
             DisplayMode: |-
-              =If( varMeetIsEligible
-                   && !IsBlank( Trim( txtMeetAccount.Text ) )
+              =If( !IsBlank( Trim( txtMeetAccount.Text ) )
                    && !IsBlank( drpMeetSubject.Selected.Value )
                    && !IsBlank( Trim( txtMeetNotes.Text ) ),
                    DisplayMode.Edit, DisplayMode.Disabled )
@@ -337,10 +334,9 @@ Screens:
                                   { i:1, ok: hasSub, t: "A meeting type is chosen (writes Approval Type)" },
                                   { i:2, ok: !IsBlank( varMeetMyName ), t: "Your name goes on as Requestor Name" },
                                   { i:3, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" },
-                                  { i:4, ok: hasNotes, t: "Notes are written for your manager to read" },
-                                  { i:5, ok: varMeetIsEligible, t: "You are set up to log meetings (Non S-Coded)" }
+                                  { i:4, ok: hasNotes, t: "Notes are written for your manager to read" }
                               ),
-                              "<g transform='translate(26," & Text( 160 + i*19 ) & ")'>" &
+                              "<g transform='translate(26," & Text( 162 + i*22 ) & ")'>" &
                               If( ok, tick, dot ) &
                               "<text x='20' y='4' font-size='11' fill='" & If( ok, "#3e4550", "#8a9096" ) & "'>" & t & "</text>" &
                               "</g>"
