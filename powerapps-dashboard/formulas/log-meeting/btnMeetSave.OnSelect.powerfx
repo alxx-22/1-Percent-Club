@@ -12,8 +12,8 @@
 //  FIELD NAMES verified against the list: HPE Opportunity ID (capital
 //  ID) - Account Name - Approval Type - Requestor Name - Notes -
 //  Opportunity Name - Approver - Approval Status.
-//  'Notes' and 'Opportunity Name' are left unwritten (nothing on this
-//  screen captures them); 'Created Date' is SharePoint's own stamp.
+//  'Opportunity Name' is left unwritten (nothing on this screen
+//  captures it); 'Created Date' is SharePoint's own stamp.
 //
 //  If 'Approver' is a PERSON column rather than text, swap that line for:
 //    Approver: { '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
@@ -29,6 +29,7 @@ IfError(
             'HPE Opportunity ID':  Trim( txtMeetOpp.Text ),
             'Approval Type':       drpMeetSubject.Selected.Value,
             'Requestor Name':      varMeetMyName,
+            Notes:                 Trim( txtMeetNotes.Text ),
             Approver:              varMeetApprover
         }
     ),
@@ -39,5 +40,6 @@ IfError(
           MStatus:  "Pending" } );
     Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
     Set( varMeetSaved, true );
-    Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject )
+    Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject );
+    Reset( txtMeetNotes )
 )

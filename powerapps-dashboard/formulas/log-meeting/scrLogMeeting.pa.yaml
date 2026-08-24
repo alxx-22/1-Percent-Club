@@ -136,12 +136,13 @@ Screens:
                   "<text x='32' y='42' font-size='19' font-weight='700' fill='#292d3a'>Log a customer meeting</text>" &
                   "<text x='32' y='64' font-size='12' fill='#606a70'>Goes to your L1 manager for weekly approval. Points land once approved.</text>" &
                   "<line x1='32' y1='84' x2='640' y2='84' stroke='#eceef0'/>" &
-                  "<text x='32' y='112' font-size='12.5' font-weight='600' fill='#3e4550'>Account <tspan fill='#c0392b'>*</tspan></text>" &
-                  "<text x='32' y='190' font-size='12.5' font-weight='600' fill='#3e4550'>Opportunity <tspan fill='#8a9096' font-weight='400'>(optional - OPE number if there is one)</tspan></text>" &
-                  "<text x='32' y='268' font-size='12.5' font-weight='600' fill='#3e4550'>Meeting type <tspan fill='#c0392b'>*</tspan></text>" &
-                  "<rect x='32' y='356' width='608' height='60' rx='8' fill='#f7f6ff' stroke='#d9d3ff'/>" &
-                  "<text x='48' y='378' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>APPROVAL TYPE WRITTEN TO SHAREPOINT</text>" &
-                  "<text x='48' y='400' font-size='12.5' font-weight='600' fill='#292d3a'>" &
+                  "<text x='32' y='100' font-size='12.5' font-weight='600' fill='#3e4550'>Account <tspan fill='#c0392b'>*</tspan></text>" &
+                  "<text x='32' y='160' font-size='12.5' font-weight='600' fill='#3e4550'>Opportunity <tspan fill='#8a9096' font-weight='400'>(optional - OPE number if there is one)</tspan></text>" &
+                  "<text x='32' y='220' font-size='12.5' font-weight='600' fill='#3e4550'>Meeting type <tspan fill='#c0392b'>*</tspan></text>" &
+                  "<text x='32' y='284' font-size='12.5' font-weight='600' fill='#3e4550'>Notes for your approver <tspan fill='#8a9096' font-weight='400'>(what the meeting covered)</tspan></text>" &
+                  "<rect x='32' y='396' width='608' height='40' rx='8' fill='#f7f6ff' stroke='#d9d3ff'/>" &
+                  "<text x='48' y='412' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>APPROVAL TYPE WRITTEN TO SHAREPOINT</text>" &
+                  "<text x='48' y='429' font-size='12.5' font-weight='600' fill='#292d3a'>" &
                       Substitute(Substitute(Substitute(
                           If( IsBlank( drpMeetSubject.Selected.Value ), "pick a meeting type above",
                               drpMeetSubject.Selected.Value & "   (" & Text( Switch( drpMeetSubject.Selected.Value,
@@ -150,11 +151,11 @@ Screens:
                               "Customer Meeting", 10,
                               "Channel Partner Meeting", 10, 0 ) ) & " points)" ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
-                  "<text x='32' y='442' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
+                  "<text x='32' y='450' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute(
                           If( IsBlank( varMeetApprover ), "not set on your record", varMeetApprover ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
-                  "<text x='32' y='464' font-size='11.5' fill='#606a70'>Requestor Name (points find you by this): <tspan font-weight='600' fill='#3e4550'>" &
+                  "<text x='32' y='466' font-size='11.5' fill='#606a70'>Requestor Name (points find you by this): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute( varMeetMyName & "", "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
                   "</g>" &
                   "</svg>"
@@ -169,12 +170,12 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =40
+            Height: =36
             HintText: ="Customer / account name"
             Size: =12
             Width: =608
             X: =48
-            Y: =192
+            Y: =176
       - txtMeetOpp:
           Control: Classic/TextInput@2.3.2
           Properties:
@@ -182,12 +183,12 @@ Screens:
             Default: =""
             Fill: =RGBA(251, 252, 252, 1)
             Font: =Font.'Open Sans'
-            Height: =40
+            Height: =36
             HintText: ="OPE-000000000 (leave blank if none)"
             Size: =12
             Width: =608
             X: =48
-            Y: =270
+            Y: =236
       - drpMeetSubject:
           Control: Classic/DropDown@2.3.1
           Properties:
@@ -195,12 +196,26 @@ Screens:
             Color: =RGBA(41, 45, 58, 1)
             Fill: =RGBA(255, 255, 255, 1)
             Font: =Font.'Open Sans'
-            Height: =44
+            Height: =40
             Items: =["Customer Meeting", "F2F Meeting", "Channel Partner Meeting", "Leadership Meeting"]
             Size: =13
             Width: =608
             X: =48
-            Y: =348
+            Y: =296
+      - txtMeetNotes:
+          Control: Classic/TextInput@2.3.2
+          Properties:
+            BorderColor: =RGBA(212, 216, 219, 1)
+            Default: =""
+            Fill: =RGBA(251, 252, 252, 1)
+            Font: =Font.'Open Sans'
+            Height: =92
+            HintText: ="Who you met, what was discussed, any outcome - this is all the approver sees"
+            Mode: =TextMode.MultiLine
+            Size: =12
+            Width: =608
+            X: =48
+            Y: =360
       - btnMeetClear:
           Control: Classic/Button@2.2.0
           Properties:
@@ -212,13 +227,14 @@ Screens:
             HoverFill: =RGBA(242, 243, 244, 1)
             OnSelect: |-
               =Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject );
+              Reset( txtMeetNotes );
               Set( varMeetSaved, false )
             Height: =44
             Size: =14
             Text: ="Clear"
             Width: =150
             X: =48
-            Y: =560
+            Y: =556
       - btnMeetSave:
           Control: Classic/Button@2.2.0
           Properties:
@@ -248,8 +264,8 @@ Screens:
               //  FIELD NAMES verified against the list: HPE Opportunity ID (capital
               //  ID) - Account Name - Approval Type - Requestor Name - Notes -
               //  Opportunity Name - Approver - Approval Status.
-              //  'Notes' and 'Opportunity Name' are left unwritten (nothing on this
-              //  screen captures them); 'Created Date' is SharePoint's own stamp.
+              //  'Opportunity Name' is left unwritten (nothing on this screen
+              //  captures it); 'Created Date' is SharePoint's own stamp.
               //
               //  If 'Approver' is a PERSON column rather than text, swap that line for:
               //    Approver: { '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
@@ -265,6 +281,7 @@ Screens:
                           'HPE Opportunity ID':  Trim( txtMeetOpp.Text ),
                           'Approval Type':       drpMeetSubject.Selected.Value,
                           'Requestor Name':      varMeetMyName,
+                          Notes:                 Trim( txtMeetNotes.Text ),
                           Approver:              varMeetApprover
                       }
                   ),
@@ -275,14 +292,15 @@ Screens:
                         MStatus:  "Pending" } );
                   Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
                   Set( varMeetSaved, true );
-                  Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject )
+                  Reset( txtMeetAccount ); Reset( txtMeetOpp ); Reset( drpMeetSubject );
+                  Reset( txtMeetNotes )
               )
             Height: =44
             Size: =14
             Text: ="Log meeting"
             Width: =200
             X: =488
-            Y: =560
+            Y: =556
       - imgMeetScore:
           Control: Image@2.2.3
           Properties:

@@ -74,6 +74,7 @@ The screen writes five of them:
 | `HPE Opportunity ID` | the Opportunity box (blank if none) |
 | `Approval Type` | the dropdown — **this is what the measures score on** |
 | `Requestor Name` | the logger's dashboard name — **this is what the measures join on** |
+| `Notes` | the Notes box — the context the approver reads |
 | `Approver` | the logger's `L1 Manager Email` |
 
 Left alone deliberately:
@@ -81,8 +82,8 @@ Left alone deliberately:
 - **`Approval Status`** — *not written at all*. The Pending measure tests `= BLANK()`, and an
   empty string is not blank in DAX, so writing `""` would drop the row out of **both** measures.
   Leaving it unset keeps it genuinely null = pending until the manager sets `"Approve"`.
-- **`Notes`** and **`Opportunity Name`** — nothing on the screen captures these yet. Say the word
-  and they become two more inputs.
+- **`Opportunity Name`** — nothing on the screen captures it yet. Say the word and it becomes
+  another input.
 - `Created Date` does not exist as a column; SharePoint stamps `Created` itself, and the measures
   have no date gate.
 
