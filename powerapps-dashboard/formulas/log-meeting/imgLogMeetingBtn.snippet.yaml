@@ -21,10 +21,16 @@
               =// Only NON S-CODED people can see (and therefore use) the meeting logger.
               // Reads the signed-in user's row straight off the model, so it needs
               // 'S Coded?' in the Power BI visual's field well.
+              //
+              // The second line is a TESTING addition so the programme owner can see
+              // the button even though their record is not Non S-Coded. It uses the
+              // REAL signed-in email, because varUserEmail is remapped for some
+              // accounts in the dashboard build. Delete that line for production.
               LookUp(
                   PowerBIIntegration.Data,
                   Trim( Lower( 'User Email' & "" ) ) = Trim( Lower( varUserEmail ) )
               ).'S Coded?' = "Non S-Coded (Phil)"
+              || Lower( User().Email ) = "alex.cohen@hpe.com"
             Width: =168
             X: =370
             Y: =11
