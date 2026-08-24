@@ -36,7 +36,12 @@ With(
     { me: LookUp( PowerBIIntegration.Data, Trim( Lower( 'User Email' & "" ) ) = varMeetMyEmail ) },
     Set( varMeetMyName, me.Name & "" );
     Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) );
-    Set( varMeetIsEligible, Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)" )
+    Set( varMeetIsEligible,
+Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)"
+// TESTING: lets the programme owner use the screen even though their
+// record is S-Coded. Uses the REAL signed-in email (varUserEmail is
+// remapped for some accounts). Delete this line for production.
+|| Lower( User().Email ) = "alex.cohen@hpe.com" )
 );
 
 // 3) what I have logged already (newest first) -------------------------------

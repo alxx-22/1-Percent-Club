@@ -50,7 +50,12 @@ Screens:
             { me: LookUp( PowerBIIntegration.Data, Trim( Lower( 'User Email' & "" ) ) = varMeetMyEmail ) },
             Set( varMeetMyName, me.Name & "" );
             Set( varMeetApprover, Trim( Lower( me.'L1 Manager Email' & "" ) ) );
-            Set( varMeetIsEligible, Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)" )
+            Set( varMeetIsEligible,
+        Trim( me.'S Coded?' & "" ) = "Non S-Coded (Phil)"
+        // TESTING: lets the programme owner use the screen even though their
+        // record is S-Coded. Uses the REAL signed-in email (varUserEmail is
+        // remapped for some accounts). Delete this line for production.
+        || Lower( User().Email ) = "alex.cohen@hpe.com" )
         );
 
         // 3) what I have logged already (newest first) -------------------------------
@@ -311,7 +316,8 @@ Screens:
                                   { i:0, ok: hasAcc, t: "An account is filled in" },
                                   { i:1, ok: hasSub, t: "A meeting type is chosen (writes Approval Type)" },
                                   { i:2, ok: !IsBlank( varMeetMyName ), t: "Your name goes on as Requestor Name" },
-                                  { i:3, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" }
+                                  { i:3, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" },
+                                  { i:4, ok: varMeetIsEligible, t: "You are set up to log meetings (Non S-Coded)" }
                               ),
                               "<g transform='translate(26," & Text( 162 + i*22 ) & ")'>" &
                               If( ok, tick, dot ) &
