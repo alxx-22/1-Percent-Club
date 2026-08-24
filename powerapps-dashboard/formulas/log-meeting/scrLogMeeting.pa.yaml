@@ -236,6 +236,11 @@ Screens:
               //  Approval Type string and join on the Requestor Name, so a typo in
               //  either silently scores zero.
               //
+              //  'Approval Status' is deliberately NOT written. The Pending measure
+              //  tests = BLANK(), and an empty string is NOT blank in DAX - writing ""
+              //  would drop the row out of BOTH measures. Leaving the column unset
+              //  keeps it genuinely null (and a Choice column rejects "" anyway).
+              //
               //  FIELD NAMES: these mirror the existing customer-meeting approval rows.
               //  If your list uses different display names, fix them here only.
               //  Delete any line whose column does not exist in your list.
@@ -258,7 +263,6 @@ Screens:
                           'Requestor Name':      varMeetMyName,
                           'Requestor Email':     varMeetMyEmail,
                           Approver:              varMeetApprover,
-                          'Approval Status':     "",
                           'Created Date':        Today()
                       }
                   ),
