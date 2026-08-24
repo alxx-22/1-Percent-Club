@@ -1,0 +1,83 @@
+-- ============================================================================
+--  Customer Centricity Points  /  ...Points Pending   (Teams calculated columns)
+--
+--  CHANGED: these now read the SharePoint approvals list '1 Percent Approvals'
+--  instead of 'Customer Meetings', join on [Requestor Name], and classify on
+--  [Approval Type].
+--
+--  AWARD:  F2F 35  ·  Leadership 20  ·  Customer 10  ·  Channel Partner 10
+--  APPROVED  = [Approval Status] = "Approve"      -> Customer Centricity Points
+--  PENDING   = [Approval Status] = BLANK()        -> ...Points Pending
+--
+--  >>> F2F NAMING <<<  the app writes "F2F Meeting"; the previous formula looked
+--  for "Face-to-Face Meeting". Both are matched below so whichever the SharePoint
+--  choice column actually uses, the 35 points still land. Keep it that way unless
+--  you are certain of the single value - a mismatch here silently scores ZERO.
+-- ============================================================================
+
+Customer Centricity Points =
+VAR thisuser = Teams[Name]
+VAR f2f =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting", "Face-to-Face Meeting" }
+                && '1 Percent Approvals'[Approval Status] = "Approve"
+        )
+    ) * 35
+VAR customerchannel =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "Customer Meeting", "Channel Partner Meeting" }
+                && '1 Percent Approvals'[Approval Status] = "Approve"
+        )
+    ) * 10
+VAR leadership =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "Leadership Meeting" }
+                && '1 Percent Approvals'[Approval Status] = "Approve"
+        )
+    ) * 20
+RETURN
+    IF ( leadership + customerchannel + f2f = BLANK (), 0, leadership + customerchannel + f2f )
+
+
+-- ----------------------------------------------------------------------------
+
+Customer Centricity Points Pending =
+VAR thisuser = Teams[Name]
+VAR f2f =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting", "Face-to-Face Meeting" }
+                && '1 Percent Approvals'[Approval Status] = BLANK ()
+        )
+    ) * 35
+VAR customerchannel =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "Customer Meeting", "Channel Partner Meeting" }
+                && '1 Percent Approvals'[Approval Status] = BLANK ()
+        )
+    ) * 10
+VAR leadership =
+    COUNTROWS (
+        FILTER (
+            '1 Percent Approvals',
+            '1 Percent Approvals'[Requestor Name] = thisuser
+                && '1 Percent Approvals'[Approval Type] IN { "Leadership Meeting" }
+                && '1 Percent Approvals'[Approval Status] = BLANK ()
+        )
+    ) * 20
+RETURN
+    IF ( leadership + customerchannel + f2f = BLANK (), 0, leadership + customerchannel + f2f )

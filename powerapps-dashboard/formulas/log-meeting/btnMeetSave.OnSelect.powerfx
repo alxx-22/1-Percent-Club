@@ -1,7 +1,8 @@
 // ============================================================================
-//  Writes one approval row. The Subject is ALWAYS prefixed with the
-//  classifying keyword - that prefix is what the model reads to set
-//  Meeting Type, and without it the meeting scores nothing.
+//  Writes one approval row. 'Approval Type' and 'Requestor Name' are
+//  the two that matter: the Customer Centricity measures match on the
+//  Approval Type string and join on the Requestor Name, so a typo in
+//  either silently scores zero.
 //
 //  FIELD NAMES: these mirror the existing customer-meeting approval rows.
 //  If your list uses different display names, fix them here only.
@@ -20,8 +21,8 @@ IfError(
             Title:                 Trim( txtMeetAccount.Text ),
             Account:               Trim( txtMeetAccount.Text ),
             'HPE Opportunity Id':  Trim( txtMeetOpp.Text ),
-            Subject:               drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
-            'Meeting Type':        drpMeetSubject.Selected.MType,
+            Subject:               drpMeetSubject.Selected.Label,
+            'Approval Type':       drpMeetSubject.Selected.Label,
             'Requestor Name':      varMeetMyName,
             'Requestor Email':     varMeetMyEmail,
             Approver:              varMeetApprover,
@@ -32,7 +33,7 @@ IfError(
     Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
     Collect( colMeetMine,
         { MAccount: Trim( txtMeetAccount.Text ),
-          MSubject: drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+          MSubject: drpMeetSubject.Selected.Label,
           MStatus:  "Pending" } );
     Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
     Set( varMeetSaved, true );

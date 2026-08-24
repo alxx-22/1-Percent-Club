@@ -20,27 +20,29 @@ Screens:
         //  differs, change it here, in btnMeetSave, and in galMeetMine.Items.
         //  (A name containing spaces MUST stay single-quoted in Power Fx.)
         //
-        //  HOW A MEETING SCORES (mirrors the model, do not change lightly):
-        //    1. Subject must START with CUSTOMER / CHANNEL / LEADERSHIP. The model
-        //       derives Meeting Type from that leading word; anything else leaves
-        //       Meeting Type blank and the meeting earns NOTHING. That is why the
-        //       Subject written to SharePoint is always "<KEYWORD> - <label>".
-        //    2. Created Date >= 1 May 2026.
-        //    3. Approval Status = "Approve" (your L1 manager signs it off).
-        //    4. Credit is by NAME - Requestor Name / Last Modified By: Full Name -
-        //       so the logger's dashboard name is written, never an email.
-        //  Points: Leadership 20, Customer 10, Channel Partner 10.
+        //  HOW A MEETING SCORES (mirrors the Customer Centricity measures, which
+        //  now read this list - see Customer_Centricity_Points.dax):
+        //    1. 'Approval Type' must be EXACTLY one of the list's choices. The
+        //       measures match on that string: F2F Meeting 35, Leadership Meeting
+        //       20, Customer Meeting 10, Channel Partner Meeting 10.
+        //    2. 'Requestor Name' must hold the logger's dashboard name - that is
+        //       what the measures join on, so points find the right person.
+        //    3. 'Approval Status' = "Approve" scores; BLANK = pending. The L1
+        //       manager signs it off.
+        //  The dropdown labels ARE the Approval Type values, so there is no
+        //  mapping layer to drift out of step with the choice column.
         // ============================================================================
 
         // 1) the meeting types, and how each one is written + scored ------------------
-        //    Keyword is what makes it classify; Pts mirrors the model's award.
+        //    Label is written verbatim into 'Approval Type'; Pts mirrors the award.
+        //    These strings MUST match the SharePoint choice column exactly.
         ClearCollect(
             colMeetTypes,
             Table(
-                { Label: "Leadership introduction",  Keyword: "LEADERSHIP", MType: "Leadership Meeting",      Pts: 20 },
-                { Label: "Customer meeting",         Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
-                { Label: "Face to face meeting",     Keyword: "CUSTOMER",   MType: "Customer Meeting",        Pts: 10 },
-                { Label: "Channel partner meeting",  Keyword: "CHANNEL",    MType: "Channel Partner Meeting", Pts: 10 }
+                { Label: "Customer Meeting",        Pts: 10 },
+                { Label: "F2F Meeting",             Pts: 35 },
+                { Label: "Channel Partner Meeting", Pts: 10 },
+                { Label: "Leadership Meeting",      Pts: 20 }
             )
         );
 
@@ -135,19 +137,19 @@ Screens:
                   "<line x1='32' y1='84' x2='640' y2='84' stroke='#eceef0'/>" &
                   "<text x='32' y='112' font-size='12.5' font-weight='600' fill='#3e4550'>Account <tspan fill='#c0392b'>*</tspan></text>" &
                   "<text x='32' y='190' font-size='12.5' font-weight='600' fill='#3e4550'>Opportunity <tspan fill='#8a9096' font-weight='400'>(optional - OPE number if there is one)</tspan></text>" &
-                  "<text x='32' y='268' font-size='12.5' font-weight='600' fill='#3e4550'>Subject <tspan fill='#c0392b'>*</tspan></text>" &
+                  "<text x='32' y='268' font-size='12.5' font-weight='600' fill='#3e4550'>Meeting type <tspan fill='#c0392b'>*</tspan></text>" &
                   "<rect x='32' y='356' width='608' height='60' rx='8' fill='#f7f6ff' stroke='#d9d3ff'/>" &
-                  "<text x='48' y='378' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>WRITTEN TO SHAREPOINT AS</text>" &
+                  "<text x='48' y='378' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>APPROVAL TYPE WRITTEN TO SHAREPOINT</text>" &
                   "<text x='48' y='400' font-size='12.5' font-weight='600' fill='#292d3a'>" &
                       Substitute(Substitute(Substitute(
-                          If( IsBlank( drpMeetSubject.Selected.Keyword ), "pick a subject above",
-                              drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label ),
+                          If( IsBlank( drpMeetSubject.Selected.Label ), "pick a meeting type above",
+                              drpMeetSubject.Selected.Label & "   (" & Text( drpMeetSubject.Selected.Pts ) & " points)" ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<text x='32' y='442' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute(
                           If( IsBlank( varMeetApprover ), "not set on your record", varMeetApprover ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
-                  "<text x='32' y='464' font-size='11.5' fill='#606a70'>Logged by (credit goes to this name): <tspan font-weight='600' fill='#3e4550'>" &
+                  "<text x='32' y='464' font-size='11.5' fill='#606a70'>Requestor Name (points find you by this): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute( varMeetMyName & "", "&","&amp;"),"<","&lt;"),">","&gt;") & "</tspan></text>" &
                   "</g>" &
                   "</svg>"
@@ -221,7 +223,7 @@ Screens:
             DisplayMode: |-
               =If( varMeetIsEligible
                    && !IsBlank( Trim( txtMeetAccount.Text ) )
-                   && !IsBlank( drpMeetSubject.Selected.Keyword ),
+                   && !IsBlank( drpMeetSubject.Selected.Label ),
                    DisplayMode.Edit, DisplayMode.Disabled )
             Fill: =RGBA(119, 100, 252, 1)
             Font: =Font.'Open Sans'
@@ -229,9 +231,10 @@ Screens:
             HoverFill: =RGBA(91, 75, 214, 1)
             OnSelect: |-
               =// ============================================================================
-              //  Writes one approval row. The Subject is ALWAYS prefixed with the
-              //  classifying keyword - that prefix is what the model reads to set
-              //  Meeting Type, and without it the meeting scores nothing.
+              //  Writes one approval row. 'Approval Type' and 'Requestor Name' are
+              //  the two that matter: the Customer Centricity measures match on the
+              //  Approval Type string and join on the Requestor Name, so a typo in
+              //  either silently scores zero.
               //
               //  FIELD NAMES: these mirror the existing customer-meeting approval rows.
               //  If your list uses different display names, fix them here only.
@@ -250,8 +253,8 @@ Screens:
                           Title:                 Trim( txtMeetAccount.Text ),
                           Account:               Trim( txtMeetAccount.Text ),
                           'HPE Opportunity Id':  Trim( txtMeetOpp.Text ),
-                          Subject:               drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
-                          'Meeting Type':        drpMeetSubject.Selected.MType,
+                          Subject:               drpMeetSubject.Selected.Label,
+                          'Approval Type':       drpMeetSubject.Selected.Label,
                           'Requestor Name':      varMeetMyName,
                           'Requestor Email':     varMeetMyEmail,
                           Approver:              varMeetApprover,
@@ -262,7 +265,7 @@ Screens:
                   Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
                   Collect( colMeetMine,
                       { MAccount: Trim( txtMeetAccount.Text ),
-                        MSubject: drpMeetSubject.Selected.Keyword & " - " & drpMeetSubject.Selected.Label,
+                        MSubject: drpMeetSubject.Selected.Label,
                         MStatus:  "Pending" } );
                   Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
                   Set( varMeetSaved, true );
@@ -285,14 +288,14 @@ Screens:
                   With(
                       { pts: Coalesce( drpMeetSubject.Selected.Pts, 0 ),
                         hasAcc: !IsBlank( Trim( txtMeetAccount.Text ) ),
-                        hasSub: !IsBlank( drpMeetSubject.Selected.Keyword ) },
+                        hasSub: !IsBlank( drpMeetSubject.Selected.Label ) },
                       "<g class='fu'>" &
                       "<rect x='0' y='0' width='416' height='270' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
                       "<text x='24' y='30' font-size='11' font-weight='700' letter-spacing='1.1' fill='#606a70'>THIS MEETING IS WORTH</text>" &
                       "<text x='24' y='76' font-size='38' font-weight='700' fill='" & If( pts > 0, "#7764fc", "#c9ced2" ) & "'>" & Text( pts ) & "</text>" &
                       "<text x='" & Text( 34 + 22*Len(Text(pts)) ) & "' y='76' font-size='13' font-weight='600' fill='#8a9096'>points</text>" &
                       "<text x='24' y='98' font-size='11' fill='#8a9096'>" &
-                          If( pts > 0, "once your L1 manager approves it", "pick a subject to see the award" ) & "</text>" &
+                          If( pts > 0, "once your L1 manager approves it", "pick a meeting type to see the award" ) & "</text>" &
                       "<line x1='24' y1='116' x2='392' y2='116' stroke='#eceef0'/>" &
                       "<text x='24' y='138' font-size='10' font-weight='700' letter-spacing='.8' fill='#606a70'>TO SCORE, ALL OF THESE MUST BE TRUE</text>" &
                       With(
@@ -301,10 +304,9 @@ Screens:
                           Concat(
                               Table(
                                   { i:0, ok: hasAcc, t: "An account is filled in" },
-                                  { i:1, ok: hasSub, t: "Subject starts CUSTOMER / CHANNEL / LEADERSHIP" },
-                                  { i:2, ok: true,   t: "Logged on or after 1 May 2026" },
-                                  { i:3, ok: !IsBlank( varMeetMyName ), t: "Your name is on the record (credit is by name)" },
-                                  { i:4, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" }
+                                  { i:1, ok: hasSub, t: "A meeting type is chosen (writes Approval Type)" },
+                                  { i:2, ok: !IsBlank( varMeetMyName ), t: "Your name goes on as Requestor Name" },
+                                  { i:3, ok: !IsBlank( varMeetApprover ), t: "An L1 manager is set to approve it" }
                               ),
                               "<g transform='translate(26," & Text( 162 + i*22 ) & ")'>" &
                               If( ok, tick, dot ) &

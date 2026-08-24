@@ -13,25 +13,30 @@ the Customer Centricity points land.
 
 ## The scoring rule this screen is built around
 
-The model derives **`Meeting Type` from the Subject's leading word** — `CUSTOMER`,
-`CHANNEL` or `LEADERSHIP`. Anything else leaves `Meeting Type` **blank and the meeting
-earns nothing**. So the Subject written to SharePoint is always `"<KEYWORD> - <label>"`:
+Points come from the **`Customer Centricity Points`** / **`...Points Pending`** measures, which
+now read the **`1 Percent Approvals`** list (see
+[`Customer_Centricity_Points.dax`](Customer_Centricity_Points.dax)). They match on two fields:
 
-| Dropdown option | Written Subject | Meeting Type | Points |
-|---|---|---|---|
-| Leadership introduction | `LEADERSHIP - Leadership introduction` | Leadership Meeting | **20** |
-| Customer meeting | `CUSTOMER - Customer meeting` | Customer Meeting | **10** |
-| Face to face meeting | `CUSTOMER - Face to face meeting` | Customer Meeting | **10** |
-| Channel partner meeting | `CHANNEL - Channel partner meeting` | Channel Partner Meeting | **10** |
+| Dropdown option = `Approval Type` written | Points |
+|---|---|
+| `F2F Meeting` | **35** |
+| `Leadership Meeting` | **20** |
+| `Customer Meeting` | **10** |
+| `Channel Partner Meeting` | **10** |
 
-> ⚠️ **"Face to face meeting" is mapped to `CUSTOMER` deliberately.** On its own the phrase
-> starts with "FACE", which classifies as nothing and scores **0**. Treating it as a customer
-> meeting (10) is the only reading that scores. If it should be its own thing, the model's
-> `Meeting Type` rule has to change first — the app cannot fix that on its own.
+- **`Approval Type`** must match the SharePoint choice string **exactly** — the measures compare
+  the literal text. The dropdown labels *are* those values, so there is no mapping layer to drift.
+- **`Requestor Name`** is how points find a person; the screen writes the logger's dashboard name.
+- **`Approval Status`**: blank = pending, `"Approve"` = scored. Written blank on save.
+- There is **no date gate** in the new measures.
 
-The full criteria (mirrored in the on‑screen checklist): Subject prefix ✓, `Created Date`
-≥ 1 May 2026 ✓, `Approval Status = "Approve"` ✓, and credit is **by name**
-(`Requestor Name` / `Last Modified By: Full Name`) — never by email.
+> ⚠️ **F2F naming.** The app writes `"F2F Meeting"`; the previous formula looked for
+> `"Face-to-Face Meeting"`. The DAX matches **both**, so the 35 points land either way. If you pin
+> it to one value, change the app and the measures together — a mismatch scores zero silently.
+
+> ⚠️ **Source switch.** These measures no longer read `'Customer Meetings'`. Only meetings present
+> in `1 Percent Approvals` score. If meetings logged straight into SFDC are not mirrored into that
+> list, they stop counting — worth checking before this goes live.
 
 ## Who can see it
 
@@ -56,13 +61,14 @@ customer‑meeting approval rows; every one is a single line in `btnMeetSave.OnS
 correcting a name or deleting an unused column is a one‑line edit:
 
 ```
-Title · Account · HPE Opportunity Id · Subject · Meeting Type
+Title · Account · HPE Opportunity Id · Subject · Approval Type
 Requestor Name · Requestor Email · Approver · Approval Status · Created Date
 ```
 
-- `Subject` is the one that **must** be written — it is what drives the scoring.
-- `Meeting Type` is a calculated column **in the model**; if your SharePoint list has no
-  such column, delete that line.
+- **`Approval Type`** and **`Requestor Name`** are the two that must be right — the measures
+  match on them. Everything else is descriptive.
+- `Subject` is written as the plain label for readability; delete the line if the column
+  does not exist.
 - If **`Approver`** is a *Person* column rather than text, swap it for the expanded‑user
   record — the exact snippet is in the comment block at the top of `btnMeetSave.OnSelect`.
 - `Approval Status` is written blank on purpose = pending. The model treats `"Approve"`
