@@ -27,7 +27,7 @@ IfError(
         {
             'Account Name':        Trim( txtMeetAccount.Text ),
             'HPE Opportunity ID':  Trim( txtMeetOpp.Text ),
-            'Approval Type':       drpMeetSubject.Selected.Label,
+            'Approval Type':       drpMeetSubject.Selected.Value,
             'Requestor Name':      varMeetMyName,
             Approver:              varMeetApprover
         }
@@ -35,7 +35,7 @@ IfError(
     Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
     Collect( colMeetMine,
         { MAccount: Trim( txtMeetAccount.Text ),
-          MSubject: drpMeetSubject.Selected.Label,
+          MSubject: drpMeetSubject.Selected.Value,
           MStatus:  "Pending" } );
     Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
     Set( varMeetSaved, true );

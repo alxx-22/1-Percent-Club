@@ -33,18 +33,14 @@ Screens:
         //  mapping layer to drift out of step with the choice column.
         // ============================================================================
 
-        // 1) the meeting types, and how each one is written + scored ------------------
-        //    Label is written verbatim into 'Approval Type'; Pts mirrors the award.
-        //    These strings MUST match the SharePoint choice column exactly.
-        ClearCollect(
-            colMeetTypes,
-            Table(
-                { Label: "Customer Meeting",        Pts: 10 },
-                { Label: "F2F Meeting",             Pts: 35 },
-                { Label: "Channel Partner Meeting", Pts: 10 },
-                { Label: "Leadership Meeting",      Pts: 20 }
-            )
-        );
+        // 1) the meeting types -------------------------------------------------------
+        //    The four choices live in drpMeetSubject.Items; their awards live in the
+        //    Switch used by imgMeetForm and imgMeetScore. FOUR PLACES must agree on
+        //    these exact strings, or a meeting silently scores nothing:
+        //      drpMeetSubject.Items - the Switch - the SharePoint 'Approval Type'
+        //      choice column - the Customer Centricity measures.
+        //        F2F Meeting 35 | Leadership Meeting 20 | Customer Meeting 10 |
+        //        Channel Partner Meeting 10
 
         // 2) who is logging, and who approves it -------------------------------------
         //    Credit is by NAME, so varMeetMyName is what gets written. The approver is
@@ -142,8 +138,12 @@ Screens:
                   "<text x='48' y='378' font-size='10' font-weight='700' letter-spacing='.6' fill='#5b4bd6'>APPROVAL TYPE WRITTEN TO SHAREPOINT</text>" &
                   "<text x='48' y='400' font-size='12.5' font-weight='600' fill='#292d3a'>" &
                       Substitute(Substitute(Substitute(
-                          If( IsBlank( drpMeetSubject.Selected.Label ), "pick a meeting type above",
-                              drpMeetSubject.Selected.Label & "   (" & Text( LookUp( colMeetTypes, Label = drpMeetSubject.Selected.Label, Pts ) ) & " points)" ),
+                          If( IsBlank( drpMeetSubject.Selected.Value ), "pick a meeting type above",
+                              drpMeetSubject.Selected.Value & "   (" & Text( Switch( drpMeetSubject.Selected.Value,
+                              "F2F Meeting", 35,
+                              "Leadership Meeting", 20,
+                              "Customer Meeting", 10,
+                              "Channel Partner Meeting", 10, 0 ) ) & " points)" ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<text x='32' y='442' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute(
@@ -191,7 +191,7 @@ Screens:
             Fill: =RGBA(255, 255, 255, 1)
             Font: =Font.'Open Sans'
             Height: =44
-            Items: =ShowColumns( colMeetTypes, "Label" )
+            Items: =["Customer Meeting", "F2F Meeting", "Channel Partner Meeting", "Leadership Meeting"]
             Size: =13
             Width: =608
             X: =48
@@ -222,7 +222,7 @@ Screens:
             DisplayMode: |-
               =If( varMeetIsEligible
                    && !IsBlank( Trim( txtMeetAccount.Text ) )
-                   && !IsBlank( drpMeetSubject.Selected.Label ),
+                   && !IsBlank( drpMeetSubject.Selected.Value ),
                    DisplayMode.Edit, DisplayMode.Disabled )
             Fill: =RGBA(119, 100, 252, 1)
             Font: =Font.'Open Sans'
@@ -258,7 +258,7 @@ Screens:
                       {
                           'Account Name':        Trim( txtMeetAccount.Text ),
                           'HPE Opportunity ID':  Trim( txtMeetOpp.Text ),
-                          'Approval Type':       drpMeetSubject.Selected.Label,
+                          'Approval Type':       drpMeetSubject.Selected.Value,
                           'Requestor Name':      varMeetMyName,
                           Approver:              varMeetApprover
                       }
@@ -266,7 +266,7 @@ Screens:
                   Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),
                   Collect( colMeetMine,
                       { MAccount: Trim( txtMeetAccount.Text ),
-                        MSubject: drpMeetSubject.Selected.Label,
+                        MSubject: drpMeetSubject.Selected.Value,
                         MStatus:  "Pending" } );
                   Notify( "Logged - sent to your L1 manager for approval.", NotificationType.Success );
                   Set( varMeetSaved, true );
@@ -287,9 +287,13 @@ Screens:
               ="data:image/svg+xml;utf8," & EncodeUrl(
                   "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 416 270' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
                   With(
-                      { pts: Coalesce( LookUp( colMeetTypes, Label = drpMeetSubject.Selected.Label, Pts ), 0 ),
+                      { pts: Switch( drpMeetSubject.Selected.Value,
+                                    "F2F Meeting", 35,
+                                    "Leadership Meeting", 20,
+                                    "Customer Meeting", 10,
+                                    "Channel Partner Meeting", 10, 0 ),
                         hasAcc: !IsBlank( Trim( txtMeetAccount.Text ) ),
-                        hasSub: !IsBlank( drpMeetSubject.Selected.Label ) },
+                        hasSub: !IsBlank( drpMeetSubject.Selected.Value ) },
                       "<g class='fu'>" &
                       "<rect x='0' y='0' width='416' height='270' rx='14' fill='#ffffff' stroke='#d4d8db'/>" &
                       "<text x='24' y='30' font-size='11' font-weight='700' letter-spacing='1.1' fill='#606a70'>THIS MEETING IS WORTH</text>" &

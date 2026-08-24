@@ -19,18 +19,14 @@
 //  mapping layer to drift out of step with the choice column.
 // ============================================================================
 
-// 1) the meeting types, and how each one is written + scored ------------------
-//    Label is written verbatim into 'Approval Type'; Pts mirrors the award.
-//    These strings MUST match the SharePoint choice column exactly.
-ClearCollect(
-    colMeetTypes,
-    Table(
-        { Label: "Customer Meeting",        Pts: 10 },
-        { Label: "F2F Meeting",             Pts: 35 },
-        { Label: "Channel Partner Meeting", Pts: 10 },
-        { Label: "Leadership Meeting",      Pts: 20 }
-    )
-);
+// 1) the meeting types -------------------------------------------------------
+//    The four choices live in drpMeetSubject.Items; their awards live in the
+//    Switch used by imgMeetForm and imgMeetScore. FOUR PLACES must agree on
+//    these exact strings, or a meeting silently scores nothing:
+//      drpMeetSubject.Items - the Switch - the SharePoint 'Approval Type'
+//      choice column - the Customer Centricity measures.
+//        F2F Meeting 35 | Leadership Meeting 20 | Customer Meeting 10 |
+//        Channel Partner Meeting 10
 
 // 2) who is logging, and who approves it -------------------------------------
 //    Credit is by NAME, so varMeetMyName is what gets written. The approver is
