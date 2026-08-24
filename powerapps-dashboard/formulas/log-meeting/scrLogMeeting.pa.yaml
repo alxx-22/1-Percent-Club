@@ -143,7 +143,7 @@ Screens:
                   "<text x='48' y='400' font-size='12.5' font-weight='600' fill='#292d3a'>" &
                       Substitute(Substitute(Substitute(
                           If( IsBlank( drpMeetSubject.Selected.Label ), "pick a meeting type above",
-                              drpMeetSubject.Selected.Label & "   (" & Text( drpMeetSubject.Selected.Pts ) & " points)" ),
+                              drpMeetSubject.Selected.Label & "   (" & Text( LookUp( colMeetTypes, Label = drpMeetSubject.Selected.Label, Pts ) ) & " points)" ),
                           "&","&amp;"),"<","&lt;"),">","&gt;") & "</text>" &
                   "<text x='32' y='442' font-size='11.5' fill='#606a70'>Approver (your L1 manager): <tspan font-weight='600' fill='#3e4550'>" &
                       Substitute(Substitute(Substitute(
@@ -191,9 +191,8 @@ Screens:
             Fill: =RGBA(255, 255, 255, 1)
             Font: =Font.'Open Sans'
             Height: =44
-            Items: =colMeetTypes
+            Items: =ShowColumns( colMeetTypes, "Label" )
             Size: =13
-            Value: ="Label"
             Width: =608
             X: =48
             Y: =348
@@ -290,7 +289,7 @@ Screens:
               ="data:image/svg+xml;utf8," & EncodeUrl(
                   "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 416 270' font-family='Segoe UI, Arial, sans-serif'>" & varSvgCss &
                   With(
-                      { pts: Coalesce( drpMeetSubject.Selected.Pts, 0 ),
+                      { pts: Coalesce( LookUp( colMeetTypes, Label = drpMeetSubject.Selected.Label, Pts ), 0 ),
                         hasAcc: !IsBlank( Trim( txtMeetAccount.Text ) ),
                         hasSub: !IsBlank( drpMeetSubject.Selected.Label ) },
                       "<g class='fu'>" &
