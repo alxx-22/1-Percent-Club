@@ -9,9 +9,11 @@
 //  would drop the row out of BOTH measures. Leaving the column unset
 //  keeps it genuinely null (and a Choice column rejects "" anyway).
 //
-//  FIELD NAMES: these mirror the existing customer-meeting approval rows.
-//  If your list uses different display names, fix them here only.
-//  Delete any line whose column does not exist in your list.
+//  FIELD NAMES verified against the list: HPE Opportunity ID (capital
+//  ID) - Account Name - Approval Type - Requestor Name - Notes -
+//  Opportunity Name - Approver - Approval Status.
+//  'Notes' and 'Opportunity Name' are left unwritten (nothing on this
+//  screen captures them); 'Created Date' is SharePoint's own stamp.
 //
 //  If 'Approver' is a PERSON column rather than text, swap that line for:
 //    Approver: { '@odata.type': "#Microsoft.Azure.Connectors.SharePoint.SPListExpandedUser",
@@ -23,15 +25,11 @@ IfError(
         '1 Percent Approvals',
         Defaults( '1 Percent Approvals' ),
         {
-            Title:                 Trim( txtMeetAccount.Text ),
-            Account:               Trim( txtMeetAccount.Text ),
-            'HPE Opportunity Id':  Trim( txtMeetOpp.Text ),
-            Subject:               drpMeetSubject.Selected.Label,
+            'Account Name':        Trim( txtMeetAccount.Text ),
+            'HPE Opportunity ID':  Trim( txtMeetOpp.Text ),
             'Approval Type':       drpMeetSubject.Selected.Label,
             'Requestor Name':      varMeetMyName,
-            'Requestor Email':     varMeetMyEmail,
-            Approver:              varMeetApprover,
-            'Created Date':        Today()
+            Approver:              varMeetApprover
         }
     ),
     Notify( "Couldn't log that meeting: " & FirstError.Message, NotificationType.Error ),

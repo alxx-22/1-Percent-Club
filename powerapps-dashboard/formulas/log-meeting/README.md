@@ -60,22 +60,31 @@ signed‑in user's model row. **Log meeting** is additionally disabled unless
 3. The Power BI visual's field well needs **`S Coded?`** and **`L1 Manager Email`**
    (`L1 Manager Email` is already in the expected column list in `../../DEBUG.md`).
 
-### Column names — confirm these against your list
+### Columns (verified against the list)
 
-The Patch writes the fields below. They are the **best reconstruction** of the existing
-customer‑meeting approval rows; every one is a single line in `btnMeetSave.OnSelect`, so
-correcting a name or deleting an unused column is a one‑line edit:
+`1 Percent Approvals` has: **HPE Opportunity ID** (capital ID) · **Account Name** ·
+**Approval Type** · **Requestor Name** · **Notes** · **Opportunity Name** · **Approver** ·
+**Approval Status**.
 
-```
-Title · Account · HPE Opportunity Id · Subject · Approval Type
-Requestor Name · Requestor Email · Approver · Approval Status · Created Date
-```
+The screen writes five of them:
 
-- **`Approval Type`** and **`Requestor Name`** are the two that must be right — the measures
-  match on them. Everything else is descriptive.
-- `Subject` is written as the plain label for readability; delete the line if the column
-  does not exist.
-- If **`Approver`** is a *Person* column rather than text, swap it for the expanded‑user
-  record — the exact snippet is in the comment block at the top of `btnMeetSave.OnSelect`.
-- `Approval Status` is written blank on purpose = pending. The model treats `"Approve"`
-  as approved and blank as pending.
+| Column | Written from |
+|---|---|
+| `Account Name` | the Account box |
+| `HPE Opportunity ID` | the Opportunity box (blank if none) |
+| `Approval Type` | the dropdown — **this is what the measures score on** |
+| `Requestor Name` | the logger's dashboard name — **this is what the measures join on** |
+| `Approver` | the logger's `L1 Manager Email` |
+
+Left alone deliberately:
+
+- **`Approval Status`** — *not written at all*. The Pending measure tests `= BLANK()`, and an
+  empty string is not blank in DAX, so writing `""` would drop the row out of **both** measures.
+  Leaving it unset keeps it genuinely null = pending until the manager sets `"Approve"`.
+- **`Notes`** and **`Opportunity Name`** — nothing on the screen captures these yet. Say the word
+  and they become two more inputs.
+- `Created Date` does not exist as a column; SharePoint stamps `Created` itself, and the measures
+  have no date gate.
+
+If **`Approver`** turns out to be a *Person* column rather than text, swap that one line for the
+expanded-user record — the snippet is in the comment block at the top of `btnMeetSave.OnSelect`.

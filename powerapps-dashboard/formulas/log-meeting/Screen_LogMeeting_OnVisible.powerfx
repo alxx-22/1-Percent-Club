@@ -50,8 +50,8 @@ ClearCollect(
     ForAll(
         Filter( '1 Percent Approvals', 'Requestor Name' = varMeetMyName ) As r,
         {
-            MAccount:  r.Account & "",
-            MSubject:  r.Subject & "",
+            MAccount:  r.'Account Name' & "",
+            MSubject:  r.'Approval Type' & "",
             MStatus:   If( IsBlank( r.'Approval Status' & "" ), "Pending", r.'Approval Status' & "" )
         }
     )
