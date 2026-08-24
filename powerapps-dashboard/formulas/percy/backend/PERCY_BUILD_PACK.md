@@ -996,8 +996,9 @@ ROW (
 // 10, only when Approval Status = "Approve". DATE GATE: Customer Centricity is gated on the meeting's
 // CREATED DATE >= 1 May 2026 (the model enforces this via the Approvals build; here it's explicit so a
 // pre-cutoff meeting scores 0 and Percy can say why). Adds CLASSIFICATION flags (the model classifies
-// by the Subject's leading word — "CUSTOMER"/"CHANNEL"/"LEADERSHIP"; if none matches, Meeting Type is
-// blank and no points are earned) and a NAME-MATCH flag (credit is by Last Modified By: Full Name).
+// by CONTAINSSTRING on the Subject - keyword ANYWHERE, case-insensitive, first match wins in the
+// order F2F > LEADERSHIP > CUSTOMER > CHANNEL; if none matches, Meeting Type is blank and no
+// points are earned) and a NAME-MATCH flag (credit is by Last Modified By: Full Name).
 DEFINE
     VAR Ope        = "OPE-123456789"      // injected
     VAR Who        = "jane.rep@hpe.com"   // injected (optional; "" if not supplied)
@@ -1008,10 +1009,11 @@ SELECTCOLUMNS (
     "OPE",               'Customer Meetings'[HPE Opportunity Id],
     "MeetingType",       'Customer Meetings'[Meeting Type],
     "MeetingClassified", IF ( NOT ISBLANK ( 'Customer Meetings'[Meeting Type] ), "Yes", "No" ),
-    "SubjectPrefix",     LEFT ( 'Customer Meetings'[Subject], 14 ),    // user's own text; first 14 chars only
-    "StartsCustomer",    IF ( LEFT ( 'Customer Meetings'[Subject], 8 )  = "CUSTOMER",   "Yes", "No" ),
-    "StartsChannel",     IF ( LEFT ( 'Customer Meetings'[Subject], 7 )  = "CHANNEL",    "Yes", "No" ),
-    "StartsLeadership",  IF ( LEFT ( 'Customer Meetings'[Subject], 10 ) = "LEADERSHIP", "Yes", "No" ),
+    "Subject",           'Customer Meetings'[Subject],
+    "HasF2F",            IF ( CONTAINSSTRING ( 'Customer Meetings'[Subject], "F2F" ),        "Yes", "No" ),
+    "HasLeadership",     IF ( CONTAINSSTRING ( 'Customer Meetings'[Subject], "LEADERSHIP" ), "Yes", "No" ),
+    "HasCustomer",       IF ( CONTAINSSTRING ( 'Customer Meetings'[Subject], "CUSTOMER" ),   "Yes", "No" ),
+    "HasChannel",        IF ( CONTAINSSTRING ( 'Customer Meetings'[Subject], "CHANNEL" ),    "Yes", "No" ),
     "CreatedDate",       'Customer Meetings'[Created Date],
     "CreatedQualifies",  IF ( 'Customer Meetings'[Created Date] >= DATE ( 2026, 5, 1 ), "Yes", "No" ),  // logged on/after the 1 May cut-off
     "LoggedBy",          'Customer Meetings'[Last Modified By: Full Name],
@@ -1020,6 +1022,7 @@ SELECTCOLUMNS (
     "Points",            SWITCH ( TRUE (),
                             'Customer Meetings'[Created Date] < DATE ( 2026, 5, 1 ), 0,   // before the cut-off → doesn't count
                             'Customer Meetings'[Approval Status] <> "Approve", 0,
+                            'Customer Meetings'[Meeting Type] = "F2F Meeting", 35,
                             'Customer Meetings'[Meeting Type] = "Leadership Meeting", 20,
                             'Customer Meetings'[Meeting Type] = "Customer Meeting", 10,
                             'Customer Meetings'[Meeting Type] = "Channel Partner Meeting", 10,
@@ -1027,9 +1030,10 @@ SELECTCOLUMNS (
 )
 ```
 
-> **Subject classification — what actually breaks it:** DAX text comparison is **case-insensitive**,
-> so `"customer review"` still classifies (case isn't the problem). It fails when the keyword isn't at
-> the **very start** (e.g. "Met with CUSTOMER…"), is **misspelled** ("CUSTMER…"), or the wrong word.
+> **Subject classification — what actually breaks it:** the model uses **`CONTAINSSTRING`**, so the
+> keyword can appear **anywhere** in the Subject and case does not matter — `"met with customer"`
+> classifies fine. It fails only on a **misspelling** (`"CUSTMER"`) or **no keyword at all**. Note the
+> order: **F2F is tested first**, so `"CUSTOMER F2F review"` scores 35, not 10.
 > The `meetingClassified=No` flag + the three `Starts*` flags + the `subjectPrefix` echo let Percy
 > diagnose and quote it back.
 
@@ -1137,7 +1141,7 @@ ROW (
 | **`CC Contracts`** | active Complete Care contract | "Customer already has an active CC contract" test for New Logo. Pre-filtered to active (End Date > now, Start Date < now−2mo). |
 | **`Cap Won`** | CAP-related won/funnel opp | CAP-generated order (50). Key `HPE Opportunity Id`. |
 | **`Cap Requests`** | CAP support request | CAP engagement (20). Key `Opportunity ID`; credited by `Support Request: Created By` (name). |
-| **`Customer Meetings`** | logged event | Customer Centricity (10/10/20). Key `HPE Opportunity Id`; `Meeting Type` derived from `Subject` prefix. |
+| **`Customer Meetings`** | logged event | Customer Centricity (F2F 35 / Leadership 20 / Customer 10 / Channel 10). Key `HPE Opportunity Id`; `Meeting Type` derived by `CONTAINSSTRING` on `Subject`. Points now score from `1 Percent Approvals` — see `Customer_Centricity_Points.dax`. |
 | **`Teams`** | one row per participant | Per-user aggregates surfaced to the app (every `*Points` column). Source for the summary tool. Key `User Email` / `Name`. |
 | **`1 Percent Approvals`** | approval record | Drives the `Approval Status` calc columns (`"Approve"` vs blank). |
 | `IP GL` | one row per user / month | IP-in-GreenLake tier (10–75). Source for the IP tool (by email). |

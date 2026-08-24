@@ -9,10 +9,10 @@
 --  APPROVED  = [Approval Status] = "Approve"      -> Customer Centricity Points
 --  PENDING   = [Approval Status] = BLANK()        -> ...Points Pending
 --
---  >>> F2F NAMING <<<  the app writes "F2F Meeting"; the previous formula looked
---  for "Face-to-Face Meeting". Both are matched below so whichever the SharePoint
---  choice column actually uses, the 35 points still land. Keep it that way unless
---  you are certain of the single value - a mismatch here silently scores ZERO.
+--  >>> F2F VALUE <<<  "F2F Meeting" is the exact string the model's Meeting Type
+--  SWITCH produces (see Meeting_Type.dax) and the exact string the app writes into
+--  Approval Type. "Face-to-Face Meeting" - which the previous version of these
+--  measures looked for - is never produced by anything, so it scored ZERO.
 -- ============================================================================
 
 Customer Centricity Points =
@@ -22,7 +22,7 @@ VAR f2f =
         FILTER (
             '1 Percent Approvals',
             '1 Percent Approvals'[Requestor Name] = thisuser
-                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting", "Face-to-Face Meeting" }
+                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting" }
                 && '1 Percent Approvals'[Approval Status] = "Approve"
         )
     ) * 35
@@ -57,7 +57,7 @@ VAR f2f =
         FILTER (
             '1 Percent Approvals',
             '1 Percent Approvals'[Requestor Name] = thisuser
-                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting", "Face-to-Face Meeting" }
+                && '1 Percent Approvals'[Approval Type] IN { "F2F Meeting" }
                 && '1 Percent Approvals'[Approval Status] = BLANK ()
         )
     ) * 35

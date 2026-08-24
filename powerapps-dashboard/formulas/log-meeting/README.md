@@ -30,9 +30,15 @@ now read the **`1 Percent Approvals`** list (see
 - **`Approval Status`**: blank = pending, `"Approve"` = scored. Written blank on save.
 - There is **no date gate** in the new measures.
 
-> ⚠️ **F2F naming.** The app writes `"F2F Meeting"`; the previous formula looked for
-> `"Face-to-Face Meeting"`. The DAX matches **both**, so the 35 points land either way. If you pin
-> it to one value, change the app and the measures together — a mismatch scores zero silently.
+**`F2F Meeting` is the correct value** — it is exactly what the model's `Meeting Type` SWITCH
+produces ([`Meeting_Type.dax`](Meeting_Type.dax)) and what the app writes. `"Face-to-Face Meeting"`,
+which an earlier draft of the measures matched on, is produced by nothing and scored zero.
+
+> **How `Meeting Type` really classifies** (it is not a prefix): `CONTAINSSTRING` on the Subject —
+> the keyword can be **anywhere**, case does not matter, and the **first match wins** in the order
+> **F2F > LEADERSHIP > CUSTOMER > CHANNEL**. So a Subject reading "CUSTOMER F2F review" is an
+> **F2F Meeting (35)**, not a Customer Meeting (10). The four labels this screen writes each contain
+> their own keyword, so they classify correctly down that path too.
 
 > ⚠️ **Source switch.** These measures no longer read `'Customer Meetings'`. Only meetings present
 > in `1 Percent Approvals` score. If meetings logged straight into SFDC are not mirrored into that

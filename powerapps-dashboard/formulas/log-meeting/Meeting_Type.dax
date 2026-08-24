@@ -1,0 +1,24 @@
+-- ============================================================================
+--  Meeting Type  ('Customer Meetings' calculated column)  -  CANONICAL.
+--
+--  Classification is CONTAINSSTRING, not a prefix: the keyword can sit ANYWHERE
+--  in the Subject, and DAX CONTAINSSTRING is case-insensitive. Order matters -
+--  the first match wins, so F2F beats everything: a Subject reading
+--  "CUSTOMER F2F review" classifies as F2F Meeting (35), not Customer (10).
+--
+--  Produces exactly these four strings, which are also the four Approval Type
+--  choices the app writes and the four the Customer Centricity measures match:
+--      F2F Meeting  ·  Leadership Meeting  ·  Customer Meeting  ·  Channel Partner Meeting
+--  No match => BLANK => the meeting scores nothing.
+-- ============================================================================
+Meeting Type =
+SWITCH(
+    TRUE(),
+    CONTAINSSTRING('Customer Meetings'[Subject], "F2F"), "F2F Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "F 2 F"), "F2F Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "F 2F"), "F2F Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "F2 F"), "F2F Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "LEADERSHIP"), "Leadership Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "CUSTOMER"), "Customer Meeting",
+    CONTAINSSTRING('Customer Meetings'[Subject], "CHANNEL"), "Channel Partner Meeting"
+)

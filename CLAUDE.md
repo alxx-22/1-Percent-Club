@@ -29,9 +29,11 @@ prompts. A 9-tools/one-flow-per-check design exists in git history if template-f
 Won + close ≥ 1 May + no CC contract started before 1 Apr 2026); Uplift 75 (9X + New Solution S OR
 Day 1 product, only when New Logo = 0); IB Expand is PRO-RATA (expand share × 25) and suppressed by
 any CC points; CAP orders credit by EMAIL, CAP requests by NAME (created-date gate); meetings now score
-from the `1 Percent Approvals` SharePoint list, matched on `Approval Type` (F2F 35 · Leadership 20 ·
+from the `1 Percent Approvals` SharePoint list, matched on `Approval Type` (F2F **35** · Leadership 20 ·
 Customer 10 · Channel Partner 10) and joined by `Requestor Name` (`Approve` = scored, blank =
-pending; no date gate); IP in GL = per-month tiers summed (May + June); `Manager Sponsor Points` = race share +
+pending; no date gate). `Customer Meetings[Meeting Type]` is derived by **CONTAINSSTRING on
+`Subject`** (keyword anywhere, case-insensitive, first match wins: F2F > LEADERSHIP > CUSTOMER >
+CHANNEL) — never a prefix test; IP in GL = per-month tiers summed (May + June); `Manager Sponsor Points` = race share +
 CSM 30 + crew/individual bonus points. Canonical queries:
 `powerapps-dashboard/deploy/flows/dax-templates.md`.
 

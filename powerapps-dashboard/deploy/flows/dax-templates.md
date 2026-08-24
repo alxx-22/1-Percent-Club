@@ -209,23 +209,26 @@ SELECTCOLUMNS (
     "MeetingType", 'Customer Meetings'[Meeting Type],
     "Classified",
         IF ( 'Customer Meetings'[Meeting Type]
-            IN { "Customer Meeting", "Channel Partner Meeting", "Leadership Meeting" }, "Yes", "No" ),
+            IN { "F2F Meeting", "Customer Meeting", "Channel Partner Meeting", "Leadership Meeting" }, "Yes", "No" ),
     "LoggedBy", 'Customer Meetings'[Last Modified By: Full Name],
     "LoggedByMatchesYou",
         IF ( 'Customer Meetings'[Last Modified By: Full Name] = CallerName, "Yes", "No" ),
     "ApprovalStatus", 'Customer Meetings'[Approval Status],
     "PointsWhenApproved",
         SWITCH ( 'Customer Meetings'[Meeting Type],
+            "F2F Meeting", 35,
             "Leadership Meeting", 20,
             "Customer Meeting", 10,
             "Channel Partner Meeting", 10,
             0 )
 )
 ```
-Returns one row per meeting on the deal (empty array = none logged). Classification is the
-`Meeting Type` field; credit is by name (`Last Modified By: Full Name` vs the caller's dashboard
-name); approval blank = pending the weekly manager approval. Scoring applies no date gate to
-meetings.
+Returns one row per meeting on the deal (empty array = none logged). `Meeting Type` is derived by
+**`CONTAINSSTRING` on the Subject** (keyword anywhere, case-insensitive), first match wins in the
+order F2F > LEADERSHIP > CUSTOMER > CHANNEL — so "CUSTOMER F2F review" is an **F2F Meeting (35)**.
+Awards: F2F 35, Leadership 20, Customer 10, Channel Partner 10. Credit is by name
+(`Last Modified By: Full Name` vs the caller's dashboard name); approval blank = pending. No date
+gate. Canonical derivation: [`Meeting_Type.dax`](../../formulas/log-meeting/Meeting_Type.dax).
 
 ## IPGreenLake — Switch case (uses `who`)
 
